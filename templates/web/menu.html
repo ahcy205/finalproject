@@ -1,0 +1,292 @@
+<!DOCTYPE HTML>
+<html>
+{% load static %}
+<head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <title>돔고돔락</title>
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="description" content="Free HTML5 Website Template by freehtml5.co" />
+   <meta name="keywords" content="free website templates, free html5, free template, free bootstrap, free website template, html5, css3, mobile first, responsive" />
+   <meta name="author" content="freehtml5.co" />
+
+     <!-- Facebook and Twitter integration -->
+   <meta property="og:title" content=""/>
+   <meta property="og:image" content=""/>
+   <meta property="og:url" content=""/>
+   <meta property="og:site_name" content=""/>
+   <meta property="og:description" content=""/>
+   <meta name="twitter:title" content="" />
+   <meta name="twitter:image" content="" />
+   <meta name="twitter:url" content="" />
+   <meta name="twitter:card" content="" />
+
+   <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:300,400" rel="stylesheet">
+
+   <!-- Animate.css -->
+   <link rel="stylesheet" href="{% static 'css/animate.css' %}">
+   <!-- Icomoon Icon Fonts-->
+   <link rel="stylesheet" href="{% static 'css/icomoon.css' %}">
+   <!-- Bootstrap  -->
+   <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+
+   <!-- Magnific Popup -->
+   <link rel="stylesheet" href="{% static 'css/magnific-popup.css' %}">
+
+   <!-- Owl Carousel  -->
+   <link rel="stylesheet" href="{% static 'css/owl.carousel.min.css' %}">
+   <link rel="stylesheet" href="{% static 'css/owl.theme.default.min.css' %}">
+
+   <!-- Flexslider  -->
+   <link rel="stylesheet" href="{% static 'css/flexslider.css' %}">
+
+   <!-- Pricing -->
+   <link rel="stylesheet" href="{% static 'css/pricing.css' %}">
+
+   <!-- Theme style  -->
+   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+   <!-- Modernizr JS -->
+   <script src="{% static 'js/modernizr-2.6.2.min.js' %}"></script>
+   <!-- FOR IE9 below -->
+   <!--[if lt IE 9]>
+   <script src="{% static 'js/respond.min.js' %}"></script>
+   <![endif]-->
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .table-container {
+      overflow-x: auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+       max-width: 1200px;
+       margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background-color: #e9ecef;
+    }
+    .time-col {
+      background-color: #f1f3f5;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      th, td {
+        font-size: 13px;
+        padding: 8px;
+      }
+      h2 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+   <div id="page">
+    <nav class="fh5co-nav" role="navigation">
+      <div class="top">
+         <div class="container">
+            <div class="row">
+               <div class="col-xs-12 text-right">
+                  <p class="site"></p>
+                  <p class="num">Call: +01 123 456 7890</p>
+                  <ul class="fh5co-social">
+                     <li><a href="#"><i class="icon-facebook2"></i></a></li>
+                     <li><a href="#"><i class="icon-twitter2"></i></a></li>
+                     <li><a href="#"><i class="icon-dribbble2"></i></a></li>
+                     <li><a href="#"><i class="icon-github"></i></a></li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="top-menu">
+         <div class="container">
+            <div class="row">
+               <div class="col-xs-2">
+                  <div id="fh5co-logo"><a href="{% url 'web:home' %}"><i class="icon-study"></i>돔고돔락<span></span></a></div>
+               </div>
+               <div class="col-xs-10 text-right menu-1">
+                  <ul>
+                     <li><a href="{% url 'web:home' %}">홈페이지</a></li>
+                     <li class="has-dropdown">
+                        <a href="{% url 'web:guide' %}">생활관 안내</a>
+                        <ul class="dropdown">
+                           {% if user.is_authenticated %}
+                           <li><a href="{% url 'web:check_in' %}">입실 신청</a></li>
+                           <li><a href="{% url 'web:outside' %}">외박 신청</a></li>
+                           <li><a href="{% url 'web:info' %}">생활관 안내</a></li>
+                           <li><a href="{% url 'web:rules' %}">생활관 규칙</a></li>
+                           {% else %}
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">입실 신청</a></li>
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">외박 신청</a></li>
+                           <li><a href="{% url 'web:info' %}">생활관 안내</a></li>
+                           <li><a href="{% url 'web:rules' %}">생활관 규칙</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="has-dropdown">
+                        <a href="{% url 'web:community' %}">커뮤니티</a>
+                        <ul class="dropdown">
+                           {% if user.is_authenticated %}
+                           <li><a href="{% url 'web:notice' %}">공지 사항</a></li>
+                           <li><a href="{% url 'web:community_home' %}">자유 게시판</a></li>
+                           {% else %}
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">공지 사항</a></li>
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">자유 게시판</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="has-dropdown">
+                        {% if user.is_authenticated %}
+                           <a href="{% url 'web:mypage' %}">마이페이지</a>
+                        {% else %}
+                           <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">마이페이지</a>
+                        {% endif %}
+                     </li>
+                     {% if user.is_authenticated %}
+                    <li class="btn-cta" style="margin-right: 10px;">
+                       <span class="btn-cta">{{ user.userprofile.full_name|default:user.username }}님, 환영합니다!</span>
+                    </li>
+                    <li class="btn-cta">
+                       <form method="post" action="{% url 'web:logout' %}" style="display: inline;">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-link p-0" style="text-decoration: none; color: blue;">
+                             로그아웃
+                          </button>
+                       </form>
+                    </li>
+                    {% else %}
+                    <li class="btn-cta">
+                       <a href="{% url 'web:login' %}"><span>로그인</span></a>
+                    </li>
+                    {% endif %}
+
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+   </nav>
+
+       <h2> 주간식단표 </h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">구분</th>
+          <th rowspan="2">시간</th>
+          <th>06월 16일<br>월</th>
+          <th>06월 17일<br>화</th>
+          <th>06월 18일<br>수</th>
+          <th>06월 19일<br>목</th>
+          <th>06월 20일<br>금</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="time-col" rowspan="3">중식<br>(4,500원)</td>
+          <td>11:00</td>
+          <td>떡만두국</td>
+          <td>반계탕</td>
+          <td>소고기콩나물해장국</span></td>
+          <td>떡만두국</td>
+          <td>잔치국수</span></td>
+        </tr>
+        <tr>
+          <td>13:30</td>
+          <td>매콤장조림</span></td>
+          <td>닭볶음탕</span></td>
+          <td>돈채버섯볶음</span></td>
+          <td>매운간장연어구이</span></td>
+          <td>떡갈비</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>한식반찬</td>
+          <td>소세지야채볶음</td>
+          <td>오이소박이</td>
+          <td>야채계란찜</td>
+          <td>영양고추치</td>
+        </tr>
+        <tr>
+          <td class="time-col" rowspan="3">석식<br>(4,500원)</td>
+          <td>17:30</td>
+          <td>스팸김치볶음밥</span></td>
+          <td>짜장라이스</span></td>
+          <td>커틀렛라이스</span></td>
+          <td>돈육불고기</span></td>
+          <td>즐거운</td>
+        </tr>
+        <tr>
+          <td>19:00</td>
+          <td>계란탕국수</td>
+          <td>애호박전</td>
+          <td>그린빈오믈렛샐러드</td>
+          <td>우엉조림</td>
+          <td>주말</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>미트볼볶음</td>
+          <td>어묵탕</td>
+          <td>김치국</td>
+          <td>상추쌈&쌈장</td>
+          <td>되세요 ^^</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+    </div>
+
+   <!-- jQuery -->
+   <script src="{% static 'js/jquery.min.js' %}"></script>
+   <!-- jQuery Easing -->
+   <script src="{% static 'js/jquery.easing.1.3.js' %}"></script>
+   <!-- Bootstrap -->
+   <script src="{% static 'js/bootstrap.min.js' %}"></script>
+   <!-- Waypoints -->
+   <script src="{% static 'js/jquery.waypoints.min.js' %}"></script>
+   <!-- Stellar Parallax -->
+   <script src="{% static 'js/jquery.stellar.min.js' %}"></script>
+   <!-- Carousel -->
+   <script src="{% static 'js/owl.carousel.min.js' %}"></script>
+   <!-- Flexslider -->
+   <script src="{% static 'js/jquery.flexslider-min.js' %}"></script>
+   <!-- countTo -->
+   <script src="{% static 'js/jquery.countTo.js' %}"></script>
+   <!-- Magnific Popup -->
+   <script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
+   <script src="{% static 'js/magnific-popup-options.js' %}"></script>
+   <!-- Count Down -->
+   <script src="{% static 'js/simplyCountdown.js' %}"></script>
+   <!-- Main -->
+   <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

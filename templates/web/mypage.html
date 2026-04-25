@@ -1,0 +1,364 @@
+<!DOCTYPE HTML>
+<html>
+{% load static %}
+<head>
+  <meta charset="utf-8" />
+  <title>돔고돔락 - 마이페이지</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Free HTML5 Website Template by freehtml5.co" />
+  <meta name="keywords" content="free website templates, free html5, free template, free bootstrap, free website template, html5, css3, mobile first, responsive" />
+  <meta name="author" content="freehtml5.co" />
+
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:300,400" rel="stylesheet" />
+
+  <link rel="stylesheet" href="{% static 'css/animate.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/icomoon.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" />
+  <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/magnific-popup.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/owl.carousel.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/owl.theme.default.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/flexslider.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/pricing.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+  <script src="{% static 'js/modernizr-2.6.2.min.js' %}"></script>
+
+  <style>
+    .tab-buttons {
+      display: flex;
+      border-bottom: 3px solid #007bff;
+      margin-bottom: 25px;
+    }
+    .tab-buttons button {
+      flex: 1;
+      padding: 12px 0;
+      cursor: pointer;
+      background-color: #e9ecef;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-weight: 600;
+      color: #007bff;
+      transition: background-color 0.3s, border-bottom-color 0.3s;
+      font-size: 1.1rem;
+    }
+    .tab-buttons button:not(:last-child) {
+      border-right: 1px solid #ced4da;
+    }
+    .tab-buttons button:hover {
+      background-color: #d0e2ff;
+    }
+    .tab-buttons button.active {
+      background-color: #fff;
+      border-bottom-color: #007bff;
+      color: #004085;
+      font-weight: 700;
+    }
+
+    .tab-content {
+      display: none;
+      padding-top: 10px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    h2 {
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #007bff;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+    table thead tr {
+      background-color: #007bff;
+      color: white;
+    }
+    table th, table td {
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+      vertical-align: middle;
+    }
+    table tbody tr:hover {
+      background-color: #f1f9ff;
+      cursor: default;
+    }
+
+    form {
+      margin-bottom: 30px;
+    }
+
+    /* 검색폼 새 디자인 */
+    .search-form {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .search-form input[type="text"] {
+      flex: 1;
+      padding: 10px 15px;
+      border: 2px solid #007bff;
+      border-radius: 6px;
+      font-size: 1.4rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .search-form input[type="text"]:focus {
+      border-color: #0056b3;
+      outline: none;
+      box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
+    }
+
+    .search-select {
+      padding: 10px 15px;
+      border: 2px solid #007bff;
+      border-radius: 6px;
+      font-size: 1.4rem;
+      background-color: white;
+      color: #333;
+      transition: border-color 0.3s ease;
+      cursor: pointer;
+      min-width: 140px;
+    }
+
+    .search-select:focus {
+      border-color: #0056b3;
+      outline: none;
+      box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
+    }
+
+    .btn-search {
+      padding: 10px 30px;
+      background-color: #007bff;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-search:hover {
+      background-color: #0056b3;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 80px auto 40px auto;
+      min-height: 80vh;
+      background: #fff;
+      padding: 30px 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      font-family: 'Source Sans Pro', sans-serif;
+      color: #333;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="page">
+    <div class="container">
+      <div class="tab-buttons">
+        <button onclick="showTab('info', event)" class="active">내 정보</button>
+        <button onclick="showTab('inquiry', event)">문의하기</button>
+        {% if is_admin %}
+          <button onclick="showTab('search', event)">검색</button>
+        {% endif %}
+      </div>
+
+      <div id="info" class="tab-content active">
+        <h2>내 정보</h2>
+        <table class="table table-bordered">
+          <tr><th>이름</th><td>{{ user.userprofile.full_name }}</td></tr>
+          <tr><th>학번</th><td>{{ user.username }}</td></tr>
+          <tr><th>학과</th><td>{{ user.userprofile.department }}</td></tr>
+          <tr><th>전화 번호</th><td>{{ user.userprofile.phone_number }}</td></tr>
+          <tr><th>현재 상점</th><td>{{ user.userprofile.reward_point }}</td></tr>
+          <tr><th>현재 벌점</th><td>{{ user.userprofile.penalty_point }}</td></tr>
+          <tr><th>관 호실</th>
+            <td>
+              {% if dorm %}
+                {{ dorm.building_name }} {{ dorm.r_number }}호 (좌석: {{ dorm.position }})
+              {% else %}
+                미배정
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+        {% if is_admin %}
+        <div class="text-start">
+          <a href="{% url 'web:reward_penalty' %}" class="btn btn-primary">상/벌점 관리</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div id="inquiry" class="tab-content">
+        {% if is_admin %}
+          <h2>모든 문의 내역</h2>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>제목</th>
+                <th>작성자</th>
+                <th>작성일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inquiry in inquiries %}
+                <tr onclick="window.location.href='{% url 'web:inquiry_detail' inquiry.pk %}'" style="cursor:pointer;">
+                  <td>{{ inquiry.title }}</td>
+                  <td>{{ inquiry.user.username }}</td>
+                  <td>{{ inquiry.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-center">문의 내역이 없습니다.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <h2>문의하기</h2>
+          <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" name="submit_inquiry" class="btn btn-primary">문의 등록</button>
+          </form>
+          <hr>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>제목</th>
+                <th>작성일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inquiry in inquiries %}
+                <tr onclick="window.location.href='{% url 'web:inquiry_detail' inquiry.pk %}'" style="cursor:pointer;">
+                  <td>{{ inquiry.title }}</td>
+                  <td>{{ inquiry.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="2" class="text-center">문의 내역이 없습니다.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+
+      <div id="search" class="tab-content {% if request.GET.field %}active{% endif %}">
+        {% if is_admin %}
+          <h2>학생 정보 검색</h2>
+          <form method="get" class="search-form">
+            <input type="text" name="query" placeholder="검색어 입력..." value="{{ request.GET.query }}">
+            <select name="field" class="search-select">
+              <option value="full_name" {% if request.GET.field == 'full_name' %}selected{% endif %}>이름</option>
+              <option value="student_number" {% if request.GET.field == 'student_number' %}selected{% endif %}>학번</option>
+              <option value="department" {% if request.GET.field == 'department' %}selected{% endif %}>학과</option>
+              <option value="phone_number" {% if request.GET.field == 'phone_number' %}selected{% endif %}>전화 번호</option>
+              <option value="building_name" {% if request.GET.field == 'building_name' %}selected{% endif %}>건물명</option>
+              <option value="r_number" {% if request.GET.field == 'r_number' %}selected{% endif %}>호수 </option>
+              <option value="gender" {% if request.GET.field == 'gender' %}selected{% endif %}>성별</option>
+            </select>
+            <button type="submit" class="btn-search">검색</button>
+          </form>
+
+          <table class="table table-bordered mt-3">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>학번</th>
+                <th>학과</th>
+                <th>전화 번호</th>
+                <th>상점</th>
+                <th>벌점</th>
+                <th>건물명</th>
+                <th>호수 번호</th>
+                <th>성별</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in students %}
+                {% with dorm=student.user.dorm %}
+                  <tr>
+                    <td>{{ student.full_name }}</td>
+                    <td>{{ student.user.username }}</td>
+                    <td>{{ student.department }}</td>
+                    <td>{{ student.phone_number }}</td>
+                    <td>{{ student.reward_point }}</td>
+                    <td>{{ student.penalty_point }}</td>
+                    <td>{% if dorm %}{{ dorm.building_name }}{% else %}-{% endif %}</td>
+                    <td>{% if dorm %}{{ dorm.r_number }}{% else %}-{% endif %}</td>
+                    <td>
+                      {% if dorm %}
+                        {% if dorm.gender == 'male' %}남자{% elif dorm.gender == 'female' %}여자{% else %}-{% endif %}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endwith %}
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center">검색 결과가 없습니다.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+
+      <div class="text-end mt-4">
+        <a href="{% url 'web:home' %}" class="btn btn-primary" style="font-size: 1.2rem">홈으로 가기</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'js/jquery.min.js' %}"></script>
+  <script src="{% static 'js/jquery.easing.1.3.js' %}"></script>
+  <script src="{% static 'js/bootstrap.min.js' %}"></script>
+  <script src="{% static 'bootstrap1.min.js' %}"></script>
+  <script src="{% static 'js/jquery.waypoints.min.js' %}"></script>
+  <script src="{% static 'js/jquery.stellar.min.js' %}"></script>
+  <script src="{% static 'js/owl.carousel.min.js' %}"></script>
+  <script src="{% static 'js/jquery.flexslider-min.js' %}"></script>
+  <script src="{% static 'js/jquery.countTo.js' %}"></script>
+  <script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
+  <script src="{% static 'js/magnific-popup-options.js' %}"></script>
+  <script src="{% static 'js/simplyCountdown.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+
+  <script>
+    function showTab(tabId, event) {
+      const contents = document.querySelectorAll('.tab-content');
+      const buttons = document.querySelectorAll('.tab-buttons button');
+      contents.forEach(el => el.classList.remove('active'));
+      buttons.forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if(event) event.currentTarget.classList.add('active');
+    }
+
+    // 페이지 로드 시, URL 쿼리 파라미터에 따라 탭 활성화 유지 (옵션)
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('query') || urlParams.has('field')) {
+        // 검색 탭 활성화
+        showTab('search');
+      }
+    });
+  </script>
+
+</body>
+</html>

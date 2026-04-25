@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>문의 상세</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #F2DCDC;
+      font-family: 'Source Sans Pro', sans-serif;
+      padding-top: 50px;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      font-weight: 700;
+      margin-bottom: 30px;
+      color: #007bff;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 8px;
+    }
+    .meta-info {
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+    }
+    .meta-info strong {
+      color: #333;
+    }
+    .inquiry-content {
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+      white-space: pre-line;
+    }
+    .answer-section {
+      background-color: #f1f9ff;
+      padding: 20px;
+      border-left: 5px solid #007bff;
+      border-radius: 6px;
+      margin-bottom: 30px;
+    }
+    .answer-meta {
+      font-size: 0.95rem;
+      color: #666;
+    }
+    .no-answer {
+      font-style: italic;
+      color: #999;
+      margin-bottom: 30px;
+    }
+    .form-control, .btn {
+      font-size: 1rem;
+    }
+    .btn-primary {
+      padding: 8px 25px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>{{ inquiry.title }}</h2>
+    <div class="meta-info"><strong>작성자:</strong> {{ inquiry.user.username }}</div>
+    <div class="meta-info"><strong>작성일:</strong> {{ inquiry.created_at|date:"Y-m-d H:i" }}</div>
+    <div class="inquiry-content">{{ inquiry.content|linebreaksbr }}</div>
+
+    <h3 class="mt-5 mb-3">답변</h3>
+    {% if inquiry.inquiryanswer %}
+      <div class="answer-section">
+        <p>{{ inquiry.inquiryanswer.answer|linebreaksbr }}</p>
+        <div class="answer-meta">
+          <small>작성자: {{ inquiry.inquiryanswer.admin.username }} | 작성일: {{ inquiry.inquiryanswer.answered_at|date:"Y-m-d H:i" }}</small>
+        </div>
+      </div>
+    {% else %}
+      <p class="no-answer">아직 답변이 없습니다.</p>
+    {% endif %}
+
+    {% if is_admin %}
+      <h3 class="mt-5 mb-3">답변 작성/수정</h3>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">저장</button>
+      </form>
+    {% endif %}
+
+    <div class="mt-4">
+      <a href="{% url 'web:mypage' %}" class="btn btn-outline-secondary">← 마이페이지로 돌아가기</a>
+    </div>
+  </div>
+</body>
+</html>

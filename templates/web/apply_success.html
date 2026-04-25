@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container" style="margin-top: 100px;">
+  <div class="alert alert-success text-center">
+    <h4>외출/외박 신청이 성공적으로 완료되었습니다.</h4>
+    <a href="{% url 'web:home' %}" class="btn btn-primary mt-3">홈으로 돌아가기</a>
+  </div>
+</div>
+
+{% if show_alert %}
+<script>
+  alert("신청이 완료되었습니다.");
+</script>
+{% endif %}
+{% endblock %}

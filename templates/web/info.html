@@ -1,0 +1,328 @@
+<!DOCTYPE HTML>
+<html>
+{% load static %}
+	<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>돔고돔락</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Free HTML5 Website Template by freehtml5.co" />
+	<meta name="keywords" content="free website templates, free html5, free template, free bootstrap, free website template, html5, css3, mobile first, responsive" />
+	<meta name="author" content="freehtml5.co" />
+
+  	<!-- Facebook and Twitter integration -->
+	<meta property="og:title" content=""/>
+	<meta property="og:image" content=""/>
+	<meta property="og:url" content=""/>
+	<meta property="og:site_name" content=""/>
+	<meta property="og:description" content=""/>
+	<meta name="twitter:title" content="" />
+	<meta name="twitter:image" content="" />
+	<meta name="twitter:url" content="" />
+	<meta name="twitter:card" content="" />
+
+	<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:300,400" rel="stylesheet">
+
+	<!-- Animate.css -->
+	<link rel="stylesheet" href="{% static 'css/animate.css' %}">
+	<!-- Icomoon Icon Fonts-->
+	<link rel="stylesheet" href="{% static 'css/icomoon.css' %}">
+	<!-- Bootstrap  -->
+	<link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+
+	<!-- Magnific Popup -->
+	<link rel="stylesheet" href="{% static 'css/magnific-popup.css' %}">
+
+	<!-- Owl Carousel  -->
+	<link rel="stylesheet" href="{% static 'css/owl.carousel.min.css' %}">
+	<link rel="stylesheet" href="{% static 'css/owl.theme.default.min.css' %}">
+
+	<!-- Flexslider  -->
+	<link rel="stylesheet" href="{% static 'css/flexslider.css' %}">
+
+	<!-- Pricing -->
+	<link rel="stylesheet" href="{% static 'css/pricing.css' %}">
+
+	<!-- Theme style  -->
+	<link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+	<!-- Modernizr JS -->
+	<script src="{% static 'js/modernizr-2.6.2.min.js' %}"></script>
+	<!-- FOR IE9 below -->
+	<!--[if lt IE 9]>
+	<script src="{% static 'js/respond.min.js' %}"></script>
+	<![endif]-->
+
+	</head>
+	<body>
+
+	<div class="fh5co-loader" ></div>
+
+	<div id="page">
+	<nav class="fh5co-nav" role="navigation">
+      <div class="top">
+         <div class="container">
+            <div class="row">
+               <div class="col-xs-12 text-right">
+                  <p class="site"></p>
+                  <p class="num">Call: +01 123 456 7890</p>
+                  <ul class="fh5co-social">
+                     <li><a href="#"><i class="icon-facebook2"></i></a></li>
+                     <li><a href="#"><i class="icon-twitter2"></i></a></li>
+                     <li><a href="#"><i class="icon-dribbble2"></i></a></li>
+                     <li><a href="#"><i class="icon-github"></i></a></li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="top-menu">
+         <div class="container">
+            <div class="row">
+               <div class="col-xs-2">
+                  <div id="fh5co-logo"><a href="{% url 'web:home' %}"><i class="icon-study"></i>돔고돔락<span></span></a></div>
+               </div>
+               <div class="col-xs-10 text-right menu-1">
+                  <ul>
+                     <li><a href="{% url 'web:home' %}">홈페이지</a></li>
+                     <li class="has-dropdown">
+                        <a href="{% url 'web:guide' %}">생활관 안내</a>
+                        <ul class="dropdown">
+                           {% if user.is_authenticated %}
+                           <li><a href="{% url 'web:check_in' %}">입실 신청</a></li>
+                           <li><a href="{% url 'web:outside' %}">외박 신청</a></li>
+                           <li><a href="{% url 'web:info' %}">생활관 안내</a></li>
+                           <li><a href="{% url 'web:rules' %}">생활관 규칙</a></li>
+                           {% else %}
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">입실 신청</a></li>
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">외박 신청</a></li>
+                           <li><a href="{% url 'web:info' %}">생활관 안내</a></li>
+                           <li><a href="{% url 'web:rules' %}">생활관 규칙</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="has-dropdown">
+                        <a href="{% url 'web:community' %}">커뮤니티</a>
+                        <ul class="dropdown">
+                           {% if user.is_authenticated %}
+                           <li><a href="{% url 'web:notice' %}">공지 사항</a></li>
+                           <li><a href="{% url 'web:community_home' %}">자유 게시판</a></li>
+                           {% else %}
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">공지 사항</a></li>
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">자유 게시판</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="has-dropdown">
+                        {% if user.is_authenticated %}
+                           <a href="{% url 'web:mypage' %}">마이페이지</a>
+                        {% else %}
+                           <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">마이페이지</a>
+                        {% endif %}
+                     </li>
+                     {% if user.is_authenticated %}
+                    <li class="btn-cta" style="margin-right: 10px;">
+                       <span class="btn-cta">{{ user.userprofile.full_name|default:user.username }}님, 환영합니다!</span>
+                    </li>
+                    <li class="btn-cta">
+                       <form method="post" action="{% url 'web:logout' %}" style="display: inline;">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-link p-0" style="text-decoration: none; color: blue;">
+                             로그아웃
+                          </button>
+                       </form>
+                    </li>
+                    {% else %}
+                    <li class="btn-cta">
+                       <a href="{% url 'web:login' %}"><span>로그인</span></a>
+                    </li>
+                    {% endif %}
+
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+   </nav>
+
+    <div class="container" style="margin-top: 80px; min-height: 80vh;">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2" style="background-color: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 6px;">
+			<h4 class="text-center mb-4">생활관 안내</h4>
+				<strong>제 1 장 구분</strong><br>
+				<strong>제1조</strong><br>
+				생활관은 명현관과 명인관으로 나누고 명현관은 남자 기숙사, 명인관은 여자 기숙사라고 정의한다.<br><br>
+
+				<strong>제 2 장 조직</strong><br>
+				<strong>제2조(구성 및 주관부서)</strong><br>
+				인재개발처장은 생활관 업무를 통괄하고 소속 직원을 지휘, 감독한다<br>
+				생활관에는 관리운영상 필요한 직원을 두며, 생활관장과 생활감을 둘 수 있다.<br>
+				생활관의 운영 및 관리의 주관 부서는 교무학생처로 한다.<br><br>
+
+				<strong>제3조(생활관장 및 생활감)</strong><br>
+				생활관장 및 생활감은 운영위원회의 의결사항과 면학분위기 조성, 생활지도, 위생 및 시설비품의 관리 등 생활관 운영에 관한 사항을 관장하며 소속직원을 지휘, 감독한다.<br>
+				생활관장은 전임교원을 원칙으로 하되, 필요시 교원 중에서 총장이 임명할 수 있다.<br><br>
+
+				<strong>제4조(생활관 직원)</strong><br>
+				생활관의 관리운영을 위한 직원과 고용인을 둘 수 있다.<br>
+				고용인의 임용 계약조건, 복무, 처우에 관한 사항은 U1대의 제반 인사관계 규정에 따른다.<br><br>
+
+				<strong>제 3 장 생활관 운영위원회</strong><br>
+				<strong>제5조(구성)</strong><br>
+				생활관의 효율적인 운영과 중요 사항을 심의하기 위하여 운영위원회를(이하"위원회"라 한다)를 둔다.<br>
+				위원회는 당연직인 학생처장이 위촉하는 5인 이내의 위원으로 구성한다.<br>
+				위원회의 위원장은 학생처장이 되며, 간사는 학생처 직원이 된다.<br>
+				당연직을 제외한 임원의 임기는 2년으로 한다.<br><br>
+
+				<strong>제6조(기능)</strong><br>
+				위원회는 다음 각 호의 사항을 심의한다.<br>
+				- 생활관 관련 규정의 제정 및 개정에 관한 사항<br>
+				- 생활 수칙의 제정 및 개정에 관한 사항<br>
+				- 생활관의 운영 및 관리에 관한 중요 사항<br><br>
+
+				<strong>제7조(회의)</strong><br>
+				회의는 필요에 따라 위원장이 소집하고 재적 위원 과반수의 출석으로 개회하고 출석 위원 과반수의 찬성으로 의결한다.<br>
+				위원장의 유고시에는 위원장이 지명하는 위원이 그 직을 대행한다.<br><br>
+
+				<strong>제 4 장 입관 및 퇴관</strong><br>
+				<strong>제8조(입관원칙 및 인원배정)</strong><br>
+				본교의 신입생 및 재학생에 한해 입관 할 수 있으며, 배정 기준은 다음과 같다.<br>
+				총 입관 가능 인원 중 성별로 입관 선정인원은 생활관 입관신청 모집 공고 시 재적인원수의 비율로 선정함을 원칙으로 하되, 생활관을 추가로 확보하는 현지 여건을 감안하여 층별 또는 동별 세대별 구분으로 다소 조정하여 선정된다.<br>
+				학년별 배정 인원은 성별 총입관 가능인원 중 다음과 같은 비율로 선정함을 원칙으로 하되 다소 사정에 따라 약간의 증감을 하여 선정한다.<br>
+				1순위 : 신입생, 남은 공실에 한해 2학년 : 60%, 3학년 30%, 4학년 10%<br><br>
+
+				<strong>제9조(입관허가)</strong><br>
+				생활관에 입관하고자 하는 자는 소정 기간 내에 입관신청서를 제출하여 운영위원장의 허가를 받아야 한다.<br>
+				입관 희망자가 생활관의 수용능력을 초과할 때에는 입관 우선순위에 따라 입관자를 선정한다.<br>
+				입관 허가를 받은 자가 정당한 사유 없이 입관 허가일로부터 7일이 경과하도록 입관하지 아니할 때에는 입관허가를 취소 할 수 있다.<br><br>
+
+				<strong>제10조(입관 우선순위)</strong><br>
+				입관우선순위는 성적을 기준으로 하되, 자치위원회 활동자와 검도부원은 우선적으로 선발한다. 추가 심의 인원 발생시 운영위원회에서 결정한다.<br><br>
+
+				<strong>제11조(건강진단서의 제출)</strong><br>
+				입관자는 소정 기간 내에 의료기관의 건강 진단서 제출을 요구할 수 있다.<br><br>
+
+				<strong>제12조(대여물품)</strong><br>
+				생활관 입관자에 대하여는 책상, 의자, 옷장, 침대, 메트리스, 열쇠 1개 등을 대여함을 원칙으로 한다.<br>
+				대여받은 물품은 임의로 외부로 반출 할 수 없다.<br><br>
+
+				<strong>제13조(입관의 제한)</strong><br>
+				다음 각 호의 1에 해당하는 학생은 생활관에 입관할 수 없다.<br>
+				- 정학 이상의 징계처분을 받은 자.<br>
+				- 퇴관 처분을 받은 자 및 무단 퇴관자.<br>
+				- 전염병 질환자 및 보균자.<br>
+				- 품행이 단정하지 못한 자.<br>
+				- 생활태도가 불량한 자.<br>
+				- 생활관 사용 시 벌점 20점 이상, 퇴관조치자는 다음 학기 입관을 제한한다.<br>
+				- 기타 정당한 사유로 운영위원장이 입관을 허가하지 아니한 자.<br><br>
+
+				<strong>제14조(각 호실의 입관정원)</strong><br>
+				생활관 각 호실의 입사정원은 운영위원장이 따로 정한다.<br><br>
+
+				<strong>제15조(실배정 및 이동)</strong><br>
+				실 배정은 운영위원장이 정한다.<br>
+				관생은 임의로 실을 이동할 수 없다. 다만, 부득이한 사유로 실 이동을 하여야 할 경우에는 실 이동 원서를 제출하여 사전 허가를 받아야 한다.<br>
+				본교의 방침에 의하여 실 이동을 단행할 경우에는 7일 전에 관생에게 통지하여야 한다.<br><br>
+
+				<strong>제16조(퇴관)</strong><br>
+				입관자가 다음 각 호의 1에 해당할 때에는 소정 기한 내에 퇴관하여야 한다.<br>
+				- 제19조의 입관자격 제한사유가 발생한 자<br>
+				- 휴학, 자퇴, 제적된 자<br>
+				- 정당한 사유 없이 2주일 이상 사용하지 않은 자<br>
+				- 건강상 생활관 내에서의 생활이 부적당하다고 인정된 자<br>
+				- 간염, 전염병, 기타 부득이한 사유로 생활관 사용과 단체생활이 곤란하다고 인정된 자<br>
+				- 1회의 경고 조치를 받은 자가 다시 경고를 받은 자<br>
+				- 생활관의 제반 수칙을 위반하거나 생활관 내의 질서를 문란하게 하여 퇴관 처분을 받은 자<br><br>
+
+				<strong>제 5 장 시설 및 안전관리</strong><br>
+				<strong>제17조(시설물 및 집기류 등의 유지보수)</strong><br>
+				시설물 및 집기류 등의 유지보수는 U1대가 한다. 단, 관생에게 변상책임이 있는 경우에는 그러하지 아니한다.<br>
+				시설물 및 집기류 등을 수리하고자 할 때에는 수리 신청서를 주관 부서에 제출하여야 한다. 단, 긴급을 요하는 때에는 구두로 신청하고 사후에 신청서를 제출 할 수 있다.<br><br>
+
+				<strong>제18조(보안)</strong><br>
+				생활관의 보안 및 안전관리를 위해 마스터 키를 둘 수 있으며 마스터 키는 생활관 직원만이 보관 사용한다.<br>
+				방 열쇠는 반드시 생활관 관리실에서 보관한다.<br>
+				실 내부에서 입관자의 과실로 발생한 사항은 입관자의 책임으로 한다.<br><br>
+
+				<strong>제19조(화기책임자 등)</strong><br>
+				생활관 각 호실에 화기책임자 및 부책임자를 두며, 책임자와 부책임자는 각 실의 입관생 중에서 선임한다.<br>
+				화기책임자 및 부책임자는 실내의 화재예방의 임무를 수행한다.<br><br>
+
+				<strong>제 6 장 재정</strong><br>
+				<strong>제20조(경비부담)</strong><br>
+				생활관의 운영에 필요한 제경비는 총장이 따로 정한다.<br><br>
+
+				<strong>제21조(생활관비)</strong><br>
+				생활관비의 납부대상자 징수금액 등에 관하여 필요한 사항은 위원회의 심의를 거쳐 총장이 따로 정한다. 단, 생활관 퇴관 시 생활관비는 다음 기준에 따라 환불한다.<br>
+				▣ 생활관비 환불 기준<br><br>
+
+				<strong>제22조(생활관비의 용도)</strong><br>
+				생활관비는 생활관 운영에 필요한 경비에 충당한다.<br><br>
+
+				<strong>제23조(예산 및 결산)</strong><br>
+				사업연도는 매년 3월 1일부터 익년 2월 28일까지로 한다.<br>
+				운영위원장은 사업연도 개시 전 사업계획서와 예산서를 작성하여 총장의 승인을 받아야 하며,<br>
+				사업연도 종료 후에는 결산서를 총장에게 보고하여야 한다.<br><br>
+
+				<strong>제24조(감사)</strong><br>
+				총장은 생활관 운영의 적정성과 효율성을 확보하기 위하여 본교 직원을 통해 생활관 운영을 감사할 수 있다.<br><br>
+
+				<strong>제 7 장 생활관 자치위원회</strong><br>
+				<strong>제25조(자치위원회 구성 및 재정지원)</strong><br>
+				생활관 봉사위원은 생활관장이 위촉한다.<br>
+				영동캠퍼스: 회장 1명, 부회장 1명, 층장 8명<br>
+				아산캠퍼스: 회장 1명, 층장 4명<br>
+				회장/부회장은 소정의 근무시간 이상 근무 시 근로장학금 지급<br>
+				봉사위원은 매학기 생활관비(식대 제외) 면제 대상<br><br>
+
+				<strong>제26조(자치위원회 활동)</strong><br>
+				- 건전한 면학 분위기 조성<br>
+				- 관생 인원 점검 (매일 24:00)<br>
+				- 생활관내 화재예방<br>
+				- 관생 후생복지 활동<br>
+				- 자치 방범 활동<br>
+				- 출입자 점검<br>
+				- 각 층별 키 관리<br>
+				- 각종 시설물 관리<br>
+				- 생활 수칙 위반자 벌점 관리 및 퇴사 건의<br><br>
+
+				<strong>제 8 장 부칙</strong><br>
+				<strong>제27조(위임규정)</strong><br>
+				이 세칙의 시행에 관하여 필요한 사항은 별도의 규정이 없는 한 운영위원장이 따로 정한다.<br><br>
+
+				</div>
+			</div>
+        </div>
+      </div>
+    </div>
+
+
+	<!-- jQuery -->
+	<script src="{% static 'js/jquery.min.js' %}"></script>
+	<!-- jQuery Easing -->
+	<script src="{% static 'js/jquery.easing.1.3.js' %}"></script>
+	<!-- Bootstrap -->
+	<script src="{% static 'js/bootstrap.min.js' %}"></script>
+	<!-- Waypoints -->
+	<script src="{% static 'js/jquery.waypoints.min.js' %}"></script>
+	<!-- Stellar Parallax -->
+	<script src="{% static 'js/jquery.stellar.min.js' %}"></script>
+	<!-- Carousel -->
+	<script src="{% static 'js/owl.carousel.min.js' %}"></script>
+	<!-- Flexslider -->
+	<script src="{% static 'js/jquery.flexslider-min.js' %}"></script>
+	<!-- countTo -->
+	<script src="{% static 'js/jquery.countTo.js' %}"></script>
+	<!-- Magnific Popup -->
+	<script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
+	<script src="{% static 'js/magnific-popup-options.js' %}"></script>
+	<!-- Count Down -->
+	<script src="{% static 'js/simplyCountdown.js' %}"></script>
+	<!-- Main -->
+	<script src="{% static 'js/main.js' %}"></script>
+    </div>
+	</body>
+</html>
+

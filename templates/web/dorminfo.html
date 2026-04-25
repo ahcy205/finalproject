@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="margin-top: 80px; min-height: 80vh;">
+  <div class="row justify-content-center">
+    <div class="col-lg-12">
+      <h3 class="text-center mb-4">기숙사 신청 현황</h3>
+
+      <div style="overflow-x: auto;">
+        <table class="table table-bordered table-hover bg-white" style="width: 100%; min-width: 1100px;">
+          <thead class="text-center">
+            <tr>
+              <th>이름</th>
+              <th>학번</th>
+              <th>성별</th>
+              <th>신청 내용</th>
+              <th>건물 이름</th>
+              <th>방 번호</th>
+              <th>침대 위치</th>
+              {% if is_admin %}
+                <th>관리자 조치</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for dorm in dorms %}
+            <tr class="text-center">
+              <td>{{ dorm.name }}</td>
+              <td>{{ dorm.student_number }}</td>
+              <td>{{ dorm.get_gender_display }}</td>
+              <td>{{ dorm.content|default:"-" }}</td>
+              <td>{{ dorm.building_name|default:"-" }}</td>
+              <td>{% if dorm.r_number %}{{ dorm.r_number }}{% else %}-{% endif %}</td>
+              <td>{% if dorm.position %}{{ dorm.position }}{% else %}-{% endif %}</td>
+              {% if is_admin %}
+              <td>
+                <form method="post" action="{% url 'web:assign_room' dorm.id %}" style="white-space: nowrap;">
+                  {% csrf_token %}
+                  <input type="text" name="building_name" class="form-control input-sm" placeholder="건물"
+                         style="display: inline-block; width: 100px; margin-right: 4px;">
+                  <input type="number" name="r_number" class="form-control input-sm" placeholder="방"
+                         style="display: inline-block; width: 100px; margin-right: 4px;">
+                  <input type="number" name="position" class="form-control input-sm" placeholder="침대"
+                         style="display: inline-block; width: 100px; margin-right: 4px;">
+                  <button type="submit" class="btn btn-primary btn-sm"
+                          style="display: inline-block; padding: 3px 10px;">배정</button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center">신청 내역이 없습니다.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+         <div class="mt-4">
+          <a href="{% url 'web:home' %}" class="btn btn-outline-secondary">← 홈으로 돌아가기</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,319 @@
+<!DOCTYPE HTML>
+<html>
+{% load static %}
+	<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>돔고돔락</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Free HTML5 Website Template by freehtml5.co" />
+	<meta name="keywords" content="free website templates, free html5, free template, free bootstrap, free website template, html5, css3, mobile first, responsive" />
+	<meta name="author" content="freehtml5.co" />
+
+  	<!-- Facebook and Twitter integration -->
+	<meta property="og:title" content=""/>
+	<meta property="og:image" content=""/>
+	<meta property="og:url" content=""/>
+	<meta property="og:site_name" content=""/>
+	<meta property="og:description" content=""/>
+	<meta name="twitter:title" content="" />
+	<meta name="twitter:image" content="" />
+	<meta name="twitter:url" content="" />
+	<meta name="twitter:card" content="" />
+
+	<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:300,400" rel="stylesheet">
+
+	<!-- Animate.css -->
+	<link rel="stylesheet" href="{% static 'css/animate.css' %}">
+	<!-- Icomoon Icon Fonts-->
+	<link rel="stylesheet" href="{% static 'css/icomoon.css' %}">
+	<!-- Bootstrap  -->
+	<link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+
+	<!-- Magnific Popup -->
+	<link rel="stylesheet" href="{% static 'css/magnific-popup.css' %}">
+
+	<!-- Owl Carousel  -->
+	<link rel="stylesheet" href="{% static 'css/owl.carousel.min.css' %}">
+	<link rel="stylesheet" href="{% static 'css/owl.theme.default.min.css' %}">
+
+	<!-- Flexslider  -->
+	<link rel="stylesheet" href="{% static 'css/flexslider.css' %}">
+
+	<!-- Pricing -->
+	<link rel="stylesheet" href="{% static 'css/pricing.css' %}">
+
+	<!-- Theme style  -->
+	<link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+	<!-- Modernizr JS -->
+	<script src="{% static 'js/modernizr-2.6.2.min.js' %}"></script>
+	<!-- FOR IE9 below -->
+	<!--[if lt IE 9]>
+	<script src="{% static 'js/respond.min.js' %}"></script>
+	<![endif]-->
+
+	</head>
+	<body>
+
+	<div class="fh5co-loader" ></div>
+
+	<div id="page">
+	<nav class="fh5co-nav" role="navigation">
+      <div class="top">
+         <div class="container">
+            <div class="row">
+               <div class="col-xs-12 text-right">
+                  <p class="site"></p>
+                  <p class="num">Call: +01 123 456 7890</p>
+                  <ul class="fh5co-social">
+                     <li><a href="#"><i class="icon-facebook2"></i></a></li>
+                     <li><a href="#"><i class="icon-twitter2"></i></a></li>
+                     <li><a href="#"><i class="icon-dribbble2"></i></a></li>
+                     <li><a href="#"><i class="icon-github"></i></a></li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="top-menu">
+         <div class="container">
+            <div class="row">
+               <div class="col-xs-2">
+                  <div id="fh5co-logo"><a href="{% url 'web:home' %}"><i class="icon-study"></i>돔고돔락<span></span></a></div>
+               </div>
+               <div class="col-xs-10 text-right menu-1">
+                  <ul>
+                     <li><a href="{% url 'web:home' %}">홈페이지</a></li>
+                     <li class="has-dropdown">
+                        <a href="{% url 'web:guide' %}">생활관 안내</a>
+                        <ul class="dropdown">
+                           {% if user.is_authenticated %}
+                           <li><a href="{% url 'web:check_in' %}">입실 신청</a></li>
+                           <li><a href="{% url 'web:outside' %}">외박 신청</a></li>
+                           <li><a href="{% url 'web:info' %}">생활관 안내</a></li>
+                           <li><a href="{% url 'web:rules' %}">생활관 규칙</a></li>
+                           {% else %}
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">입실 신청</a></li>
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">외박 신청</a></li>
+                           <li><a href="{% url 'web:info' %}">생활관 안내</a></li>
+                           <li><a href="{% url 'web:rules' %}">생활관 규칙</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="has-dropdown">
+                        <a href="{% url 'web:community' %}">커뮤니티</a>
+                        <ul class="dropdown">
+                           {% if user.is_authenticated %}
+                           <li><a href="{% url 'web:notice' %}">공지 사항</a></li>
+                           <li><a href="{% url 'web:community_home' %}">자유 게시판</a></li>
+                           {% else %}
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">공지 사항</a></li>
+                           <li><a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">자유 게시판</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="has-dropdown">
+                        {% if user.is_authenticated %}
+                           <a href="{% url 'web:mypage' %}">마이페이지</a>
+                        {% else %}
+                           <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">마이페이지</a>
+                        {% endif %}
+                     </li>
+                     {% if user.is_authenticated %}
+                    <li class="btn-cta" style="margin-right: 10px;">
+                       <span class="btn-cta">{{ user.userprofile.full_name|default:user.username }}님, 환영합니다!</span>
+                    </li>
+                    <li class="btn-cta">
+                       <form method="post" action="{% url 'web:logout' %}" style="display: inline;">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-link p-0" style="text-decoration: none; color: blue;">
+                             로그아웃
+                          </button>
+                       </form>
+                    </li>
+                    {% else %}
+                    <li class="btn-cta">
+                       <a href="{% url 'web:login' %}"><span>로그인</span></a>
+                    </li>
+                    {% endif %}
+
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+   </nav>
+
+    <div class="container" style="margin-top: 80px; min-height: 80vh;">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2" style="background-color: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 6px;">
+          <h4 class="text-center mb-4">생활관 규칙</h4>
+			<div style="white-space: pre-line; line-height: 1.8; font-size: 15px;">
+
+			<strong>제1조 (목적)</strong><br>
+			이 수칙은 생활관 운영규정 제7조에 의거 생활관 입관자(이하 "관생"이라 한다)가 지켜야 할 생활규범을 정함을 목적으로 한다.<br><br>
+
+			<strong>제2조 (적용범위)</strong><br>
+			이 생활관 생활수칙(이하 "수칙"이라 한다)은 모든 관생에게 적용한다.<br><br>
+
+			<strong>제3조 (생활규범)</strong><br>
+			관생의 생활관내 출입시간은 06:00-23:00로 한다. 다만, 부득이한 경우라고 판단될 경우에는 생활관장은 출입시간을 변경할 수 있다.<br>
+			방(침실)의 천정등은 00:00-06:00까지 소등함을 원칙으로 하되, 실원 전원의 합의하에 점등할 수 있다.<br><br>
+
+			<strong>제4조 (의무사항)</strong><br>
+			관생은 생활수칙과 공중도덕을 준수하여야 한다.<br>
+			관생은 건전한 공동생활과 면학분위기가 유지될 수 있도록 생활하여야 한다.<br>
+			생활관내에서는 절대 정숙하여야 하며 타인에게 피해를 주는 행위를 하여서는 아니 된다.<br>
+			관생은 각 실내를 청소 정리 정돈하고 청결하게 유지하여야 한다.<br>
+			관생은 실내 화기단속 등 화재예방과 기타 안전사고에 대한 책임을 져야 한다.<br>
+			관생은 생활관 시설을 보호 유지하고 관리, 보존하여야 한다.<br>
+			방을 비울 시에는 반드시 문을 잠그고 도난방지에 유의하여야 한다.<br>
+			관생은 관계직원의 정당한 지시에 순응하여야 하며 점검 및 대청소에 적극 협조하여야 한다.<br><br>
+
+			<strong>제5조 (출입제한)</strong><br>
+			남, 여학생은 사용이 따로 구분되어 있는 제반시설을 상호출입할 수 없으며, 부득이한 경우에는 생활관 직원의 사전허가를 받아야 한다.<br>
+			사용자의 승인 없이 타인의 방에 출입할 수 없으며, 타인의 방에서 숙박할 수 없다.<br><br>
+
+			<strong>제6조 (공용물 사용)</strong><br>
+			생활관내의 모든 기물은 임의로 이동할 수 없으며, 특히 공용물품을 임의로 이동하거나 독점 사용하여서는 안 된다.<br>
+			전화사용료 등의 개인사용료는 본인이 부담하여야 한다.<br>
+			세탁은 지정된 세탁실을 이용하여야 하며 23:00시부터 익일 07:00시까지는 세탁할 수 없다.<br>
+			세탁물의 건조는 건조기 또는 지정된 건조대를 이용하여야 한다.<br>
+			다리미실을 이용할 때에는 화재에 특히 유의하여야 하며 사용 후에는 반드시 전원을 제거한 후 정돈하여야 한다.<br><br>
+
+			<strong>제7조 (변상책임)</strong><br>
+			관생이 고의 또는 과실로 생활관의 시설과, 대여받은 물품을 훼손하였거나 망실하였을 때에는 이를 변상하여야 한다.<br><br>
+
+			<strong>제8조 (광고 및 게시)</strong><br>
+			광고 및 게시물은 반드시 지정된 게시판을 이용하여야 한다.<br>
+			모든 게시물은 48시간이 경과하면 주지 된 것으로 보고 철거할 수 있다.<br><br>
+
+			<strong>제9조 (통보의무)</strong><br>
+			관생은 다음 각호의 사항이 발생하였을 때에는 지체없이 이를 관계 부서에 통보하여야 한다.<br>
+			- 시설, 물품 등을 훼손하였거나 망실하였을 때<br>
+			- 화재, 도난, 응급환자, 기타 이변이 발생하였을 때<br>
+			- 전기, 수도, 스팀 등의 고장이나 시설, 물품 등의 파손을 발견하였을 때<br>
+			- 기타 위의 각 호에 준하는 사태가 발생하였을 때<br><br>
+
+			<strong>제10조 (금지사항)</strong><br>
+			다음 각호의 행위를 한 관생은 상담을 통하여 퇴관 여부를 결정하되, 금지사항 위반에 따른 벌점내역은 별표1에 의한다.<br>
+			1. 생활관 사용권의 양도, 외부인의 숙박, 기타 이와 유사한 행위<br>
+			2. 시설 및 대여 물품의 임의 이동, 원형 변경 및 목적외 사용<br>
+			3. 공동 사용 물품의 독점 또는 임의 이동<br>
+			4. 건물 내 위험물의 반입 및 사용<br>
+			5. 타인에게 방해가 되는 소음, 음주, 고성방가<br>
+			6. 도박<br>
+			7. 동물 사육<br>
+			8. 영리 목적의 행위<br>
+			9. 전열기, 기타 난방/취사 도구 사용<br>
+			10. 비밀결사 조직<br>
+			11. 열쇠 개인 제작<br>
+			12. 질서를 문란케 하거나 학생 신분에 위배되는 행위<br><br>
+
+			<strong>제11조 (관리)</strong><br>
+			관생은 각자의 방을 항상 청결하게 유지하여야 하며 시설물 보호에 노력하여야 한다.<br>
+			관생은 쾌적한 생활 환경 유지를 위하여 매주 수요일 22:00 ~ 23:00에 대청소를 실시한다.<br><br>
+
+			<strong>제12조 (점검)</strong><br>
+			생활관 문화 형성과 복지향상 자료를 수집하고 차년도 생활관비 및 기초자료를 작성하기 위하여 인원, 시설, 위생, 생활상태 등을 점검한다.<br>
+			정기점검은 매주 수요일 저녁에 실시하고 특별한 사유가 있을 때에는 특별점검을 실시할 수 있다.<br>
+			점검은 생활관장과 생활감 또는 직원이 원칙이나 자치회에 위임할 수 있다.<br><br>
+
+			<strong>제13조 (퇴관원서 제출)</strong><br>
+			입관자가 퇴관할 때에는 퇴관확인서를 제출하고 대여받은 물품은 반환하여야 한다.<br><br>
+
+			<strong>제14조 (포상)</strong><br>
+			생활관장은 면학여건 조성 및 환경개선에 기여한 학생에 대하여 포상할 수 있다.<br><br>
+
+			<strong>제14조의2 (벌점감면)</strong><br>
+			생활관장은 제10조에 의하여 벌점 받은 관생들에게 별표1 제2항에 따라 벌점 감면 혜택을 부여할 수 있다.<br><br>
+
+			<strong>제15조 (징계)</strong><br>
+			생활관 규칙 및 수칙을 위반한 관생에 대하여는 별표1에 의거 경고 또는 퇴관의 징계를 할 수 있다.<br>
+			경고 및 퇴관은 생활관장이 행한다.<br><br>
+
+			<strong>부칙</strong><br>
+			(시행일) 이 수칙은 1995년 3월 1일부터 시행한다.<br>
+			(시행일) 이 수칙은 2002년 5월 15일부터 개정 시행한다.<br>
+			(시행일) 이 수칙은 2006년 12월 18일부터 개정 시행한다. 다만, 위반 시 벌점 및 상점 부과 규정은 2011.08.29부터 적용한다.<br>
+			(시행일) 이 수칙은 2012년 12월 26일부터 시행한다.<br><br>
+
+			<strong>▣ 생활관 관생수칙 위반 시 벌점 사항</strong><br>
+
+			<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; font-size: 15px; width: 100%;">
+
+			<thead>
+			<tr>
+			  <th>항</th><th>위반내용</th><th>벌점</th><th>비고</th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr><td>1</td><td>소란 및 고성방가</td><td>3점</td><td></td></tr>
+			<tr><td>2</td><td>청소 불량 (대청소 불참)</td><td>3점</td><td></td></tr>
+			<tr><td>3</td><td>창문 투기</td><td>3점</td><td></td></tr>
+			<tr><td>4</td><td>낙서, 게시물 무단 부착</td><td>3점</td><td></td></tr>
+			<tr><td>5</td><td>서류 지연 제출</td><td>3점</td><td></td></tr>
+			<tr><td>6</td><td>외출신청 허위 또는 대리</td><td>4점</td><td></td></tr>
+			<tr><td>7</td><td>학과 공문 위반</td><td>4점</td><td></td></tr>
+			<tr><td>8</td><td>퇴실 시 청소상태 불량</td><td>5점</td><td></td></tr>
+			<tr><td>9</td><td>불법집회 참여</td><td>5점</td><td></td></tr>
+			<tr><td>10</td><td>호실 비밀번호 공유</td><td>5점</td><td></td></tr>
+			<tr><td>11</td><td>지시사항 불이행</td><td>5점</td><td></td></tr>
+			<tr><td>12</td><td>무단 외박, 호실 무단 변경</td><td>7점</td><td></td></tr>
+			<tr><td>13</td><td>지연입실 (귀관/출입시간 위반)</td><td>7점</td><td></td></tr>
+			<tr><td>14</td><td>비품 파손</td><td>10점</td><td></td></tr>
+			<tr><td>15</td><td>음주 후 소란</td><td>10점</td><td></td></tr>
+			<tr><td>16</td><td>타인 우편물 무단 수취</td><td>10점</td><td></td></tr>
+			<tr><td>17</td><td>관내 흡연</td><td>퇴관</td><td></td></tr>
+			<tr><td>18</td><td>음주, 도박 행위</td><td>퇴관</td><td></td></tr>
+			<tr><td>19</td><td>출입문 외 탈출</td><td>퇴관</td><td></td></tr>
+			<tr><td>20</td><td>폭력, 구타, 절도 등</td><td>퇴관</td><td></td></tr>
+			<tr><td>21</td><td>학칙 위반으로 징계</td><td>퇴관</td><td></td></tr>
+			<tr><td>22</td><td>이성 구역 출입</td><td>퇴관</td><td></td></tr>
+			<tr><td>23</td><td>외부인 동반/숙박</td><td>퇴관</td><td></td></tr>
+			<tr><td>24</td><td>전열기, 취사도구 사용</td><td>퇴관</td><td></td></tr>
+			</tbody>
+			 </table>
+
+			<p>
+			벌점 20점을 초과하면 지도교수 및 학과장 면담을 받아야 하며,<br>
+			벌점 학생은 교내 봉사활동 참여 시 1시간당 2점 감면 가능합니다.<br>
+			벌점 20점 이상 또는 퇴관 사유 위반 시, 퇴관 조치되며 2주 이내 퇴관해야 합니다.
+			</p>
+
+			</div>
+        </div>
+      </div>
+    </div>
+
+
+	<!-- jQuery -->
+	<script src="{% static 'js/jquery.min.js' %}"></script>
+	<!-- jQuery Easing -->
+	<script src="{% static 'js/jquery.easing.1.3.js' %}"></script>
+	<!-- Bootstrap -->
+	<script src="{% static 'js/bootstrap.min.js' %}"></script>
+	<!-- Waypoints -->
+	<script src="{% static 'js/jquery.waypoints.min.js' %}"></script>
+	<!-- Stellar Parallax -->
+	<script src="{% static 'js/jquery.stellar.min.js' %}"></script>
+	<!-- Carousel -->
+	<script src="{% static 'js/owl.carousel.min.js' %}"></script>
+	<!-- Flexslider -->
+	<script src="{% static 'js/jquery.flexslider-min.js' %}"></script>
+	<!-- countTo -->
+	<script src="{% static 'js/jquery.countTo.js' %}"></script>
+	<!-- Magnific Popup -->
+	<script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
+	<script src="{% static 'js/magnific-popup-options.js' %}"></script>
+	<!-- Count Down -->
+	<script src="{% static 'js/simplyCountdown.js' %}"></script>
+	<!-- Main -->
+	<script src="{% static 'js/main.js' %}"></script>
+    </div>
+	</body>
+</html>
+

@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>상벌점 관리</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:300,400" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <style>
+    body {
+      background-color: #F2DCDC;
+      font-family: 'Source Sans Pro', sans-serif;
+      color: #333;
+    }
+
+    .container {
+      margin-top: 80px;
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      max-width: 700px;
+    }
+
+    h2 {
+      font-weight: 700;
+      margin-bottom: 30px;
+      color: #007bff;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    .form-label {
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 1.5rem;
+    }
+
+    .form-control {
+      border-radius: 4px;
+      border: 1px solid #ced4da;
+      padding: 10px 12px;
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+    }
+
+    .form-check-label {
+      margin-left: 4px;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      border-color: #007bff;
+      padding: 10px 25px;
+      font-size: 1.5rem;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+      border-color: #004085;
+    }
+
+    .radio-group {
+      margin-bottom: 20px;
+    }
+
+    .text-end {
+      text-align: right;
+    }
+
+    @media (max-width: 576px) {
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>상벌점 관리</h2>
+  <form method="post">
+    {% csrf_token %}
+    <label for="student_number" class="form-label">학생 학번</label>
+    <input type="text" id="student_number" name="student_number" class="form-control" placeholder="학번 입력" required>
+
+    <label for="points" class="form-label">점수</label>
+    <input type="number" id="points" name="points" class="form-control" placeholder="점수 입력" required>
+
+    <div class="radio-group">
+      <label class="form-label">상벌점 선택</label><br>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="point_type" id="reward" value="reward" checked>
+        <label class="form-check-label" for="reward">상점</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="point_type" id="penalty" value="penalty">
+        <label class="form-check-label" for="penalty">벌점</label>
+      </div>
+    </div>
+
+    <div class="text-start">
+      <button type="submit" class="btn btn-primary">점수 부여</button>
+    </div>
+  </form>
+    <div class="text-end">
+      <a href="{% url 'web:mypage' %}" class="btn btn-outline-secondary">← 마이페이지로 돌아가기</a>
+    </div>
+</div>
+
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="margin-top: 80px; min-height: 80vh;">
+  <div class="row">
+    <div class="col-md-10 col-md-offset-1">
+      <h3 class="text-center mb-4">외박 신청 현황</h3>
+
+      <table class="table table-bordered table-hover bg-white">
+        <thead>
+          <tr class="text-center">
+            <th>이름</th>
+            <th>학번</th>
+            <th>신청 날짜</th>
+            <th>신청 시간</th>
+            <th>상태</th>
+            {% if is_admin %}
+              <th>관리자 조치</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for app in applications %}
+            <tr class="text-center">
+              <td>{{ app.name }}</td>
+              <td>{{ app.student_number }}</td>
+              <td>{{ app.out_date }}</td>
+              <td>{{ app.applied_at|date:"Y-m-d H:i" }}</td>
+              <td>
+                {% if app.status == 'approved' %}
+                  <span class="text-success">승인</span>
+                {% elif app.status == 'rejected' %}
+                  <span class="text-danger">거절</span>
+                {% else %}
+                  <span class="text-muted">대기 중</span>
+                {% endif %}
+              </td>
+              {% if is_admin %}
+              <td>
+                {% if app.status == 'pending' %}
+                  <form method="post" action="{% url 'web:approve_outing' app.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-sm">승인</button>
+                  </form>
+                  <form method="post" action="{% url 'web:reject_outing' app.id %}" style="display:inline; margin-left: 5px;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">거절</button>
+                  </form>
+                {% else %}
+                  처리 완료
+                {% endif %}
+              </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center">신청 내역이 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+        <div class="mt-4">
+          <a href="{% url 'web:home' %}" class="btn btn-outline-secondary">← 돌아가기</a>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

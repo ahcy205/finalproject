@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>공지사항 삭제 확인</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+</head>
+<body>
+<div class="container mt-5">
+    <h3>공지사항 삭제 확인</h3>
+    <p><strong>제목:</strong> {{ notice.title }}</p>
+    <p><strong>작성일:</strong> {{ notice.date }}</p>
+    <p>정말 이 공지사항을 삭제하시겠습니까?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'web:notice' %}" class="btn btn-secondary">취소</a>
+        <button type="submit" class="btn btn-danger">삭제하기</button>
+    </form>
+</div>
+</body>
+</html>

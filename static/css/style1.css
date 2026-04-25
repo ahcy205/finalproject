@@ -1,0 +1,14 @@
+textarea{
+ width:100%;
+}
+
+input[type=submit]{
+    margin-top:10px;
+}
+
+.highlight-link {
+  color: #f1f1f1;
+  text-decoration: none;
+}
+
+
