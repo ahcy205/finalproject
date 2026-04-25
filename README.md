@@ -90,9 +90,3 @@
 - [📘 결과보고서](/docs/결과보고서.pdf)
 - [📑 화면정의서](/docs/화면정의서.pdf)
 
----
-
-## 🎥 시연 영상
-
-- 웹: https://youtu.be/AaTSNMspfkU
-- 앱: https://youtu.be/XfAiipPwK6E
