@@ -4,13 +4,11 @@
 ---
 
 실제 구현 이미지
-<img width="1907" height="917" alt="로그인 전 메인페이지" src="https://github.com/user-attachments/assets/24345f90-698b-4c11-8700-dff839b7bf6b" />
+<img width="1251" height="809" alt="이용자_로그인후메인" src="https://github.com/user-attachments/assets/86fefe4e-d9b9-429f-b9ab-dc58a753bf72" />
 
-<img width="2559" height="1409" alt="로그인 페이지" src="https://github.com/user-attachments/assets/0a2eb124-1681-454f-96ac-1e49c2e03120" />
+<img width="1482" height="812" alt="이용자_외박신청" src="https://github.com/user-attachments/assets/d8964a8b-956f-4d45-8c44-aa176bdb20ff" />
 
-<img width="2559" height="1409" alt="회원가입 페이지" src="https://github.com/user-attachments/assets/42ab59a4-f1ee-427a-a2bb-b3ab671096f7" />
-
-<img width="1097" height="917" alt="커뮤니티 페이지" src="https://github.com/user-attachments/assets/3cb36940-844f-4de6-bd0d-dcb50f67fd7a" />
+<img width="1451" height="853" alt="이용자_기숙사 신청" src="https://github.com/user-attachments/assets/057a0506-a30d-4385-8eaf-5575e198e87e" />
 
 ---
 
