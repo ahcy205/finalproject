@@ -3,6 +3,17 @@
 
 ---
 
+실제 구현 이미지
+<img width="1907" height="917" alt="로그인 전 메인페이지" src="https://github.com/user-attachments/assets/24345f90-698b-4c11-8700-dff839b7bf6b" />
+
+<img width="2559" height="1409" alt="로그인 페이지" src="https://github.com/user-attachments/assets/0a2eb124-1681-454f-96ac-1e49c2e03120" />
+
+<img width="2559" height="1409" alt="회원가입 페이지" src="https://github.com/user-attachments/assets/42ab59a4-f1ee-427a-a2bb-b3ab671096f7" />
+
+<img width="1097" height="917" alt="커뮤니티 페이지" src="https://github.com/user-attachments/assets/3cb36940-844f-4de6-bd0d-dcb50f67fd7a" />
+
+---
+
 ## 📌 프로젝트 소개
 돔고돔락은 학생과 관리자가 웹과 모바일 환경에서 기숙사 생활을 통합적으로 관리할 수 있는 플랫폼입니다.  
 외출 신청, 상벌점 관리, 공지사항, 문의, 게시판 등 다양한 기능을 하나의 시스템에서 제공합니다.
