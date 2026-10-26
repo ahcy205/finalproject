@@ -45,39 +45,6 @@
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
    <![endif]-->
-   <style>
-    .admin-link {
-      margin-left: 12px;
-      border-radius: 6px;
-      background-color: #eab7b7;
-      transition: background-color 0.3s, color 0.3s;
-    }
-
-    .admin-link a {
-      display: inline-block;
-      padding: 8px 14px;
-      color: #6c757d;
-      font-weight: 600;
-      font-size: 14px;
-      text-decoration: none;
-    }
-    nav ul li.admin-link a {
-      color: #6c757d;
-    }
-
-    .admin-link i {
-      margin-right: 6px;
-      color: #495057;
-    }
-
-    .admin-link:hover {
-      background-color: #dee2e6;
-    }
-
-    .admin-link a:hover {
-      color: #0d6efd;
-    }
-   </style>
 
    </head>
    <body>
@@ -85,7 +52,7 @@
    <div class="fh5co-loader"></div>
 
    <div id="page">
-   {% include 'web/_nav.html' with admin_menu=True %}
+   {% include 'web/_nav.html' %}
 
    <aside id="fh5co-hero">
       <div class="flexslider">
