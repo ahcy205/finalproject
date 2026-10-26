@@ -1,7 +1,7 @@
 {% load static %}
 {% comment %}
 테마 CSS (FreeHTML5 템플릿). 사용법: include 'web/_theme_css.html'
-- bootstrap5: Bootstrap 5 CDN과 css/bootstrap.min.css를 함께 로드 (게시판·공지 화면)
+- bootstrap5: Bootstrap 5 CDN 로드 (게시판·공지 화면)
 - fontawesome: Font Awesome 6 아이콘 로드
 CSS는 로드 순서가 결과에 영향을 주므로 아래 순서를 바꾸지 않는다.
 {% endcomment %}
@@ -12,7 +12,6 @@ CSS는 로드 순서가 결과에 영향을 주므로 아래 순서를 바꾸지
 <link rel="stylesheet" href="{% static 'css/animate.css' %}">
 <link rel="stylesheet" href="{% static 'css/icomoon.css' %}">
 <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
-{% if bootstrap5 %}<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">{% endif %}
 <link rel="stylesheet" href="{% static 'css/magnific-popup.css' %}">
 <link rel="stylesheet" href="{% static 'css/owl.carousel.min.css' %}">
 <link rel="stylesheet" href="{% static 'css/owl.theme.default.min.css' %}">

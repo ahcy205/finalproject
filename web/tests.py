@@ -490,7 +490,7 @@ class SharedThemeAssetTests(TestCase):
         self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
         html = self.client.get(reverse('web:community_home')).content.decode()
         order = [html.index(x) for x in ('bootstrap@5.3.0', 'font-awesome/6.0.0', '/static/css/bootstrap.css',
-                                         '/static/css/bootstrap.min.css', '/static/css/style.css')]
+                                         '/static/css/style.css')]
         self.assertEqual(order, sorted(order))
 
 
@@ -554,3 +554,20 @@ class LoginRequiredLinkTests(TestCase):
         response = self.client.post(reverse('web:login'),
                                     {'username': '20250001', 'password': 'pw12345!', 'next': '/notice/'})
         self.assertRedirects(response, '/notice/')
+
+
+class StaticReferenceTests(TestCase):
+    """템플릿의 {% static '...' %} 경로는 모두 실제 파일이어야 한다 (404 방지)."""
+
+    def test_every_static_reference_in_templates_exists(self):
+        import re
+        from django.contrib.staticfiles import finders
+        base = os.path.dirname(os.path.dirname(__file__))
+        missing = []
+        for folder, _, files in os.walk(os.path.join(base, 'templates')):
+            for name in files:
+                with open(os.path.join(folder, name), encoding='utf-8') as f:
+                    for path in re.findall(r"\{% static '([^']+)' %\}", f.read()):
+                        if not finders.find(path):
+                            missing.append(f'{name}: {path}')
+        self.assertEqual(missing, [])
