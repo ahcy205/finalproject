@@ -1,10 +1,15 @@
 from datetime import date
+import io
+import shutil
+import tempfile
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
+from PIL import Image
 from django.urls import reverse
 
-from dorm.models import Comment, Inquiry, Like, OutingApply, Post
+from dorm.models import Comment, Inquiry, Like, Notice, OutingApply, Post
 
 
 class RewardPenaltyTests(TestCase):
@@ -145,3 +150,61 @@ class LoginNextTests(TestCase):
     def test_failed_login_keeps_next(self):
         response = self.client.post(self.url, {'username': '20250001', 'password': 'wrong', 'next': '/mypage/'})
         self.assertContains(response, 'name="next" value="/mypage/"')
+
+
+TEMP_MEDIA = tempfile.mkdtemp()
+
+
+def png_file(name='notice.png'):
+    buf = io.BytesIO()
+    Image.new('RGB', (2, 2), 'white').save(buf, 'PNG')
+    return SimpleUploadedFile(name, buf.getvalue(), content_type='image/png')
+
+
+def html_file():
+    return SimpleUploadedFile('x.html', b'<script>alert(1)</script>', content_type='text/html')
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
+class NoticeImageTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        self.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.client.force_login(self.staff)
+        self.notice = Notice.objects.create(title='원래 제목', content='원래 내용')
+        self.url = reverse('web:notice_update', args=[self.notice.pk])
+
+    def test_update_rejects_non_image_file(self):
+        response = self.client.post(self.url, {'title': '새 제목', 'content': '새 내용', 'image': html_file()})
+        self.assertEqual(response.status_code, 200)
+        self.notice.refresh_from_db()
+        self.assertFalse(self.notice.image)
+        self.assertEqual(self.notice.title, '원래 제목')
+
+    def test_update_accepts_image(self):
+        response = self.client.post(self.url, {'title': '새 제목', 'content': '새 내용', 'image': png_file()})
+        self.assertRedirects(response, reverse('web:notice_detail', args=[self.notice.pk]))
+        self.notice.refresh_from_db()
+        self.assertTrue(self.notice.image.name.endswith('.png'))
+        self.assertEqual(self.notice.title, '새 제목')
+
+    def test_update_without_new_image_keeps_old_image(self):
+        self.client.post(self.url, {'title': 't', 'content': 'c', 'image': png_file()})
+        self.notice.refresh_from_db()
+        old = self.notice.image.name
+        self.client.post(self.url, {'title': '다시', 'content': 'c'})
+        self.notice.refresh_from_db()
+        self.assertEqual(self.notice.image.name, old)
+        self.assertEqual(self.notice.title, '다시')
+
+    def test_update_requires_title_and_content(self):
+        response = self.client.post(self.url, {'title': '', 'content': ''})
+        self.assertContains(response, '제목과 내용을 모두 입력해주세요.')
+
+    def test_create_rejects_non_image_file(self):
+        self.client.post(reverse('web:notice_create'), {'title': 't', 'content': 'c', 'image': html_file()})
+        self.assertFalse(Notice.objects.filter(title='t').exists())

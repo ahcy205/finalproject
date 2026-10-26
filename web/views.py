@@ -181,23 +181,19 @@ def notice_update(request, notice_id):
     notice = get_object_or_404(Notice, pk=notice_id)
 
     if request.method == "POST":
-        title = request.POST.get("title")
-        content = request.POST.get("content")
-        image = request.FILES.get("image")
+        # NoticeForm의 ImageField가 실제 이미지 파일인지 검사한다
+        form = NoticeForm(request.POST, request.FILES, instance=notice)
+        if form.is_valid():
+            form.save()
+            return redirect('web:notice_detail', pk=notice.pk)
 
-        if not title or not content:
-            return render(request, 'web/notice_update.html', {
-                'notice': notice,
-                'error': '제목과 내용을 모두 입력해주세요.'
-            })
-
-        notice.title = title
-        notice.content = content
-        if image:
-            notice.image = image
-        notice.save()
-
-        return redirect('web:notice_detail', pk=notice.pk)
+        if 'image' in form.errors:
+            error = '이미지 파일(jpg, png 등)만 올릴 수 있습니다.'
+        else:
+            error = '제목과 내용을 모두 입력해주세요.'
+        # 검증 실패 시 form이 바꿔 둔 값 대신 저장된 원래 공지를 다시 보여준다
+        notice.refresh_from_db()
+        return render(request, 'web/notice_update.html', {'notice': notice, 'error': error})
 
     return render(request, 'web/notice_update.html', {'notice': notice})
 
