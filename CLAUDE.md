@@ -7,7 +7,7 @@
 - 돔고돔락: 기숙사 통합 관리 시스템. Django 5.2 + Django REST Framework
 - `web` 앱: HTML 화면(Django Template). 자체 모델 없음
 - `dorm` 앱: 서비스 모델과 Android 앱용 REST API(`/api/`), API 문서 설명(`dorm/schema.py`)
-- `knowledge` 앱: RAG용 원본 자료(`knowledge/data/*.yaml`, 규칙·안내 화면도 이 파일을 씀)와 검색 기능, 문의 답변 초안(`answering.py`, 로컬 LLM은 `llm.py`, 테스트는 `FakeLLM`)
+- `knowledge` 앱: RAG용 원본 자료(`knowledge/data/*.yaml`, 규칙·안내 화면도 이 파일을 씀)와 검색 기능, 문의 답변 초안(`answering.py`, 로컬 LLM은 `llm.py`, 테스트는 `FakeLLM`), 학생 챗봇(`chat.py`)
 - DB: PostgreSQL 17 + pgvector, `docker compose up -d db`로 실행 → [ADR 0005](docs/adr/0005-postgresql-pgvector.md). DB가 꺼져 있으면 SQLite로 대신 실행하지 않고 `dorm.E001` 점검 오류로 안내한다
 - **로컬 실행 전용, 배포하지 않음** → [ADR 0002](docs/adr/0002-local-only.md)
 
@@ -22,6 +22,7 @@ python manage.py runserver 127.0.0.1:8001         # 8000이 다른 프로그램�
 python manage.py build_knowledge_index --backend fake   # RAG 검색 자료 다시 만들기 (fake = 모델 없이)
 python manage.py evaluate_knowledge_search              # 검색 품질 측정 (knowledge/eval/questions.yaml)
 python manage.py evaluate_answer_drafts                 # 답변 초안 품질 측정 (Ollama 필요, 모델 비교는 --model 여러 번)
+python manage.py evaluate_answer_drafts --mode chat     # 학생 챗봇 품질 측정 (학생에게 보이는 답만 채점)
 ```
 
 ## 작업 순서

@@ -46,6 +46,7 @@ REMINDER = ('위 [근거]만 사용해 답변을 쓰세요. 근거를 쓴 문장
             '근거로 답할 수 없으면 "근거 자료에서 확인할 수 없습니다. 생활관에 직접 문의해 주세요."라고만 쓰세요.')
 
 CITATION = re.compile(r'\[(\d+)\]')
+REFUSAL_PHRASE = '확인할 수 없'  # 지시문의 거절 문구 "근거 자료에서 확인할 수 없습니다"의 일부
 
 
 @dataclass
@@ -75,20 +76,23 @@ def check_citations(text, evidence_count):
     invalid = [n for n in cited if not 1 <= n <= evidence_count]
     if invalid:
         warnings.append(f'없는 근거 번호를 인용했습니다: {invalid}')
-    if not cited and '확인할 수 없' not in text:
+    if not cited and REFUSAL_PHRASE not in text:
         warnings.append('근거 번호가 없습니다. 근거와 맞는지 확인하세요.')
     return [n for n in cited if 1 <= n <= evidence_count], warnings
 
 
 def draft_for_text(title, content, known_names=(), exclude_keys=(), llm=None, embedder=None,
-                   min_similarity=None):
+                   min_similarity=None, sources=None, system_prompt=None):
     """제목·내용으로 초안을 만든다. 평가와 화면이 함께 쓴다.
 
     min_similarity: 근거 부족 기준. 없으면 MIN_SIMILARITY (bge-m3 측정값이라 다른 임베딩은 따로 정한다)
+    sources: 근거로 쓸 자료 종류 (KnowledgeChunk.Source 값 목록). 없으면 전부. 학생 챗봇은 공개 자료만 쓴다
+    system_prompt: 모델에게 주는 역할·규칙. 없으면 관리자 초안용 SYSTEM_PROMPT
     """
     title = mask_personal_info(title, known_names)
     content = mask_personal_info(content, known_names)
-    result = search(f'{title}\n{content}', k=EVIDENCE_COUNT + len(exclude_keys), embedder=embedder)
+    result = search(f'{title}\n{content}', k=EVIDENCE_COUNT + len(exclude_keys), embedder=embedder,
+                    sources=sources)
     hits = [h for h in result.hits if h.chunk.key not in exclude_keys][:EVIDENCE_COUNT]
     best = max((h.similarity for h in hits if h.similarity is not None), default=None)
     draft = Draft(status='ok', evidence=hits, best_similarity=best)
@@ -103,7 +107,7 @@ def draft_for_text(title, content, known_names=(), exclude_keys=(), llm=None, em
     draft.model = llm.name
     started = time.perf_counter()
     try:
-        text = llm.generate(SYSTEM_PROMPT, build_prompt(title, content, hits))
+        text = llm.generate(system_prompt or SYSTEM_PROMPT, build_prompt(title, content, hits))
     except LLMError as exc:
         draft.status = 'error'
         draft.warnings.append(str(exc))

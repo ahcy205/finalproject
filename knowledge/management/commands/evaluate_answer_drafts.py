@@ -20,7 +20,8 @@ import statistics
 
 from django.core.management.base import BaseCommand
 
-from knowledge.answering import draft_for_text
+from knowledge.answering import REFUSAL_PHRASE, draft_for_text
+from knowledge.chat import answer_question
 from knowledge.embeddings import get_embedder
 from knowledge.llm import LLMError, get_llm
 from knowledge.management.commands.evaluate_knowledge_search import QUESTIONS
@@ -28,7 +29,7 @@ from knowledge.models import KnowledgeChunk
 
 import yaml
 
-REFUSAL = '확인할 수 없'
+REFUSAL = REFUSAL_PHRASE
 FOREIGN = re.compile(r'[぀-ヿ一-鿿]')  # 일본 가나, 한자
 
 
@@ -70,6 +71,19 @@ def grade(kind, item, draft):
     return row
 
 
+def grade_chat(kind, item, reply):
+    """챗봇 답 채점. 학생이 실제로 보는 것만 센다: 숨긴 답(unverified)은 답하지 않은 것으로 본다."""
+    row = grade(kind, item, reply.draft)
+    row['chat_status'] = reply.status
+    row['refused'] = reply.status != 'answered'  # 답 속의 거절 문구가 아니라, 답을 보여 줬는지로 센다
+    if reply.status != 'answered':
+        row['format_problem'] = False
+        if kind == 'answerable':
+            row['facts_ok'] = False if row['facts'] else None
+            row['cites_expected'] = False
+    return row
+
+
 def summarize(rows):
     answerable = [r for r in rows if r['kind'] == 'answerable']
     out_of_scope = [r for r in rows if r['kind'] == 'out_of_scope']
@@ -88,6 +102,7 @@ def summarize(rows):
         'out_of_scope_refusal': ratio(out_of_scope, 'refused'),
         'foreign': ratio(generated, 'foreign'),
         'errors': sum(1 for r in rows if r['status'] == 'error'),
+        'hidden': sum(1 for r in rows if r.get('chat_status') == 'unverified'),
         'median_seconds': statistics.median(seconds) if seconds else 0.0,
         'max_seconds': max(seconds) if seconds else 0.0,
     }
@@ -104,6 +119,8 @@ class Command(BaseCommand):
         parser.add_argument('--questions', default=str(QUESTIONS), help='평가 질문 파일')
         parser.add_argument('--limit', type=int, help='질문 수 제한 (빠른 확인용)')
         parser.add_argument('--output', help='초안 원문과 채점 결과를 저장할 JSON 파일')
+        parser.add_argument('--mode', choices=['draft', 'chat'], default='draft',
+                            help="draft: 관리자 답변 초안, chat: 학생 챗봇 (학생에게 보이는 답만 채점)")
 
     def handle(self, *args, **options):
         if not KnowledgeChunk.objects.exists():
@@ -125,21 +142,28 @@ class Command(BaseCommand):
                 continue
             rows = []
             for kind, item, text in cases:
-                draft = draft_for_text('', text, llm=llm, embedder=embedder,
-                                       min_similarity=options['min_similarity'])
-                rows.append(grade(kind, item, draft))
-                self.stdout.write(f'  [{llm.name}] {len(rows)}/{len(cases)} {draft.status} {draft.seconds:.1f}초')
+                if options['mode'] == 'chat':
+                    reply = answer_question(text, llm=llm, embedder=embedder,
+                                            min_similarity=options['min_similarity'])
+                    rows.append(grade_chat(kind, item, reply))
+                else:
+                    draft = draft_for_text('', text, llm=llm, embedder=embedder,
+                                           min_similarity=options['min_similarity'])
+                    rows.append(grade(kind, item, draft))
+                self.stdout.write(f'  [{llm.name}] {len(rows)}/{len(cases)} {rows[-1].get("chat_status", rows[-1]["status"])} '
+                                  f'{rows[-1]["seconds"]:.1f}초')
             report[llm.name] = {'summary': summarize(rows), 'rows': rows}
 
-        self.stdout.write(f'\n## 답변 초안 평가 (답할 수 있는 질문 {len(questions)}개, 범위 밖 질문 {len(out_of_scope)}개)')
+        label = '학생 챗봇' if options['mode'] == 'chat' else '답변 초안'
+        self.stdout.write(f'\n## {label} 평가 (답할 수 있는 질문 {len(questions)}개, 범위 밖 질문 {len(out_of_scope)}개)')
         self.stdout.write('| 모델 | 사실 정확도 | 정답 근거 인용 | 인용 형식 문제 | 잘못 거절 | 범위 밖 거절 | 외국어 섞임 '
-                          '| 시간 중앙값 | 최대 | 오류 |\n|---|---|---|---|---|---|---|---|---|---|')
+                          '| 시간 중앙값 | 최대 | 오류 | 숨긴 답 |\n|---|---|---|---|---|---|---|---|---|---|---|')
         for name, result in report.items():
             s = result['summary']
             self.stdout.write(
                 f'| {name} | {s["facts"]:.2f} | {s["cites_expected"]:.2f} | {s["format_problem"]:.2f} '
                 f'| {s["wrong_refusal"]:.2f} | {s["out_of_scope_refusal"]:.2f} | {s["foreign"]:.2f} '
-                f'| {s["median_seconds"]:.1f}초 | {s["max_seconds"]:.1f}초 | {s["errors"]} |')
+                f'| {s["median_seconds"]:.1f}초 | {s["max_seconds"]:.1f}초 | {s["errors"]} | {s["hidden"]} |')
 
         if options['output']:
             with open(options['output'], 'w', encoding='utf-8') as f:

@@ -630,3 +630,98 @@ class DraftPromptTests(TestCase):
         from knowledge.answering import SYSTEM_PROMPT
         self.assertIn('예시 1', SYSTEM_PROMPT)
         self.assertIn('답변: 근거 자료에서 확인할 수 없습니다.', SYSTEM_PROMPT)
+
+
+class StudentChatTests(TestCase):
+    """학생 챗봇: 공개 자료만 쓰고, 인용 검사를 통과한 답만 보여 준다 (ADR 0011)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        selected = ['rules', 'info']
+        sync_chunks(build_chunks(selected), selected)
+        student = User.objects.create_user('20250001', password='pw12345!')
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        cls.inquiry = Inquiry.objects.create(user=student, title='출입시간', content='생활관 출입시간 알려주세요')
+        InquiryAnswer.objects.create(inquiry=cls.inquiry, admin=staff, answer='06:00-23:00입니다')
+        embed_pending(cls.embedder)
+
+    def ask(self, question, llm, **kwargs):
+        from knowledge.chat import answer_question
+        kwargs.setdefault('min_similarity', 0.0)
+        return answer_question(question, llm=llm, embedder=self.embedder, **kwargs)
+
+    def test_cited_answer_is_shown_with_its_sources(self):
+        llm = RecordingLLM()
+        reply = self.ask('생활관 출입시간 알려주세요', llm)
+        self.assertEqual(reply.status, 'answered')
+        self.assertEqual(reply.text, reply.draft.text)
+        self.assertEqual([s['number'] for s in reply.sources], [1])
+        self.assertEqual(reply.sources[0]['title'], reply.draft.evidence[0].chunk.title)
+        from knowledge.chat import SYSTEM_PROMPT
+        self.assertEqual(llm.calls[0][0], SYSTEM_PROMPT)
+
+    def test_other_students_inquiries_are_never_used(self):
+        reply = self.ask('생활관 출입시간 알려주세요', RecordingLLM())
+        keys = [h.chunk.key for h in reply.draft.evidence]
+        self.assertNotIn(f'inquiry:{self.inquiry.pk}', keys)
+        self.assertTrue(all(not key.startswith('inquiry:') for key in keys))
+
+    def test_uncited_or_made_up_citations_are_hidden(self):
+        from knowledge.chat import UNVERIFIED_MESSAGE
+        for reply_text in ('23:00까지입니다.', '23:00까지입니다 [9]'):
+            reply = self.ask('출입시간 알려주세요', RecordingLLM(reply=reply_text))
+            self.assertEqual(reply.status, 'unverified')
+            self.assertEqual(reply.text, UNVERIFIED_MESSAGE)
+            self.assertNotIn('23:00', reply.text)
+            self.assertEqual([s['number'] for s in reply.sources], [1, 2, 3])
+
+    def test_refusal_and_weak_evidence_suggest_an_inquiry(self):
+        from knowledge.chat import NO_ANSWER_MESSAGE
+        refused = self.ask('출입시간 알려주세요', RecordingLLM(reply='근거 자료에서 확인할 수 없습니다. 생활관에 직접 문의해 주세요.'))
+        llm = RecordingLLM()
+        weak = self.ask('오늘 날씨 어때?', llm, min_similarity=0.99)
+        for reply in (refused, weak):
+            self.assertEqual(reply.status, 'no_answer')
+            self.assertEqual(reply.text, NO_ANSWER_MESSAGE)
+            self.assertEqual(reply.sources, [])
+        self.assertEqual(llm.calls, [])
+
+    def test_model_failure_gives_a_friendly_message(self):
+        from knowledge.chat import ERROR_MESSAGE
+
+        class Broken(FakeLLM):
+            def generate(self, system, prompt):
+                raise LLMError('Ollama에 연결할 수 없습니다')
+
+        reply = self.ask('출입시간 알려주세요', Broken())
+        self.assertEqual(reply.status, 'error')
+        self.assertEqual(reply.text, ERROR_MESSAGE)
+
+    def test_long_questions_are_cut_and_personal_info_is_masked(self):
+        from knowledge.chat import MAX_QUESTION_LENGTH
+        llm = RecordingLLM()
+        self.ask('저는 010-1234-5678 입니다. 출입시간 ' + '가' * 2000, llm)
+        prompt = llm.calls[0][1]
+        self.assertNotIn('010-1234-5678', prompt)
+        self.assertLess(prompt.count('가'), MAX_QUESTION_LENGTH)
+
+    def test_chat_mode_of_the_evaluation_command(self):
+        out = io.StringIO()
+        call_command('evaluate_answer_drafts', mode='chat', backend='fake', embedding_backend='fake',
+                     min_similarity=0.0, limit=2, stdout=out)
+        self.assertIn('## 학생 챗봇 평가', out.getvalue())
+
+    def test_answers_that_open_with_not_found_are_not_shown(self):
+        from knowledge.chat import NO_ANSWER_MESSAGE, opens_with_not_found
+        self.assertTrue(opens_with_not_found('안녕하세요. 졸업 학점은 근거 자료에 명시되어 있지 않습니다 [5]. 학과에 문의하세요.'))
+        reply = self.ask('졸업 학점', RecordingLLM(reply='졸업 학점은 근거 자료에 명시되어 있지 않습니다 [1].'))
+        self.assertEqual(reply.status, 'no_answer')
+        self.assertEqual(reply.text, NO_ANSWER_MESSAGE)
+
+    def test_a_later_caveat_does_not_hide_a_good_answer(self):
+        from knowledge.chat import opens_with_not_found
+        text = '안녕하세요. 남자 기숙사는 명현관입니다 [1]. 여자 기숙사는 명인관입니다 [1]. 다른 별칭은 확인할 수 없습니다.'
+        self.assertFalse(opens_with_not_found(text))
+        reply = self.ask('남자 기숙사 이름', RecordingLLM(reply=text))
+        self.assertEqual(reply.status, 'answered')
