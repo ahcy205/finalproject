@@ -3,79 +3,109 @@
 # - 학생이 실제로 물을 법한 말투로 쓰고, 규정 문구를 그대로 베끼지 않는다
 #   (베끼면 키워드 검색이 실제보다 좋게 나온다).
 # - expected: 이 질문의 답이 들어 있는 청크 key. 여러 개면 그중 하나만 찾아도 정답으로 본다.
+# - facts: 답변 초안에 들어 있어야 할 사실 (답변 초안 평가용). "a|b"는 둘 중 하나만 있어도 맞음.
 # - 직접 작성한 질문이라 편향이 있을 수 있다. 실제 문의가 쌓이면 그 문의로 질문을 늘린다.
 #
-# 측정: python manage.py evaluate_knowledge_search
+# 측정: python manage.py evaluate_knowledge_search (검색), evaluate_answer_drafts (답변 초안)
 
 questions:
 # 생활관 규칙
 - q: 기숙사 통금 몇 시까지야?
   expected: [rules:article:3]
+  facts: ['23:00|23시|오후 11시|밤 11시']
 - q: 방 불은 몇 시에 꺼야 돼?
   expected: [rules:article:3]
+  facts: ['00:00|자정|24:00|밤 12시|0시부터']
 - q: 밤 늦게 세탁기 돌려도 돼?
   expected: [rules:article:6]
+  facts: ['23:00|23시|오후 11시|밤 11시']
 - q: 방에서 담배 피우다 걸리면 어떻게 돼?
   expected: [rules:penalty_table]
+  facts: ['퇴관']
 - q: 친구를 내 방에서 재워도 돼?
   expected: [rules:article:5, rules:article:10, rules:penalty_table]
 - q: 벌점 깎을 수 있는 방법 있어?
   expected: [rules:penalty_table, rules:article:14-2]
 - q: 대청소는 무슨 요일에 해?
   expected: [rules:article:11]
+  facts: ['수요일']
 - q: 호실 점검은 언제 와?
   expected: [rules:article:12]
+  facts: ['수요일']
 - q: 기숙사 책상 부서뜨리면 물어줘야 해?
   expected: [rules:article:7]
+  facts: ['변상']
 - q: 동아리 홍보 포스터 아무 데나 붙여도 돼?
   expected: [rules:article:8]
+  facts: ['게시판']
 - q: 전기장판 써도 돼?
   expected: [rules:article:10, rules:penalty_table]
+  facts: ['전열기']
 - q: 기숙사에서 고양이 키우면 안 돼?
   expected: [rules:article:10]
+  facts: ['동물']
 - q: 방에 물이 새는 걸 발견하면 어디에 알려야 해?
   expected: [rules:article:9]
+  facts: ['관계 부서|관계부서']
 - q: 퇴실할 때 뭐 내야 돼?
   expected: [rules:article:13, info:article:16]
+  facts: ['퇴관확인서|퇴관 확인서']
 - q: 늦게 들어오면 벌점 몇 점이야?
   expected: [rules:penalty_table]
+  facts: ['7점']
 # 생활관 안내
 - q: 남자 기숙사 이름이 뭐야?
   expected: [info:article:1]
+  facts: ['명현관']
 - q: 기숙사 신청하면 누가 먼저 뽑혀?
   expected: [info:article:10, info:article:8]
+  facts: ['성적']
 - q: 신입생도 기숙사 들어갈 수 있어?
   expected: [info:article:8]
+  facts: ['1순위|우선']
 - q: 합격하고 일주일 넘게 입사 안 하면 어떻게 돼?
   expected: [info:article:9]
+  facts: ['취소']
 - q: 기숙사에서 빌려주는 물건 뭐 있어?
   expected: [info:article:12]
+  facts: ['책상|침대|옷장']
 - q: 벌점 많이 받으면 다음 학기에 못 들어가?
   expected: [info:article:13]
+  facts: ['20점']
 - q: 룸메이트랑 안 맞아서 방 바꾸고 싶어
   expected: [info:article:15]
+  facts: ['원서|사전 허가|사전허가']
 - q: 중간에 나가면 기숙사비 돌려받을 수 있어?
   expected: [info:article:21]
+  facts: ['환불']
 - q: 자치위원 하면 무슨 혜택 있어?
   expected: [info:article:25]
+  facts: ['면제|장학금']
 - q: 인원 점검 몇 시에 해?
   expected: [info:article:26]
+  facts: ['24:00|자정|밤 12시']
 - q: 방 열쇠는 누가 보관해?
   expected: [info:article:18]
+  facts: ['관리실']
 # 셔틀버스
 - q: 터미널에서 학교 가는 첫차 몇 시야?
   expected: [bus:terminal:outbound]
+  facts: ['08:25|8시 25분']
 - q: 학교에서 천안아산역 가는 셔틀 시간 알려줘
   expected: [bus:asan:inbound]
+  facts: ['09:00|오전 9시']
 - q: 두정역에서 학교 오는 버스 있어?
   expected: [bus:terminal:outbound]
+  facts: ['08:35|8시 35분']
 # 식단
 - q: 수요일 점심 메뉴 뭐야?
   expected: ['menu:06월 18일']
+  facts: ['해장국']
 - q: 금요일 저녁에 뭐 나와?
   expected: ['menu:06월 20일']
 - q: 학식 한 끼 얼마야?
   expected: ['menu:06월 16일', 'menu:06월 17일', 'menu:06월 18일', 'menu:06월 19일', 'menu:06월 20일']
+  facts: ['4,500원|4500원|4,500']
 
 # 기숙사 자료로는 답할 수 없는 질문. "근거 부족" 기준값을 정하는 데 쓴다 (초안을 만들지 않아야 정답).
 out_of_scope:

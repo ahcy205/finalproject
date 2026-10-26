@@ -20,7 +20,7 @@ python manage.py runserver
 - DB 접속 정보는 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` 환경변수로 바꿀 수 있습니다. 기본값은 `docker-compose.yml`과 같은 로컬 개발용 값입니다.
 - RAG 검색 자료는 `python manage.py build_knowledge_index`로 만듭니다. 임베딩 방식은 환경변수 `KNOWLEDGE_EMBEDDING_BACKEND`(`sentence-transformers` 또는 `fake`)와 `KNOWLEDGE_EMBEDDING_MODEL`(기본 `BAAI/bge-m3`)로 정합니다. 모델 라이브러리 없이 확인할 때는 `--backend fake`를 씁니다.
 - 실제 임베딩 모델을 쓰려면 `pip install -r requirements-ml.txt`로 PyTorch(CPU)와 sentence-transformers를 추가로 설치합니다(CI에는 설치하지 않음). 모델 파일은 환경변수 `HF_HOME` 위치에 저장됩니다(용량이 커서 D 드라이브 등 여유 있는 곳을 권장).
-- 문의 답변 초안은 로컬 LLM을 [Ollama](https://ollama.com)로 실행해 만듭니다([ADR 0007](docs/adr/0007-local-llm-answer-draft.md)). Ollama를 설치하고 `ollama pull exaone3.5:7.8b`로 모델을 받습니다. 환경변수 `KNOWLEDGE_LLM_BACKEND`(`ollama` 또는 `fake`), `KNOWLEDGE_LLM_MODEL`(기본 `exaone3.5:7.8b`), `OLLAMA_HOST`(기본 `http://127.0.0.1:11434`)로 바꿀 수 있습니다. 테스트는 모델 대역(`FakeLLM`)을 쓰므로 Ollama 없이 돌아갑니다.
+- 문의 답변 초안은 로컬 LLM을 [Ollama](https://ollama.com)로 실행해 만듭니다([ADR 0007](docs/adr/0007-local-llm-answer-draft.md)). Ollama를 설치하고 `ollama pull exaone3.5:7.8b`로 모델을 받습니다. 환경변수 `KNOWLEDGE_LLM_BACKEND`(`ollama` 또는 `fake`), `KNOWLEDGE_LLM_MODEL`(기본 `exaone3.5:7.8b`), `OLLAMA_HOST`(기본 `http://127.0.0.1:11434`)로 바꿀 수 있습니다. 테스트는 모델 대역(`FakeLLM`)을 쓰므로 Ollama 없이 돌아갑니다. 지시문이나 모델을 바꾸면 `python manage.py evaluate_answer_drafts`로 초안 품질을 측정하고 PR에 적습니다([ADR 0008](docs/adr/0008-answer-draft-llm-choice.md)).
 - 검색 방식이나 자료 나누기를 바꾸면 `python manage.py evaluate_knowledge_search`로 전후 품질을 비교하고 PR에 적습니다.
 
 ## 2. 작업 단위

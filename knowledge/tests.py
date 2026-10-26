@@ -543,3 +543,48 @@ class LLMBackendTests(TestCase):
         self.assertEqual(get_llm('ollama', 'qwen3:8b').name, 'qwen3:8b')
         with self.assertRaises(ValueError):
             get_llm('nope')
+
+
+class AnswerDraftEvaluationTests(TestCase):
+    """답변 초안 평가 명령의 채점 규칙."""
+
+    def make_draft(self, text, cited=(), status='ok', warnings=()):
+        from knowledge.answering import Draft
+        from knowledge.search import SearchHit
+        evidence = [SearchHit(chunk=KnowledgeChunk(key=key, title=key, content=''), score=1.0) for key in ('rules:article:3', 'info:article:1')]
+        return Draft(status=status, text=text, evidence=evidence, cited=list(cited), warnings=list(warnings))
+
+    def test_facts_accept_any_alternative(self):
+        from knowledge.management.commands.evaluate_answer_drafts import grade
+        item = {'q': '통금?', 'expected': ['rules:article:3'], 'facts': ['23:00|오후 11시']}
+        row = grade('answerable', item, self.make_draft('출입은 오후 11시까지입니다 [1]', cited=[1]))
+        self.assertTrue(row['facts_ok'])
+        self.assertTrue(row['cites_expected'])
+        self.assertFalse(row['refused'])
+
+    def test_citing_the_wrong_evidence_is_not_counted(self):
+        from knowledge.management.commands.evaluate_answer_drafts import grade
+        item = {'q': '통금?', 'expected': ['rules:article:3'], 'facts': ['23:00']}
+        row = grade('answerable', item, self.make_draft('명현관입니다 [2]', cited=[2]))
+        self.assertFalse(row['facts_ok'])
+        self.assertFalse(row['cites_expected'])
+
+    def test_refusals_and_foreign_text(self):
+        from knowledge.management.commands.evaluate_answer_drafts import grade
+        refused = grade('out_of_scope', '도서관?', self.make_draft('근거 자료에서 확인할 수 없습니다.'))
+        skipped = grade('out_of_scope', '도서관?', self.make_draft('', status='insufficient_evidence'))
+        answered = grade('out_of_scope', '도서관?', self.make_draft('도서관은 22時까지입니다 [1]', cited=[1]))
+        self.assertTrue(refused['refused'])
+        self.assertTrue(skipped['refused'])
+        self.assertFalse(answered['refused'])
+        self.assertTrue(answered['foreign'])
+
+    def test_command_runs_with_fake_models(self):
+        selected = ['rules', 'info']
+        sync_chunks(build_chunks(selected), selected)
+        out = io.StringIO()
+        call_command('evaluate_answer_drafts', backend='fake', embedding_backend='fake', min_similarity=0.0,
+                     limit=3, stdout=out)
+        table = out.getvalue()
+        self.assertIn('| fake |', table)
+        self.assertIn('답할 수 있는 질문 3개, 범위 밖 질문 3개', table)

@@ -21,6 +21,7 @@ python manage.py spectacular --validate --fail-on-warn --file %TEMP%\schema.yml 
 python manage.py runserver 127.0.0.1:8001         # 8000이 다른 프로그램에 쓰이고 있으면 8001
 python manage.py build_knowledge_index --backend fake   # RAG 검색 자료 다시 만들기 (fake = 모델 없이)
 python manage.py evaluate_knowledge_search              # 검색 품질 측정 (knowledge/eval/questions.yaml)
+python manage.py evaluate_answer_drafts                 # 답변 초안 품질 측정 (Ollama 필요, 모델 비교는 --model 여러 번)
 ```
 
 ## 작업 순서
