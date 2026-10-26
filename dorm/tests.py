@@ -323,3 +323,30 @@ class LogoutApiTests(TestCase):
 
     def test_logout_requires_a_token(self):
         self.assertEqual(APIClient().post('/api/logout/').status_code, 401)
+
+
+class ApiDocsTests(TestCase):
+    """API 문서(/api/docs/)와 OpenAPI 스키마(/api/schema/)."""
+
+    def test_schema_lists_every_api_endpoint(self):
+        response = APIClient().get('/api/schema/', {'format': 'json'})
+        self.assertEqual(response.status_code, 200)
+        paths = set(response.json()['paths'])
+        expected = {'/api/signup/', '/api/login/', '/api/logout/', '/api/mypage/', '/api/give_point/',
+                    '/api/dorm_apply/', '/api/dorm-applications/', '/api/dorm-applications/{id}/',
+                    '/api/outing_apply/', '/api/sleepover/status/', '/api/sleepover/approve/{id}/',
+                    '/api/sleepover/reject/{id}/', '/api/notices/', '/api/posts/', '/api/posts/{id}/',
+                    '/api/posts/{id}/like/', '/api/posts/{post_id}/comments/', '/api/inquiries/',
+                    '/api/inquiries/{id}/'}
+        self.assertEqual(paths, expected)
+
+    def test_login_is_documented_with_its_token_response(self):
+        schema = APIClient().get('/api/schema/', {'format': 'json'}).json()
+        login = schema['paths']['/api/login/']['post']
+        self.assertEqual(login['summary'], '로그인 (Token 발급)')
+        self.assertIn('token', schema['components']['schemas']['LoginResponse']['properties'])
+
+    def test_swagger_page_loads(self):
+        response = self.client.get('/api/docs/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'swagger')

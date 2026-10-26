@@ -32,10 +32,12 @@ from .serializers import (
     InquiryAnswerSerializer,
     InquiryAnswerCreateSerializer,
 )
+from . import schema
 from .permissions import IsAuthorOrAdmin, IsInquiryUserOrAdmin
 from datetime import date
 
 
+@schema.signup
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup_api(request):
@@ -72,6 +74,7 @@ def signup_api(request):
     return JsonResponse({'success': True, 'user_id': user.id})
 
 
+@schema.login
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_api(request):
@@ -92,6 +95,7 @@ def login_api(request):
     })
 
 
+@schema.logout
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -101,6 +105,7 @@ def logout_api(request):
     return JsonResponse({'success': True})
 
 
+@schema.mypage
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -120,6 +125,7 @@ def mypage_api(request):
     })
 
 
+@schema.give_point
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -148,6 +154,7 @@ def give_point_api(request):
     return JsonResponse({'success': True, 'profile': UserProfileSerializer(target).data})
 
 
+@schema.notices
 @api_view(['GET', 'POST'])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def notices_api(request):
@@ -169,6 +176,7 @@ def notices_api(request):
     return JsonResponse({'success': True, 'notice': NoticeSerializer(notice, context={'request': request}).data})
 
 
+@schema.dorm_apply
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -201,6 +209,7 @@ def apply_dorm_api(request):
     return JsonResponse({'success': True, 'dorm': DormSerializer(dorm).data})
 
 
+@schema.outing_apply
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -232,6 +241,7 @@ def apply_outing_api(request):
     return JsonResponse({'success': True, 'outing': OutingApplySerializer(outing).data})
 
 
+@schema.outing_status
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -245,6 +255,7 @@ def outing_apply_status_api(request):
     return JsonResponse({'success': True, 'list': serializer.data})
 
 
+@schema.outing_approve
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -260,6 +271,7 @@ def approve_outing_api(request, pk):
     return JsonResponse({'success': True, 'outing': OutingApplySerializer(outing).data})
 
 
+@schema.outing_reject
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -285,6 +297,7 @@ def posts_with_comments():
     )
 
 
+@schema.posts
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticatedOrReadOnly])
 @parser_classes([MultiPartParser, FormParser])
@@ -318,6 +331,7 @@ def posts_api(request):
     return Response({'success': True, 'post': serializer.data})
 
 
+@schema.post_detail
 @api_view(['GET', 'PUT', 'DELETE'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthorOrAdmin])
@@ -343,6 +357,7 @@ def post_detail_api(request, pk):
     return Response({'success': True})
 
 
+@schema.comments
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticatedOrReadOnly])
 @parser_classes([JSONParser])
@@ -361,6 +376,7 @@ def comments_api(request, post_id):
     return Response({'success': True, 'comment': serializer.data})
 
 
+@schema.inquiries
 @api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -377,6 +393,7 @@ def inquiries_api(request):
     return Response({'success': False, 'error': serializer.errors}, status=400)
 
 
+@schema.inquiry_detail
 @api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated, IsInquiryUserOrAdmin])
@@ -409,6 +426,7 @@ def inquiry_detail_api(request, pk):
     return Response({'success': False, 'error': serializer.errors}, status=400)
 
 
+@schema.dorm_list
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -420,6 +438,7 @@ def dorm_applications_list_api(request):
     return JsonResponse({'success': True, 'dorms': data})
 
 
+@schema.dorm_detail
 @api_view(['GET', 'PATCH', 'DELETE'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -471,6 +490,7 @@ def dorm_application_detail_api(request, pk):
         return JsonResponse({'success': True, 'message': 'Dorm application deleted.'})
 
 
+@schema.like_post
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
