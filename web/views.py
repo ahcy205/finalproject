@@ -268,6 +268,7 @@ def outing_info(request):
     })
 
 
+@require_POST
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def approve_outing(request, pk):
@@ -277,6 +278,7 @@ def approve_outing(request, pk):
     return redirect('web:outing_info')
 
 
+@require_POST
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def reject_outing(request, pk):
@@ -364,6 +366,7 @@ def add_comment(request, pk):
 
     return redirect('web:community_detail', pk=pk)
 
+@require_POST
 @login_required
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
@@ -493,6 +496,7 @@ def reward_penalty(request):
     return render(request, 'web/reward_penalty.html')
 
 
+@require_POST
 @login_required
 def toggle_like(request, pk):
     post = get_object_or_404(Post, pk=pk)
