@@ -39,18 +39,18 @@ class DormSerializer(serializers.ModelSerializer):
 class OutingApplySerializer(serializers.ModelSerializer):
     class Meta:
         model = OutingApply
-        fields = ['id', 'name', 'student_number', 'out_date', 'applied_at']
-        read_only_fields = ['applied_at']
+        fields = ['id', 'name', 'student_number', 'out_date', 'applied_at', 'status']
+        read_only_fields = ['applied_at', 'status']
 
 class NoticeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notice
-        fields = ['id', 'title', 'content', 'date']
+        fields = ['id', 'title', 'content', 'date', 'image']
 
 class NoticeCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notice
-        fields = ['title', 'content']
+        fields = ['title', 'content', 'image']
 
 class CommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.id', read_only=True)

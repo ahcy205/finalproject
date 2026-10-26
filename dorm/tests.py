@@ -1,9 +1,15 @@
+import io
+import shutil
+import tempfile
+
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
-from dorm.models import Dorm, Inquiry, OutingApply
+from dorm.models import Dorm, Inquiry, Notice, OutingApply
 
 
 def token_client(user):
@@ -90,3 +96,62 @@ class InputValidationApiTests(TestCase):
             '/api/outing_apply/', {'name': '홍길동', 'student_number': '20250001', 'out_date': '11월 1일'}, format='json')
         self.assertEqual(response.status_code, 400)
         self.assertFalse(OutingApply.objects.exists())
+
+
+class OutingStatusApiTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+        self.outing = OutingApply.objects.create(name='홍길동', student_number='20250001', out_date='2026-11-01',
+                                                 status='approved')
+
+    def test_status_list_includes_approval_state(self):
+        response = token_client(self.student).get('/api/sleepover/status/')
+        self.assertEqual(response.json()['list'][0]['status'], 'approved')
+
+    def test_new_application_reports_pending(self):
+        response = token_client(self.student).post(
+            '/api/outing_apply/', {'name': '홍길동', 'student_number': '20250001', 'out_date': '2026-11-02'},
+            format='json')
+        self.assertEqual(response.json()['outing']['status'], 'pending')
+
+
+TEMP_MEDIA = tempfile.mkdtemp()
+
+
+def png_file():
+    buf = io.BytesIO()
+    Image.new('RGB', (2, 2), 'white').save(buf, 'PNG')
+    return SimpleUploadedFile('notice.png', buf.getvalue(), content_type='image/png')
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
+class NoticeImageApiTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        self.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+
+    def test_list_includes_image_url(self):
+        Notice.objects.create(title='이미지 없음', content='c')
+        response = APIClient().get('/api/notices/')
+        self.assertIsNone(response.json()['notices'][0]['image'])
+
+    def test_staff_can_post_notice_with_image(self):
+        response = token_client(self.staff).post(
+            '/api/notices/', {'title': '공지', 'content': '내용', 'image': png_file()}, format='multipart')
+        self.assertEqual(response.status_code, 200)
+        image_url = response.json()['notice']['image']
+        self.assertTrue(image_url.startswith('http://testserver/media/notices/'))
+        self.assertTrue(image_url.endswith('.png'))
+
+    def test_non_image_file_is_rejected(self):
+        html = SimpleUploadedFile('x.html', b'<script>alert(1)</script>', content_type='text/html')
+        response = token_client(self.staff).post(
+            '/api/notices/', {'title': '공지', 'content': '내용', 'image': html}, format='multipart')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Notice.objects.exists())
