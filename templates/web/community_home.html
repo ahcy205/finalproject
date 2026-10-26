@@ -89,8 +89,8 @@
              <td><a href="{% url 'web:community_detail' post.id %}">{{ post.title }}</a></td>
              <td><i class="fas fa-user-circle"></i> 익명{{ forloop.revcounter }}</td>
              <td>{{ post.created_at|date:"Y-m-d H:i" }}</td>
-             <td><span class="badge bg-warning text-dark"><i class="fas fa-heart"></i> {{ post.likes.count }}</span></td>
-             <td><span class="badge bg-info text-dark"><i class="fas fa-comments"></i> {{ post.comments.count }}</span></td>
+             <td><span class="badge bg-warning text-dark"><i class="fas fa-heart"></i> {{ post.like_count }}</span></td>
+             <td><span class="badge bg-info text-dark"><i class="fas fa-comments"></i> {{ post.comment_count }}</span></td>
              {% if user.is_authenticated %}
              <td>
                {% if user == post.author or user.is_staff %}
