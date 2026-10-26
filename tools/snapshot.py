@@ -74,7 +74,7 @@ def pages(d):
         f'/notice/{d["notice"].pk}/edit/', '/menu/', '/check_in/', '/outside/', '/outside/manage/',
         '/community_home/', f'/post/{d["post"].pk}/', '/post/create/', f'/post/{d["post"].pk}/delete/',
         f'/post/{d["post"].pk}/edit/', '/bus/', '/acc/', '/info/', '/rules/', '/apply_success/', '/outinfo/',
-        '/reward/', '/mypage/?field=full_name&query=홍',
+        '/reward/', '/mypage/?field=full_name&query=홍', '/chatbot/',
         '/api/posts/', f'/api/posts/{d["post"].pk}/', f'/api/posts/{d["post"].pk}/comments/',
     ]
 

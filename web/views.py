@@ -4,17 +4,19 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Count
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from knowledge import sources as knowledge_sources
 from knowledge.answering import Draft, draft_answer
+from knowledge.chat import MAX_QUESTION_LENGTH, allow_request, answer_question, load_suggestions
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
 from django.shortcuts import get_object_or_404
 
 from web.forms import CustomSignupForm, CommentForm, PostForm, InquiryForm, InquiryAnswerForm, OutingApplyForm, \
-    NoticeForm
+    NoticeForm, ChatQuestionForm
 
 
 def index(request):
@@ -472,6 +474,26 @@ def info(request):
 
 def rules(request):
     return render(request, 'web/rules.html', {'doc': knowledge_sources.load('rules')})
+
+
+@login_required
+def chatbot(request):
+    """학생 챗봇 화면. 질문은 chatbot_ask로 보내고 답은 화면에서만 보여 준다 (docs/adr/0011)."""
+    return render(request, 'web/chatbot.html', {'suggestions': load_suggestions(), 'max_length': MAX_QUESTION_LENGTH})
+
+
+@login_required
+@require_POST
+def chatbot_ask(request):
+    form = ChatQuestionForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'error': form.errors['question'][0]}, status=400)
+    if not allow_request(request.user.pk):
+        return JsonResponse({'error': '질문이 너무 많아요. 잠시 후 다시 시도해 주세요.'}, status=429)
+    user = request.user
+    names = [user.username, getattr(getattr(user, 'userprofile', None), 'full_name', '')]
+    reply = answer_question(form.cleaned_data['question'], known_names=names)
+    return JsonResponse({'status': reply.status, 'text': reply.text, 'sources': reply.sources})
 
 
 def signup_views(request):

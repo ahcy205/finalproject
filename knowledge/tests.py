@@ -725,3 +725,8 @@ class StudentChatTests(TestCase):
         self.assertFalse(opens_with_not_found(text))
         reply = self.ask('남자 기숙사 이름', RecordingLLM(reply=text))
         self.assertEqual(reply.status, 'answered')
+
+    def test_markdown_bold_is_removed_from_answers(self):
+        reply = self.ask('출입시간', RecordingLLM(reply='1. **출입시간**: 06:00-23:00입니다 [1].'))
+        self.assertEqual(reply.status, 'answered')
+        self.assertEqual(reply.text, '1. 출입시간: 06:00-23:00입니다 [1].')

@@ -1,0 +1,202 @@
+<!DOCTYPE HTML>
+<html>
+{% load static %}
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>AI 챗봇</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+
+  {% include 'web/_theme_css.html' with bootstrap5=True %}
+
+  <style>
+    .chat-wrap { max-width: 760px; margin: 40px auto 60px; padding: 0 16px; }
+    .chat-title { text-align: center; margin-bottom: 6px; }
+    .chat-sub { text-align: center; color: #777; font-size: 15px; margin-bottom: 20px; }
+    .chat-box {
+      background: #fff; border: 1px solid #e3e6ea; border-radius: 10px;
+      height: 52vh; min-height: 320px; overflow-y: auto; padding: 18px;
+    }
+    .msg { display: flex; margin-bottom: 14px; }
+    .msg.user { justify-content: flex-end; }
+    .bubble {
+      max-width: 85%; padding: 10px 14px; border-radius: 12px;
+      font-size: 15px; line-height: 1.6; white-space: pre-line; word-break: keep-all;
+    }
+    .msg.user .bubble { background: #0d6efd; color: #fff; border-bottom-right-radius: 4px; }
+    .msg.bot .bubble { background: #f1f3f5; color: #212529; border-bottom-left-radius: 4px; }
+    .msg.bot.notice .bubble { background: #fff8e1; }
+    .msg.bot.error .bubble { background: #fdecea; }
+    .sources { margin-top: 8px; font-size: 13px; white-space: normal; }
+    .sources-label { color: #666; font-weight: 600; }
+    .sources ol { margin: 4px 0 0; padding-left: 0; list-style: none; }
+    .sources li { margin-top: 2px; }
+    .sources .num { color: #0d6efd; font-weight: 600; margin-right: 4px; }
+    .suggestions { margin: 4px 0 12px; }
+    .suggestions-label { color: #666; font-size: 14px; margin-bottom: 8px; }
+    .suggestion {
+      display: inline-block; margin: 0 6px 8px 0; padding: 6px 12px; font-size: 14px;
+      border: 1px solid #ced4da; border-radius: 16px; background: #fff; color: #333; cursor: pointer;
+    }
+    .suggestion:hover { border-color: #0d6efd; color: #0d6efd; }
+    .chat-form { display: flex; gap: 8px; margin-top: 12px; }
+    .chat-form textarea { flex: 1; resize: none; font-size: 15px; }
+    .chat-form button { white-space: nowrap; }
+    .chat-caution { margin-top: 10px; font-size: 13px; color: #888; }
+    .typing { color: #888; font-style: italic; }
+
+    @media (max-width: 768px) {
+      nav.fh5co-nav { display: none !important; }
+      .chat-box { height: 60vh; }
+    }
+    .js-fh5co-nav-toggle { display: none !important; }
+  </style>
+</head>
+
+<body>
+<div class="fh5co-loader"></div>
+
+<div id="page">
+  {% include 'web/_nav.html' %}
+  {% include 'web/_theme_js.html' %}
+
+  <div class="chat-wrap">
+    <h2 class="chat-title">AI 챗봇</h2>
+    <p class="chat-sub">생활관 규칙·안내·셔틀버스·식단·공지를 찾아 답해 드려요.</p>
+
+    <div class="chat-box" id="chat-box" aria-live="polite">
+      <div class="msg bot">
+        <div class="bubble">궁금한 점을 물어보세요. 아래 질문을 눌러도 돼요.</div>
+      </div>
+      <div class="suggestions" id="suggestions">
+        <div class="suggestions-label">자주 묻는 질문</div>
+        {% for item in suggestions %}
+          <button type="button" class="suggestion" data-question="{{ item.question }}">{{ item.label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <form class="chat-form" id="chat-form" action="{% url 'web:chatbot_ask' %}" method="post">
+      {% csrf_token %}
+      <textarea class="form-control" id="question" name="question" rows="2" maxlength="{{ max_length }}"
+                placeholder="예: 전기장판 써도 되나요?" required></textarea>
+      <button type="submit" class="btn btn-primary" id="send">보내기</button>
+    </form>
+    <p class="chat-caution">
+      AI 답변은 틀릴 수 있어요. 답 아래의 출처에서 원문을 확인하시고, 정확한 안내가 필요하면
+      <a href="{% url 'web:mypage' %}">마이페이지에서 문의</a>를 남겨 주세요. 첫 질문은 AI를 준비하느라 30초 정도 걸릴 수 있어요.
+    </p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var box = document.getElementById('chat-box');
+    var form = document.getElementById('chat-form');
+    var input = document.getElementById('question');
+    var send = document.getElementById('send');
+    var csrf = form.querySelector('input[name=csrfmiddlewaretoken]').value;
+
+    function addMessage(who, text, kind) {
+      var row = document.createElement('div');
+      row.className = 'msg ' + who + (kind ? ' ' + kind : '');
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;  // 답은 글자로만 넣는다 (HTML로 해석하지 않음)
+      row.appendChild(bubble);
+      box.appendChild(row);
+      box.scrollTop = box.scrollHeight;
+      return bubble;
+    }
+
+    function addSources(bubble, sources, status) {
+      if (!sources || !sources.length) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'sources';
+      var label = document.createElement('div');
+      label.className = 'sources-label';
+      label.textContent = status === 'answered' ? '출처' : '관련 자료';
+      wrap.appendChild(label);
+      var list = document.createElement('ol');
+      sources.forEach(function (s) {
+        var item = document.createElement('li');
+        if (status === 'answered') {
+          var num = document.createElement('span');
+          num.className = 'num';
+          num.textContent = '[' + s.number + ']';
+          item.appendChild(num);
+        }
+        if (s.url && s.url.charAt(0) === '/') {
+          var link = document.createElement('a');
+          link.href = s.url;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.textContent = s.title;
+          item.appendChild(link);
+        } else {
+          item.appendChild(document.createTextNode(s.title));
+        }
+        list.appendChild(item);
+      });
+      wrap.appendChild(list);
+      bubble.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function ask(question) {
+      question = question.trim();
+      if (!question) return;
+      var suggestions = document.getElementById('suggestions');
+      if (suggestions) suggestions.remove();
+      addMessage('user', question);
+      var waiting = addMessage('bot', '답변을 찾는 중이에요…');
+      waiting.classList.add('typing');
+      send.disabled = true;
+      input.value = '';
+
+      var body = new URLSearchParams();
+      body.append('question', question);
+      fetch(form.action, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: body.toString(),
+        credentials: 'same-origin'
+      }).then(function (response) {
+        return response.json().then(function (data) { return {ok: response.ok, data: data}; });
+      }).then(function (result) {
+        waiting.parentNode.remove();
+        if (!result.ok) {
+          addMessage('bot', result.data.error || '요청을 처리하지 못했어요.', 'error');
+          return;
+        }
+        var data = result.data;
+        var kind = data.status === 'answered' ? '' : (data.status === 'error' ? 'error' : 'notice');
+        var bubble = addMessage('bot', data.text, kind);
+        addSources(bubble, data.sources, data.status);
+      }).catch(function () {
+        waiting.parentNode.remove();
+        addMessage('bot', '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.', 'error');
+      }).finally(function () {
+        send.disabled = false;
+        input.focus();
+      });
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      ask(input.value);
+    });
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        ask(input.value);
+      }
+    });
+    document.querySelectorAll('.suggestion').forEach(function (button) {
+      button.addEventListener('click', function () { ask(button.dataset.question); });
+    });
+  })();
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@
 | `bus.yaml` | `/bus/` 셔틀버스 | 노선 2개(천안 터미널·천안아산역 방면), 노선마다 12편 |
 | `menu.yaml` | `/menu/` 주간 식단표 | 5일 × 중식·석식 (2025년 6월 16–20일 예시 식단) |
 | `synonyms.yaml` | (화면 없음) | 검색어 보강: 학생이 쓰는 말 → 규정 용어 ([ADR 0009](../../docs/adr/0009-query-synonyms.md)) |
+| `faq_suggestions.yaml` | `/chatbot/` AI 챗봇 | 첫 화면의 추천 질문 버튼 ([ADR 0011](../../docs/adr/0011-student-chatbot.md)) |
 
 ## 형식
 
