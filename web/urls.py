@@ -41,7 +41,5 @@ urlpatterns = [
     path('outinfo/approve/<int:pk>/', views.approve_outing, name='approve_outing'),
     path('outinfo/reject/<int:pk>/', views.reject_outing, name='reject_outing'),
     path('reward/', views.reward_penalty, name='reward_penalty'),
-    path('dorminfo/', views.dorm_info_view, name='dorm_info'),
-    path('assign_room/<int:dorm_id>/', views.assign_room, name='assign_room'),
     path('post/<int:pk>/like/', views.toggle_like, name='toggle_like'),
 ]
