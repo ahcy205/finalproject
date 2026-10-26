@@ -59,3 +59,19 @@ def embed_pending(embedder, batch_size=32):
         KnowledgeChunk.objects.bulk_update(batch, ['embedding', 'embedding_model'])
         done += len(batch)
     return done
+
+
+def upsert_chunk(chunk):
+    """청크 하나를 추가하거나 고친다 (공지·문의 저장 시 자동 갱신용). 내용이 바뀌면 벡터를 비운다."""
+    digest = chunk.content_hash()
+    row = KnowledgeChunk.objects.filter(key=chunk.key).first()
+    if row is None:
+        return KnowledgeChunk.objects.create(
+            source=chunk.source, key=chunk.key, title=chunk.title, content=chunk.content, url=chunk.url,
+            metadata=chunk.metadata, content_hash=digest)
+    if row.content_hash != digest:
+        row.embedding, row.embedding_model = None, ''
+    row.title, row.content, row.url, row.metadata, row.content_hash = (
+        chunk.title, chunk.content, chunk.url, chunk.metadata, digest)
+    row.save()
+    return row
