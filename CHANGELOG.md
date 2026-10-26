@@ -5,6 +5,58 @@
 
 
 
+
+## 2026-10-26 (6차) — 보완 설계안 실행
+
+[보완 설계안](https://claude.ai/artifact/U7GRXJBNSkZPfcFoFWqzX6)을 검토·승인받은 뒤 7개 항목을 진행했습니다(PR #32–#39).
+
+결정 사항은 다음과 같습니다.
+- 페이지 나누기: A안(선택형)
+- 메뉴 아이콘 8개: 유지
+- 공지·자유게시판 목록: 로그인 필수
+
+| PR | 설계안 | 내용 |
+|---|---|---|
+| [#32](https://github.com/ahcy205/finalproject/pull/32) | 1 | GitHub Actions CI: PR마다 설정 점검·마이그레이션 누락 검사·테스트 실행, README 배지 |
+| [#33](https://github.com/ahcy205/finalproject/pull/33) | 2 | N+1 쿼리 개선: 글 20개 기준 게시글 API 103 → 4번, 자유게시판 35 → 5번 |
+| [#34](https://github.com/ahcy205/finalproject/pull/34) | 3 | 게시글 API `?page=` 선택형 페이지 나누기 (20개씩, `page` 없으면 기존처럼 전체) |
+| [#35](https://github.com/ahcy205/finalproject/pull/35) | 5 | 앱 로그아웃 API `POST /api/logout/` (Token 삭제) |
+| [#36](https://github.com/ahcy205/finalproject/pull/36) | 7 | 로그인 필요 알림창 링크 14곳을 실제 링크로 교체, 공지·게시판 목록 로그인 필수, 로그인 후 원래 페이지로 이동 |
+| [#37](https://github.com/ahcy205/finalproject/pull/37) | 6 | 미사용 정적 파일 23개 삭제 (메뉴 아이콘 8개·`sass/`는 유지) |
+| [#38](https://github.com/ahcy205/finalproject/pull/38) | 4 | API 문서: drf-spectacular 0.30.0, Swagger `/api/docs/`, 19개 엔드포인트 설명, CI에 문서 검증 추가 |
+| #39 | — | 변경이력·README·흐름도 갱신 |
+
+### 설계와 달라진 점
+- **#32:** 실패 확인용 커밋을 이력에서 지울 계획이었습니다. 하지만 강제 푸시가 권한 설정에서 막혀 있어서 되돌림 커밋으로 처리했습니다. 최종 변경 내용은 같습니다.
+- **#34:** 정렬에 글 번호(`-id`)를 보조 기준으로 추가했습니다. 작성 시각이 같은 글이 있으면 순서가 흔들려서, 페이지를 넘길 때 같은 글이 두 번 나오거나 빠질 수 있었기 때문입니다(테스트에서 실제로 발생).
+- **#38:** 설계에 더해 CI에 문서 검증 단계를 넣었습니다. API를 바꾸고 문서를 고치지 않으면 CI가 실패합니다. 문서 그룹 순서도 앱에서 쓰는 순서로 정했습니다.
+
+### 검증 방법
+화면을 바꿀 수 있는 PR(#33, #34, #36, #37, #38)은 수정 전후로 99개 화면·API 응답을 임시 DB에서 렌더링해 비교했습니다. 의도한 차이만 있는지 확인했습니다.
+
+### 새로 발견한 문제 (수정하지 않음)
+정적 파일을 정리하다가 **없는 파일을 참조하는 곳 10개**를 찾았습니다(브라우저에서 404).
+- 화면 7개가 불러오는 `css/bootstrap.min.css`: 실제 파일은 `static/bootstrap.min.css`에 있습니다.
+- CSS가 가리키는 `css/fonts/icomoon.*`, `css/fonts/flexslider-icon.*`, `css/owl.video.play.png`: 해당 경로에 파일이 없습니다.
+
+다음 설계안에서 검토받겠습니다.
+
+### 앱 영향
+- 로그아웃 버튼에서 `POST /api/logout/`을 호출하면 서버의 Token도 무효화됩니다.
+- 게시글 목록은 `?page=1`부터 요청하면 20개씩 받을 수 있습니다. 요청하지 않으면 기존과 같습니다.
+- 요청·응답 형식은 `/api/docs/`에서 확인할 수 있습니다.
+
+### 테스트
+
+`python manage.py test web dorm`: 총 99건 (웹 66, API 33). PR마다 GitHub Actions에서도 실행됩니다.
+
+### 남은 사항
+
+- **없는 정적 파일 참조 10곳:** 위 "새로 발견한 문제" 참고
+- **로컬 실행 전용:** 배포하지 않으므로 `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용을 그대로 둡니다.
+- **일부 화면의 head 구성:** `mypage.html`, `reward_penalty.html`, `inquiry_detail.html`은 불러오는 CSS·JS 구성이 달라서 공통 템플릿을 쓰지 않습니다.
+- **Bootstrap 3·5 혼용:** 화면 7개가 두 버전을 함께 불러옵니다. 화면을 다시 디자인해야 해서 다루지 않았습니다.
+
 ## 2026-10-26 (5차) — 남은 과제 정리
 
 남은 과제를 처리했습니다(PR #25–#31). 이 프로젝트는 배포하지 않기로 해서, 배포 설정은 그대로 두고 "로컬 실행 전용"으로 문서에 적었습니다.
@@ -31,11 +83,6 @@
 ### 테스트
 
 `python manage.py test web dorm`: 총 81건 (웹 60, API 21)
-
-### 남은 사항
-
-- **로컬 실행 전용:** 배포하지 않으므로 `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용을 그대로 둡니다. 배포하려면 이 설정부터 바꿔야 합니다.
-- **일부 화면의 head 구성:** `mypage.html`, `reward_penalty.html`, `inquiry_detail.html`은 불러오는 CSS·JS 구성이 달라서 공통 템플릿을 쓰지 않습니다.
 
 ## 2026-10-26 (4차) — 포트폴리오 정리
 
