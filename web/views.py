@@ -460,11 +460,21 @@ def logout_views(request):
     return redirect('web:home')
 
 
+@login_required
+@user_passes_test(lambda u: u.is_staff)
 def reward_penalty(request):
     if request.method == 'POST':
         student_number = request.POST.get('student_number')
-        points = int(request.POST.get('points', 0))
         point_type = request.POST.get('point_type')
+        try:
+            points = int(request.POST.get('points', 0))
+        except (TypeError, ValueError):
+            messages.error(request, "점수는 숫자로 입력해주세요.")
+            return redirect('web:reward_penalty')
+
+        if point_type not in ('reward', 'penalty'):
+            messages.error(request, "상점 또는 벌점을 선택해주세요.")
+            return redirect('web:reward_penalty')
 
         try:
             user = User.objects.get(username=student_number)
