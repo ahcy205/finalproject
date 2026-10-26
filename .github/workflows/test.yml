@@ -54,4 +54,4 @@ jobs:
         run: python manage.py spectacular --validate --fail-on-warn --file /tmp/schema.yml
 
       - name: Run tests
-        run: python manage.py test web dorm
+        run: python manage.py test web dorm knowledge
