@@ -6,7 +6,8 @@
 
 - 돔고돔락: 기숙사 통합 관리 시스템. Django 5.2 + Django REST Framework
 - `web` 앱: HTML 화면(Django Template). 자체 모델 없음
-- `dorm` 앱: 모델 전체와 Android 앱용 REST API(`/api/`), API 문서 설명(`dorm/schema.py`)
+- `dorm` 앱: 서비스 모델과 Android 앱용 REST API(`/api/`), API 문서 설명(`dorm/schema.py`)
+- `knowledge` 앱: RAG용 원본 자료(`knowledge/data/*.yaml`, 규칙·안내 화면도 이 파일을 씀)와 검색 기능
 - DB: PostgreSQL 17 + pgvector, `docker compose up -d db`로 실행 → [ADR 0005](docs/adr/0005-postgresql-pgvector.md). DB가 꺼져 있으면 SQLite로 대신 실행하지 않고 `dorm.E001` 점검 오류로 안내한다
 - **로컬 실행 전용, 배포하지 않음** → [ADR 0002](docs/adr/0002-local-only.md)
 
@@ -15,7 +16,7 @@
 ```
 docker compose up -d db                           # DB 먼저
 venv\Scripts\activate
-python manage.py test web dorm                    # 전체 테스트 (CI와 같음)
+python manage.py test web dorm knowledge          # 전체 테스트 (CI와 같음)
 python manage.py spectacular --validate --fail-on-warn --file %TEMP%\schema.yml   # API 문서 검증
 python manage.py runserver 127.0.0.1:8001         # 8000이 다른 프로그램에 쓰이고 있으면 8001
 ```

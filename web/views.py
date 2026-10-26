@@ -8,6 +8,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
+from knowledge import sources as knowledge_sources
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
 from django.shortcuts import get_object_or_404
 
@@ -443,10 +444,10 @@ def acc(request):
     return render(request, 'web/acc.html')
 
 def info(request):
-    return render(request, 'web/info.html')
+    return render(request, 'web/info.html', {'doc': knowledge_sources.load('info')})
 
 def rules(request):
-    return render(request, 'web/rules.html')
+    return render(request, 'web/rules.html', {'doc': knowledge_sources.load('rules')})
 
 
 def signup_views(request):

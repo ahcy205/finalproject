@@ -56,10 +56,10 @@ python manage.py runserver
 ## 6. 테스트
 
 ```
-python manage.py test web dorm
+python manage.py test web dorm knowledge
 ```
 
-- 웹 화면 테스트는 `web/tests.py`, 모델과 API 테스트는 `dorm/tests.py`에 둡니다.
+- 웹 화면 테스트는 `web/tests.py`, 모델과 API 테스트는 `dorm/tests.py`, RAG 자료와 검색 테스트는 `knowledge/tests.py`에 둡니다.
 - **버그 수정에는 그 버그를 재현하는 테스트를 함께 추가합니다.** 수정 전에는 실패하고 수정 후에는 통과해야 합니다.
 - 외부 서비스(AI API 등)는 가짜 응답으로 바꿔서, API 키 없이도 테스트와 CI가 돌아가게 합니다.
 - 화면이나 API 응답이 바뀔 수 있는 변경은 [tools/](tools/README.md)로 수정 전후를 비교하고 결과를 PR에 적습니다.
