@@ -613,3 +613,20 @@ class QueryExpansionTests(TestCase):
         embed_pending(FakeEmbedder())
         keys = [h.chunk.key for h in search('전기장판 써도 돼?', embedder=FakeEmbedder(), use_vector=False).hits]
         self.assertIn('rules:article:10', keys)
+
+
+class DraftPromptTests(TestCase):
+    """작은 모델이 규칙을 지키도록: 예시를 보여 주고, 근거 바로 뒤에 핵심 규칙을 한 번 더 둔다 (ADR 0010)."""
+
+    def test_prompt_ends_with_the_rule_reminder(self):
+        from knowledge.answering import REMINDER, build_prompt
+        from knowledge.search import SearchHit
+        hit = SearchHit(chunk=KnowledgeChunk(key='rules:article:3', title='제3조', content='06:00-23:00'), score=1.0)
+        prompt = build_prompt('통금', '몇 시까지?', [hit])
+        self.assertTrue(prompt.endswith(REMINDER))
+        self.assertIn('[1] 제3조\n06:00-23:00', prompt)
+
+    def test_system_prompt_shows_an_answer_and_a_refusal(self):
+        from knowledge.answering import SYSTEM_PROMPT
+        self.assertIn('예시 1', SYSTEM_PROMPT)
+        self.assertIn('답변: 근거 자료에서 확인할 수 없습니다.', SYSTEM_PROMPT)
