@@ -1,0 +1,1133 @@
+{
+  "exaone3.5:7.8b": {
+    "summary": {
+      "facts": 0.896551724137931,
+      "cites_expected": 0.9375,
+      "format_problem": 0.0,
+      "wrong_refusal": 0.25,
+      "out_of_scope_refusal": 0.5,
+      "foreign": 0.0,
+      "errors": 0,
+      "hidden": 1,
+      "median_seconds": 2.46,
+      "max_seconds": 12.39
+    },
+    "rows": [
+      {
+        "kind": "answerable",
+        "q": "기숙사 통금 몇 시까지야?",
+        "status": "ok",
+        "text": "기숙사 통금 시간은 일반적으로 23:00까지입니다 [1]. 부득이한 경우 생활관장의 판단에 따라 출입 시간이 변경될 수 있으니 참고해 주세요 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 2.55,
+        "evidence": [
+          "rules:article:3",
+          "bus:terminal:inbound",
+          "rules:penalty_table",
+          "bus:terminal:outbound",
+          "bus:asan:outbound"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "23:00|23시|오후 11시|밤 11시"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "방 불은 몇 시에 꺼야 돼?",
+        "status": "ok",
+        "text": "방 불은 원칙적으로 23:00시 이후에는 소등해야 합니다 [1]. 이는 생활관 내 출입 시간이 06:00부터 23:00까지로 제한되어 있기 때문입니다 [1]. 다만, 특별한 경우에 대해서는 생활관장의 판단에 따라 조정될 수 있으니 참고하시기 바랍니다 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 2.21,
+        "evidence": [
+          "rules:article:3",
+          "rules:article:11",
+          "rules:article:4",
+          "rules:penalty_table",
+          "rules:article:6"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "00:00|자정|24:00|밤 12시|0시부터"
+        ],
+        "facts_ok": false,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "밤 늦게 세탁기 돌려도 돼?",
+        "status": "ok",
+        "text": "밤 늦게 세탁기를 사용하는 것은 제한이 있습니다. 생활관 규칙에 따르면, 세탁은 지정된 세탁실을 이용해야 하며 23:00시부터 익일 07:00시까지는 세탁이 불가능합니다 [1]. 따라서 밤 늦게 세탁기를 사용하려면 이 시간 외에 이용해야 합니다. 안전과 질서 유지에 협조 부탁드립니다 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 2.22,
+        "evidence": [
+          "rules:article:6",
+          "rules:article:11",
+          "rules:article:3",
+          "rules:penalty_table",
+          "info:article:17"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "23:00|23시|오후 11시|밤 11시"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "방에서 담배 피우다 걸리면 어떻게 돼?",
+        "status": "ok",
+        "text": "방에서 담배를 피우다 걸리면 퇴관 조치가 될 수 있습니다 [3]. 특히 관내 흡연은 벌점 17점으로 퇴관 사유에 해당하므로, 해당 조치가 취해질 수 있습니다 [3]. 건전한 공동생활 유지와 화재 예방을 위해 흡연은 지정된 장소에서만 허용됩니다 [5].",
+        "cited": [
+          3,
+          5
+        ],
+        "warnings": [],
+        "seconds": 1.99,
+        "evidence": [
+          "rules:article:10",
+          "rules:article:5",
+          "rules:penalty_table",
+          "info:article:13",
+          "rules:article:4"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "퇴관"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "친구를 내 방에서 재워도 돼?",
+        "status": "ok",
+        "text": "친구를 방에서 재워도 된다는 규정은 없습니다. 생활관 규칙 제5조에 따르면 사용자의 승인 없이 타인의 방에 출입하거나 숙박하는 것은 금지되어 있습니다 [1]. 또한, 생활관 내에서의 외부인 숙박은 금지사항에 해당하므로 사전에 생활관 직원의 허가 없이는 허용되지 않습니다 [2]. 따라서 친구를 재워달라는 요청은 현재 규정상으로는 적절하지 않습니다 [1][2]. 근거 자료에서 확인할 수 없습니다. 생활관에 직접 문의해 주세요.",
+        "cited": [
+          1,
+          2
+        ],
+        "warnings": [],
+        "seconds": 2.78,
+        "evidence": [
+          "rules:article:5",
+          "rules:article:10",
+          "info:article:12",
+          "info:article:15",
+          "rules:article:3"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [],
+        "facts_ok": null,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "벌점 깎을 수 있는 방법 있어?",
+        "status": "ok",
+        "text": "벌점을 깎는 직접적인 방법은 명시되어 있지 않지만, 벌점 감면 혜택 중 하나로 교내 봉사활동에 참여할 경우 1시간당 2점을 감면받을 수 있습니다 [2]. 따라서 봉사활동 참여를 통해 벌점을 줄일 수 있습니다 [2]. 다른 방법으로는 규칙을 준수하고, 만약 위반 사항이 있다면 상담을 통해 적극적으로 개선 의지를 보여주는 것도 도움이 될 수 있습니다 [3]. 근거 자료에서 명확히 제시된 방법 외의 구체적인 절차는 확인하기 어렵습니다. 생활관에 직접 문의해 보시는 것을 권장드립니다.",
+        "cited": [
+          2,
+          3
+        ],
+        "warnings": [],
+        "seconds": 3.17,
+        "evidence": [
+          "rules:penalty_table",
+          "rules:article:14-2",
+          "rules:article:10",
+          "rules:section::16",
+          "rules:article:8"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [],
+        "facts_ok": null,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "대청소는 무슨 요일에 해?",
+        "status": "ok",
+        "text": "대청소는 매주 수요일 저녁 22:00부터 23:00까지 진행됩니다 [1]. 이 시간 동안 모든 관생은 함께 참여하여 생활관을 청결하게 유지하도록 합니다 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 1.36,
+        "evidence": [
+          "rules:article:11",
+          "rules:article:6",
+          "rules:article:12",
+          "menu:06월 17일",
+          "menu:06월 20일"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "수요일"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "호실 점검은 언제 와?",
+        "status": "ok",
+        "text": "호실 점검은 주로 생활관 문화 형성과 복지 향상을 위해 이루어지며, 정기적으로는 매주 수요일 저녁에 점검이 실시됩니다 [1]. 특별한 상황이 발생할 경우에는 추가적인 특별 점검도 진행될 수 있습니다 [1]. 정확한 점검 일정이나 세부 사항에 대해서는 생활관 안내나 직원에게 문의하시는 것이 가장 정확할 것입니다 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 1.91,
+        "evidence": [
+          "rules:article:12",
+          "info:article:11",
+          "notice:2",
+          "notice:7",
+          "info:article:26"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "수요일"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "기숙사 책상 부서뜨리면 물어줘야 해?",
+        "status": "ok",
+        "text": "네, 책상을 부서뜨렸을 경우 고의 또는 과실로 생활관의 시설을 훼손한 것으로 간주되어 변상책임이 발생합니다 [2]. 훼손된 물품의 수리 또는 교체 비용은 학생 본인이 부담해야 합니다 [2]. 또한, 비품 파손에 해당하는 경우 벌점 10점이 부과될 수 있으며, 벌점이 누적되면 추가적인 조치가 취해질 수 있으니 주의가 필요합니다 [3]. 시설물 및 집기류의 유지보수는 생활관에서 담당하지만, 변상책임이 있는 경우에는 예외입니다 [4]. 따라서 책상 파손에 대한 책임은 학생에게 있습니다. 생활관 안내에 따라 정확한 절차와 비용은 생활관 관리 부서에 문의하시는 것이 좋습니다.",
+        "cited": [
+          2,
+          3,
+          4
+        ],
+        "warnings": [],
+        "seconds": 3.64,
+        "evidence": [
+          "rules:article:9",
+          "rules:article:7",
+          "rules:penalty_table",
+          "info:article:17",
+          "info:article:12"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "변상"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "동아리 홍보 포스터 아무 데나 붙여도 돼?",
+        "status": "ok",
+        "text": "동아리 홍보 포스터는 지정된 게시판에만 붙여주셔야 합니다 [1]. 임의로 다른 곳에 붙이는 것은 규칙에 위배됩니다 [1]. 추가로, 공지사항 333번과 111번도 관련 규정을 확인해 보시는 것이 좋습니다 [2], [5].",
+        "cited": [
+          1,
+          2,
+          5
+        ],
+        "warnings": [],
+        "seconds": 1.64,
+        "evidence": [
+          "rules:article:8",
+          "notice:14",
+          "info:article:15",
+          "rules:article:6",
+          "notice:21"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "게시판"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "전기장판 써도 돼?",
+        "status": "ok",
+        "text": "전기장판의 사용에 대해 명확한 규정이 생활관 규칙 내에 명시되어 있지 않습니다 [3]. 따라서 일반적인 난방/취사 도구 사용에 대한 금지 사항을 참고하시면, 전열기 사용과 관련된 제한이 있을 수 있으니 주의가 필요합니다 [3]. 정확한 허용 여부는 생활관 직원에게 문의하시는 것이 가장 좋습니다. 근거 자료에서 확인할 수 없습니다. 생활관에 직접 문의해 주세요.",
+        "cited": [
+          3
+        ],
+        "warnings": [],
+        "seconds": 2.38,
+        "evidence": [
+          "rules:article:6",
+          "rules:article:5",
+          "rules:article:10",
+          "info:article:12",
+          "info:article:17"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "전열기"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "기숙사에서 고양이 키우면 안 돼?",
+        "status": "ok",
+        "text": "기숙사 내에서 고양이를 키우는 것은 생활관 규칙 제10조 (금지사항)에 명시된 동물 사육에 해당합니다 [1]. 따라서 일반적으로 기숙사 내에서 고양이를 키우는 것은 허용되지 않습니다 [1]. 만약 특별한 예외 사항이나 개인적인 상황이 있다면, 생활관 직원에게 사전에 상담을 요청하시는 것이 좋습니다 [1]. 근거 자료에서 확인할 수 없는 개별 상황에 대해서는 생활관에 직접 문의해 주세요.",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 2.55,
+        "evidence": [
+          "rules:article:10",
+          "info:article:13",
+          "rules:article:5",
+          "rules:article:4",
+          "info:article:1"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "동물"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "방에 물이 새는 걸 발견하면 어디에 알려야 해?",
+        "status": "ok",
+        "text": "방에 물이 새는 문제를 발견했을 경우, 즉시 생활관 직원에게 알려야 합니다 [1]. 이는 시설의 고장이나 파손 사항으로 분류되어 통보 의무 사항에 해당하기 때문입니다 [1]. 문제 해결을 위해 신속한 연락이 필요하니, 가까운 관리 사무실이나 담당 직원에게 연락해 주세요 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 1.95,
+        "evidence": [
+          "rules:article:9",
+          "rules:article:4",
+          "rules:penalty_table",
+          "rules:article:5",
+          "rules:article:11"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "관계 부서|관계부서"
+        ],
+        "facts_ok": false,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "퇴실할 때 뭐 내야 돼?",
+        "status": "ok",
+        "text": "퇴실할 때는 퇴관확인서를 제출해야 합니다 [1]. 또한, 대여받은 물품은 반드시 반환해야 합니다 [1]. 벌점 사항으로 인한 퇴관 조치가 아닌 일반적인 퇴실 시에는 추가적인 벌금이나 특별한 서류 제출 외에 위의 두 가지 절차를 완료하면 됩니다 [1]. 만약 생활관비 환불 기준에 대한 자세한 내용은 별도로 확인이 필요합니다 [4].",
+        "cited": [
+          1,
+          4
+        ],
+        "warnings": [],
+        "seconds": 2.28,
+        "evidence": [
+          "rules:article:13",
+          "rules:penalty_table",
+          "info:article:16",
+          "info:article:21",
+          "rules:article:9"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "퇴관확인서|퇴관 확인서"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "늦게 들어오면 벌점 몇 점이야?",
+        "status": "ok",
+        "text": "지연입실(귀관/출입시간 위반)의 경우 벌점이 7점 부과됩니다 [1]. 생활관 내 출입시간은 기본적으로 06:00부터 23:00까지로 정해져 있으나, 부득이한 경우 생활관장의 판단에 따라 변경될 수 있습니다 [2]. 벌점이 20점을 초과하면 추가적인 조치가 필요하며, 구체적인 조치 사항은 생활관 규칙에 따라 결정됩니다 [1]. 따라서 정확한 벌점 범위에 대한 추가적인 정보는 생활관 규칙을 직접 확인하시거나 생활관에 문의해 보시는 것이 좋습니다 [1].",
+        "cited": [
+          1,
+          2
+        ],
+        "warnings": [],
+        "seconds": 3.38,
+        "evidence": [
+          "rules:penalty_table",
+          "rules:article:3",
+          "rules:article:14-2",
+          "rules:article:10",
+          "rules:section::16"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "7점"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "남자 기숙사 이름이 뭐야?",
+        "status": "ok",
+        "text": "남자 기숙사의 이름은 명현관입니다 [1]. 다른 세부적인 별칭이나 추가적인 명칭은 제공된 근거에서 확인할 수 없습니다 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 1.07,
+        "evidence": [
+          "info:article:1",
+          "rules:article:5",
+          "info:article:25",
+          "info:article:18",
+          "info:article:8"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "명현관"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "기숙사 신청하면 누가 먼저 뽑혀?",
+        "status": "ok",
+        "text": "기숙사 신청 시 선발 우선순위는 주로 성적을 기준으로 하지만, 자치위원회 활동자와 검도부원은 우선적으로 선발됩니다 [1]. 구체적인 선발 순서는 학년별로도 차이가 있으며, 신입생이 가장 우선이고, 그 다음으로 2학년이 전체 입관 가능 인원의 60%, 3학년이 30%, 그리고 4학년이 10%의 비율로 배정됩니다 [2]. 따라서 성적과 함께 해당 학년 및 특별 활동 참여 여부가 선발에 중요한 역할을 합니다 [1].\n\n근거 자료에서 확인할 수 없습니다. 생활관에 직접 문의해 주세요.",
+        "cited": [
+          1,
+          2
+        ],
+        "warnings": [],
+        "seconds": 3.27,
+        "evidence": [
+          "info:article:10",
+          "info:article:8",
+          "info:article:1",
+          "info:article:15",
+          "info:article:9"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "성적"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "신입생도 기숙사 들어갈 수 있어?",
+        "status": "ok",
+        "text": "네, 신입생도 기숙사에 들어갈 수 있습니다. [1] 신입생은 배정 기준에 따라 남은 공실에 한해 입관이 가능합니다. 다만, 성별로 구분된 기숙사 시설 이용 시 사전 허가가 필요할 수 있으니 참고하시기 바랍니다 [4]. [2] 또한, 입관 제한 사항에 해당되지 않는다면 문제없이 생활관에 입주하실 수 있습니다 [3].",
+        "cited": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "warnings": [],
+        "seconds": 2.19,
+        "evidence": [
+          "info:article:8",
+          "rules:article:5",
+          "info:article:13",
+          "info:article:1",
+          "rules:article:3"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "1순위|우선"
+        ],
+        "facts_ok": false,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "합격하고 일주일 넘게 입사 안 하면 어떻게 돼?",
+        "status": "ok",
+        "text": "합격 후 일주일 넘게 입사하지 않을 경우, 생활관의 규정에 따르면 입관 허가를 받은 자가 정당한 사유 없이 허가일로부터 7일이 경과하도록 입관하지 않으면 입관 허가가 취소될 수 있습니다 [1]. 따라서, 이 기간 내에 입사 절차를 완료하지 않으면 생활관 입사가 불가능해질 수 있으니 주의가 필요합니다 [1].",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 2.41,
+        "evidence": [
+          "info:article:9",
+          "info:article:16",
+          "info:article:8",
+          "info:article:13",
+          "rules:penalty_table"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "취소"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "기숙사에서 빌려주는 물건 뭐 있어?",
+        "status": "ok",
+        "text": "기숙사에서 제공하는 대여 물품으로는 책상, 의자, 옷장, 침대, 매트리스, 그리고 열쇠 1개 등이 있습니다 [1]. 이 물품들은 입관 시 원칙적으로 제공되지만, 외부로 반출하는 것은 허용되지 않습니다 [1]. 또한, 생활관 내에서는 공용 물품을 임의로 이동하거나 독점 사용해서는 안 됩니다 [5]. 만약 더 자세한 물품 목록이나 추가 정보가 필요하시다면 생활관에 직접 문의해 주세요.",
+        "cited": [
+          1,
+          5
+        ],
+        "warnings": [],
+        "seconds": 2.55,
+        "evidence": [
+          "info:article:12",
+          "info:article:1",
+          "rules:article:5",
+          "rules:article:10",
+          "rules:article:6"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "책상|침대|옷장"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "벌점 많이 받으면 다음 학기에 못 들어가?",
+        "status": "ok",
+        "text": "벌점이 누적되어 20점 이상이 되면 퇴관 조치를 받게 되며, 이 경우 다음 학기 입관이 제한될 수 있습니다 [2]. 특히 벌점 20점 이상 또는 퇴관 사유 위반 시에는 2주 이내에 퇴관해야 하며, 이후에는 다음 학기 입관이 어려울 수 있습니다 [2]. 벌점 감면을 통해 일부 완화될 수 있으나, 초기 위반 사항에 따라 제한이 적용될 수 있으니 주의가 필요합니다 [4]. 근거 자료에서 확인할 수 없는 세부적인 제한 사항은 생활관에 직접 문의해 주세요.",
+        "cited": [
+          2,
+          4
+        ],
+        "warnings": [],
+        "seconds": 3.2,
+        "evidence": [
+          "rules:penalty_table",
+          "info:article:13",
+          "rules:article:10",
+          "rules:article:14-2",
+          "info:article:16"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "20점"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "룸메이트랑 안 맞아서 방 바꾸고 싶어",
+        "status": "ok",
+        "text": "룸메이트와의 문제로 방 변경을 원하시는군요. 하지만 [1] 생활관 안내에 따르면 실 배정 및 이동은 운영위원장이 결정하며, 관생이 임의로 방을 변경할 수는 없습니다 [1]. 부득이한 경우에는 실 이동 원서를 제출하여 사전 허가를 받아야 합니다 [1]. 따라서 현재로서는 룸메이트와의 문제 해결을 우선적으로 고려하시는 것이 좋을 것 같습니다. 만약 불가피한 상황이라면 생활관 직원에게 문의하여 절차를 확인해 보시는 것을 추천드립니다.",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 2.94,
+        "evidence": [
+          "info:article:15",
+          "rules:article:3",
+          "rules:article:5",
+          "rules:article:10",
+          "rules:article:6"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "원서|사전 허가|사전허가"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "중간에 나가면 기숙사비 돌려받을 수 있어?",
+        "status": "ok",
+        "text": "중간에 나가는 경우에도 생활관비 환불 기준에 따라 검토될 수 있습니다. 특히, 퇴관 시 환불 기준은 명시된 벌점 사항이나 금지사항 위반 여부에 따라 결정되므로, 단순히 중간에 나가는 것만으로는 정확한 환불 여부를 판단하기 어렵습니다 [1]. 정확한 환불 조건은 상담을 통해 확인해야 합니다 [1]. 근거 자료에서 확인할 수 없는 세부 사항은 생활관에 직접 문의해 주세요.",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 2.47,
+        "evidence": [
+          "info:article:21",
+          "rules:penalty_table",
+          "rules:article:10",
+          "rules:article:13",
+          "info:article:8"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "환불"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "자치위원 하면 무슨 혜택 있어?",
+        "status": "ok",
+        "text": "자치위원으로 활동하면 다음과 같은 혜택이 있습니다:\n\n- 회장 및 부회장은 소정의 근무시간 이상 근무 시 근로장학금을 받을 수 있습니다 [1].\n- 모든 봉사위원은 매 학기 동안 생활관비(식대 제외)를 면제받을 수 있습니다 [1].\n\n또한, 자치위원으로서 건전한 생활 환경 조성과 다양한 활동 참여를 통해 생활관 내에서 중요한 역할을 수행하게 됩니다 [2]. 이러한 활동은 개인의 리더십과 사회성을 키우는 데 도움이 될 것입니다 [2].\n\n벌점 감면 혜택도 있습니다: 생활관장은 자치위원 활동을 포함한 다양한 조건 하에 벌점을 감면할 수 있습니다 [5].\n\n더 자세한 내용은 생활관에 직접 문의해 주세요. [1] [2] [5]",
+        "cited": [
+          1,
+          2,
+          5
+        ],
+        "warnings": [],
+        "seconds": 4.11,
+        "evidence": [
+          "info:article:25",
+          "info:article:26",
+          "info:article:10",
+          "info:article:5",
+          "rules:article:14-2"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "면제|장학금"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "인원 점검 몇 시에 해?",
+        "status": "ok",
+        "text": "인원 점검은 주로 매일 자정(00:00)에 이루어집니다 [3]. 이 점검은 생활관의 건전한 운영과 안전을 위해 이루어지며, 자치위원회 활동의 일부로 진행됩니다 [3]. 특별한 상황이 없는 한 이 시간에 점검이 이루어질 예정이니 참고 부탁드립니다 [3].",
+        "cited": [
+          3
+        ],
+        "warnings": [],
+        "seconds": 1.62,
+        "evidence": [
+          "rules:article:12",
+          "rules:article:11",
+          "info:article:26",
+          "rules:article:3",
+          "notice:2"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "24:00|자정|밤 12시"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "방 열쇠는 누가 보관해?",
+        "status": "ok",
+        "text": "방 열쇠는 생활관 관리실에서 보관됩니다 [1]. 이는 안전 관리를 위해 생활관 직원들이 관리하기 때문입니다 [1]. 따라서 방을 비울 때는 항상 문을 잠그고 안전에 유의해야 합니다 [4].",
+        "cited": [
+          1,
+          4
+        ],
+        "warnings": [],
+        "seconds": 1.35,
+        "evidence": [
+          "info:article:18",
+          "rules:article:11",
+          "rules:article:5",
+          "info:article:12",
+          "rules:article:4"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "관리실"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "터미널에서 학교 가는 첫차 몇 시야?",
+        "status": "ok",
+        "text": "학교에서 천안 터미널로 가는 첫차 셔틀버스 시간은 오전 8시 25분입니다 [2]. 이 시간에 천안 아산역 방면으로 운행하는 3호차 셔틀버스를 이용하시면 됩니다 [3].",
+        "cited": [
+          2,
+          3
+        ],
+        "warnings": [],
+        "seconds": 2.5,
+        "evidence": [
+          "bus:terminal:inbound",
+          "bus:terminal:outbound",
+          "bus:asan:outbound",
+          "bus:asan:inbound",
+          "info:article:8"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "08:25|8시 25분"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "학교에서 천안아산역 가는 셔틀 시간 알려줘",
+        "status": "ok",
+        "text": "천안아산역으로 가는 셔틀 버스의 운행 시간은 다음과 같습니다:\n\n- **천안 아산역 방면**:\n  - 08:30 출발 → 학교 도착 09:00\n  - 09:30 출발 → 학교 도착 10:00\n  - 10:30 출발 → 학교 도착 11:00\n  - 11:30 출발 → 학교 도착 12:00\n  - 13:30 출발 → 학교 도착 14:00\n  - 14:30 출발 → 학교 도착 15:00\n  - 15:30 출발 → 학교 도착 16:00\n  - 16:30 출발 → 학교 도착 17:00\n  - 17:30 출발 → 학교 도착 18:00\n  - 18:30 출발 → 학교 도착 19:00\n  - 19:30 출발 → 학교 도착 20:00\n\n- **학교에서 천안 아산역 방면**:\n  - 09:00 출발 → 천안 아산역 도착 09:30\n  - 10:00 출발 → 천안 아산역 도착 10:30\n  - 11:00 출발 → 천안 아산역 도착 11:30\n  - 12:00 출발 → 천안 아산역 도착 12:30\n  - 14:00 출발 → 천안 아산역 도착 14:30\n  - 15:00 출발 → 천안 아산역 도착 15:30\n  - 16:00 출발 → 천안 아산역 도착 16:30\n  - 17:00 출발 → 천안 아산역 도착 17:30\n  - 18:00 출발 → 천안 아산역 도착 18:30\n  - 19:00 출발 → 천안 아산역 도착 19:30\n  - 20:00 출발 → 천안 아산역 도착 20:30\n\n이 시간표는 [1]에 근거하였습니다.",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 12.39,
+        "evidence": [
+          "bus:asan:outbound",
+          "bus:asan:inbound",
+          "bus:terminal:outbound",
+          "bus:terminal:inbound",
+          "menu:06월 18일"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "09:00|오전 9시"
+        ],
+        "facts_ok": true,
+        "cites_expected": false,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "두정역에서 학교 오는 버스 있어?",
+        "status": "ok",
+        "text": "두정역에서 학교로 오는 버스는 여러 노선이 운행되고 있습니다. 특히, [1] 셔틀버스 시간표에 따르면 천안 터미널 방면으로 운행하는 셔틀버스 중 일부 노선이 두정역을 경유합니다. 예를 들어, 천안 터미널에서 출발하는 1호차와 2호차 버스는 각각 08:35, 09:35, 10:35, 11:35, 12:35, 13:35, 14:35, 15:35, 16:35, 17:35, 18:35, 19:35, 20:35 시간대에 두정역을 지나 학교 앞 삼거리까지 운행합니다. 정확한 시간과 노선 번호를 확인하시려면 셔틀버스 시간표를 참조하시거나 생활관에 문의해 주세요.",
+        "cited": [
+          1
+        ],
+        "warnings": [],
+        "seconds": 5.83,
+        "evidence": [
+          "bus:terminal:outbound",
+          "bus:terminal:inbound",
+          "bus:asan:outbound",
+          "bus:asan:inbound",
+          "menu:06월 18일"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "08:35|8시 35분"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "수요일 점심 메뉴 뭐야?",
+        "status": "ok",
+        "text": "수요일 점심 메뉴는 소고기콩나물해장국, 돈채버섯볶음, 오이소박이입니다 [3]. 석식 메뉴는 커틀렛라이스, 그린빈오믈렛샐러드, 김치국입니다 [3].",
+        "cited": [
+          3
+        ],
+        "warnings": [],
+        "seconds": 1.4,
+        "evidence": [
+          "menu:06월 17일",
+          "menu:06월 16일",
+          "menu:06월 18일",
+          "rules:article:11",
+          "menu:06월 19일"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "해장국"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "answerable",
+        "q": "금요일 저녁에 뭐 나와?",
+        "status": "ok",
+        "text": "금요일 저녁에 제공되는 식사는 석식으로, \"즐거운, 주말, 되세요 ^^\"라는 메뉴로 제공됩니다. 배식 시간은 오후 7시 30분부터 9시까지입니다 [1]. 다른 날짜의 석식 메뉴도 비슷한 시간대에 제공되고 있으니 참고하시기 바랍니다 [4][5][6].",
+        "cited": [
+          1,
+          4,
+          5
+        ],
+        "warnings": [
+          "없는 근거 번호를 인용했습니다: [6]"
+        ],
+        "seconds": 1.92,
+        "evidence": [
+          "menu:06월 20일",
+          "menu:06월 17일",
+          "rules:article:12",
+          "menu:06월 16일",
+          "menu:06월 19일"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [],
+        "facts_ok": null,
+        "cites_expected": false,
+        "chat_status": "unverified"
+      },
+      {
+        "kind": "answerable",
+        "q": "학식 한 끼 얼마야?",
+        "status": "ok",
+        "text": "한 끼 학식의 가격은 4,500원입니다 [1][2][3][4][5]. 제공되는 메뉴는 매일 조금씩 달라질 수 있으니, 정확한 메뉴와 가격은 해당 날짜의 주간 식단표를 확인해 주세요 [1][2][3][4][5].",
+        "cited": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "warnings": [],
+        "seconds": 1.77,
+        "evidence": [
+          "menu:06월 19일",
+          "menu:06월 16일",
+          "menu:06월 17일",
+          "menu:06월 18일",
+          "menu:06월 20일"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "facts": [
+          "4,500원|4500원|4,500"
+        ],
+        "facts_ok": true,
+        "cites_expected": true,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "학교 도서관 몇 시까지 열어?",
+        "status": "ok",
+        "text": "학교 도서관의 정확한 운영 시간은 근거 자료에서 명시되어 있지 않습니다. 생활관 내 출입 시간은 06:00부터 23:00까지이지만, 도서관의 특수한 운영 시간에 대해서는 확인이 필요합니다. 도서관의 정확한 운영 시간을 알고 싶으시다면 도서관 측에 직접 문의해 주시기 바랍니다. [5]",
+        "cited": [
+          5
+        ],
+        "warnings": [],
+        "seconds": 3.26,
+        "evidence": [
+          "bus:asan:outbound",
+          "bus:terminal:outbound",
+          "bus:terminal:inbound",
+          "bus:asan:inbound",
+          "rules:article:3"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "졸업하려면 몇 학점 들어야 해?",
+        "status": "ok",
+        "text": "졸업을 위한 정확한 학점 요건은 근거 자료에서 명시되어 있지 않습니다 [4]. 학과별 요구 사항은 학칙이나 학과 규정에 따라 다를 수 있으니, 학과 사무실이나 지도교수님께 문의하시는 것을 추천드립니다 [3].",
+        "cited": [
+          3,
+          4
+        ],
+        "warnings": [],
+        "seconds": 2.45,
+        "evidence": [
+          "rules:penalty_table",
+          "info:article:8",
+          "info:article:13",
+          "bus:terminal:inbound",
+          "bus:terminal:outbound"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "수강신청 언제부터야?",
+        "status": "ok",
+        "text": "수강신청 관련 구체적인 날짜는 제공된 근거 자료에서 명시되어 있지 않습니다. 일반적으로 학교의 수강신청 기간은 학기 시작 전에 공지되지만, 정확한 날짜는 매년 또는 학기마다 달라질 수 있습니다. 정확한 수강신청 기간을 확인하시려면 학교의 공식 웹사이트나 생활관에 직접 문의하시는 것이 좋습니다 [1][3][4].",
+        "cited": [
+          1,
+          3,
+          4
+        ],
+        "warnings": [],
+        "seconds": 2.7,
+        "evidence": [
+          "info:article:8",
+          "info:article:9",
+          "bus:asan:outbound",
+          "info:article:23",
+          "bus:asan:inbound"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "장학금 신청 기간 알려줘",
+        "status": "ok",
+        "text": "장학금 신청 기간에 대한 정보는 현재 제공된 근거 자료에서 명시적으로 확인할 수 없습니다 [5]. 장학금 관련 구체적인 일정은 별도의 공지사항이나 학교의 장학금 관리 부서에서 확인하시는 것이 가장 정확할 것입니다 [1][2][3][4]. 생활관 안내 내용은 주로 입관과 관련된 규정을 다루고 있어 장학금 신청 기간과 직접 연관성이 없습니다 [5].\n\n근거 자료에서 확인할 수 없습니다. 생활관에 직접 문의해 주세요. [1][2][3][4][5]",
+        "cited": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "warnings": [],
+        "seconds": 2.77,
+        "evidence": [
+          "notice:14",
+          "notice:21",
+          "notice:12",
+          "notice:15",
+          "info:article:9"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "학생증 재발급은 어디서 해?",
+        "status": "insufficient_evidence",
+        "text": "",
+        "cited": [],
+        "warnings": [
+          "관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요."
+        ],
+        "seconds": 0.0,
+        "evidence": [
+          "notice:14",
+          "notice:21",
+          "notice:12",
+          "notice:15",
+          "notice:16"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "no_answer"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "학교 와이파이 비밀번호 뭐야?",
+        "status": "insufficient_evidence",
+        "text": "",
+        "cited": [],
+        "warnings": [
+          "관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요."
+        ],
+        "seconds": 0.0,
+        "evidence": [
+          "info:article:18",
+          "rules:penalty_table",
+          "notice:14",
+          "rules:article:5",
+          "notice:21"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "no_answer"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "기말고사 시험 기간이 언제야?",
+        "status": "insufficient_evidence",
+        "text": "",
+        "cited": [],
+        "warnings": [
+          "관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요."
+        ],
+        "seconds": 0.0,
+        "evidence": [
+          "menu:06월 20일",
+          "rules:section::16",
+          "notice:2",
+          "bus:terminal:outbound",
+          "info:article:23"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "no_answer"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "휴학 신청은 어떻게 해?",
+        "status": "ok",
+        "text": "휴학 신청은 생활관의 직접적인 절차에 대한 구체적인 안내가 주어진 근거 자료에 명시되어 있지 않습니다. 하지만 일반적으로 휴학은 학교의 학사 규정에 따라 진행되며, 생활관 퇴관 절차와 유사하게 정해진 기한 내에 신청해야 할 것으로 보입니다 [5]. 휴학 관련 자세한 절차는 학교 학사 관리 부서나 휴학 관련 규정을 확인해 보시는 것이 좋습니다 [5]. 근거 자료에서는 휴학이 퇴관 사유 중 하나로 언급되어 있으나, 구체적인 신청 방법은 제공되지 않았습니다. 따라서 정확한 휴학 신청 방법은 학교에 직접 문의하시는 것을 권장드립니다.",
+        "cited": [
+          5
+        ],
+        "warnings": [],
+        "seconds": 3.48,
+        "evidence": [
+          "info:article:16",
+          "info:article:9",
+          "info:article:17",
+          "rules:penalty_table",
+          "info:article:13"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "근처에 맛있는 치킨집 추천해줘",
+        "status": "ok",
+        "text": "근거 자료에는 근처 치킨집에 대한 정보가 포함되어 있지 않습니다. 맛있는 치킨집을 찾으시려면 주변 지역 정보나 온라인 리뷰를 참고하시는 것을 추천드립니다 [5]. 생활관 내에서는 주로 식단과 관련된 정보를 제공하고 있습니다 [2][3][4].",
+        "cited": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "warnings": [],
+        "seconds": 1.75,
+        "evidence": [
+          "notice:14",
+          "menu:06월 20일",
+          "menu:06월 17일",
+          "menu:06월 18일",
+          "notice:2"
+        ],
+        "refused": false,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "answered"
+      },
+      {
+        "kind": "out_of_scope",
+        "q": "오늘 서울 날씨 어때?",
+        "status": "insufficient_evidence",
+        "text": "",
+        "cited": [],
+        "warnings": [
+          "관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요."
+        ],
+        "seconds": 0.0,
+        "evidence": [
+          "bus:asan:inbound",
+          "bus:asan:outbound",
+          "bus:terminal:outbound",
+          "bus:terminal:inbound",
+          "notice:12"
+        ],
+        "refused": true,
+        "foreign": false,
+        "format_problem": false,
+        "chat_status": "no_answer"
+      }
+    ]
+  }
+}
