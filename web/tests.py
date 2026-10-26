@@ -663,3 +663,73 @@ class AnswerDraftPanelTests(TestCase):
             response = self.client.post(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '임베딩 모델 라이브러리가 설치되지 않았습니다.')
+
+
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+class ChatbotPageTests(TestCase):
+    """학생 챗봇 화면 (ADR 0011)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(FakeEmbedder())
+        cls.student = User.objects.create_user('20250001', password='pw12345!')
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        patcher = mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.client.force_login(self.student)
+
+    def ask(self, question):
+        return self.client.post(reverse('web:chatbot_ask'), {'question': question})
+
+    def test_page_needs_login(self):
+        self.client.logout()
+        response = self.client.get(reverse('web:chatbot'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('web:login'), response['Location'])
+
+    def test_page_shows_suggestions_and_a_caution(self):
+        from knowledge.chat import load_suggestions
+        response = self.client.get(reverse('web:chatbot'))
+        self.assertEqual(response.status_code, 200)
+        suggestions = load_suggestions()
+        self.assertGreaterEqual(len(suggestions), 6)
+        for item in suggestions:
+            self.assertContains(response, item['label'])
+        self.assertContains(response, 'AI 답변은 틀릴 수 있어요')
+
+    def test_menu_links_to_the_chatbot(self):
+        self.assertContains(self.client.get(reverse('web:rules')), reverse('web:chatbot'))
+
+    def test_answer_comes_back_as_json_with_sources(self):
+        response = self.ask('생활관 출입시간 알려주세요')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'answered')
+        self.assertIn('[1]', data['text'])
+        self.assertEqual(data['sources'][0]['number'], 1)
+        self.assertTrue(data['sources'][0]['url'].startswith('/rules/'))
+
+    def test_empty_or_too_long_questions_are_rejected(self):
+        with mock.patch('web.views.answer_question') as answer_question:
+            for question in ('', '   ', '가' * 501):
+                response = self.ask(question)
+                self.assertEqual(response.status_code, 400)
+                self.assertIn('error', response.json())
+        answer_question.assert_not_called()
+
+    def test_ask_needs_post_and_login(self):
+        self.assertEqual(self.client.get(reverse('web:chatbot_ask')).status_code, 405)
+        self.client.logout()
+        self.assertEqual(self.ask('출입시간').status_code, 302)
+
+    def test_more_than_ten_questions_a_minute_are_refused(self):
+        for _ in range(10):
+            self.assertEqual(self.ask('출입시간 알려주세요').status_code, 200)
+        response = self.ask('출입시간 알려주세요')
+        self.assertEqual(response.status_code, 429)
+        self.assertIn('잠시 후', response.json()['error'])

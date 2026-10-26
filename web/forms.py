@@ -73,6 +73,14 @@ class InquiryForm(forms.ModelForm):
             'content': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
         }
 
+class ChatQuestionForm(forms.Form):
+    """학생 챗봇 질문 (knowledge.chat.MAX_QUESTION_LENGTH자까지)"""
+    question = forms.CharField(max_length=500, strip=True, error_messages={
+        'required': '질문을 입력해 주세요.',
+        'max_length': '질문은 500자까지 입력할 수 있어요.',
+    })
+
+
 class InquiryAnswerForm(forms.ModelForm):
     class Meta:
         model = InquiryAnswer

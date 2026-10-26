@@ -1,0 +1,20 @@
+# 학생 챗봇 첫 화면의 추천 질문 버튼 (docs/adr/0011)
+#
+# label: 버튼에 보이는 짧은 말, question: 누르면 보내는 질문
+# 평가(evaluate_answer_drafts --mode chat)에서 좋은 답이 나온 질문 위주로 둔다.
+- label: 통금 시간
+  question: 기숙사 출입 시간이 몇 시까지예요?
+- label: 지각 벌점
+  question: 출입 시간보다 늦게 들어오면 벌점이 몇 점이에요?
+- label: 전기제품
+  question: 방에서 전기장판이나 전기포트 써도 되나요?
+- label: 방 바꾸기
+  question: 룸메이트와 안 맞아서 방을 바꾸고 싶어요. 어떻게 해야 해요?
+- label: 셔틀버스
+  question: 천안 터미널에서 학교 오는 셔틀버스 첫차는 몇 시예요?
+- label: 이번 주 식단
+  question: 수요일 점심 메뉴가 뭐예요?
+- label: 대여 물품
+  question: 기숙사에서 빌려주는 물건은 뭐가 있어요?
+- label: 퇴관 절차
+  question: 퇴관할 때 무엇을 내야 하나요?

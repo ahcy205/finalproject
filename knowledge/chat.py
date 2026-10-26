@@ -9,7 +9,13 @@
 - 한 번에 질문 하나만 받는다(앞 대화를 기억하지 않음).
 """
 import re
+import time
 from dataclasses import dataclass, field
+from functools import lru_cache
+from pathlib import Path
+
+import yaml
+from django.core.cache import cache
 
 from .answering import REFUSAL_PHRASE, SYSTEM_PROMPT as DRAFT_SYSTEM_PROMPT, draft_for_text
 from .models import KnowledgeChunk
@@ -18,6 +24,9 @@ Source = KnowledgeChunk.Source
 PUBLIC_SOURCES = [Source.RULES, Source.INFO, Source.BUS, Source.MENU, Source.NOTICE]
 MAX_QUESTION_LENGTH = 500
 RELATED_LINKS = 3  # 답을 숨길 때 보여 줄 관련 자료 수
+RATE_LIMIT = 10        # 한 사용자가 RATE_WINDOW초 안에 할 수 있는 질문 수 (GPU를 한 사람이 독점하지 않게)
+RATE_WINDOW = 60
+SUGGESTIONS_FILE = Path(__file__).resolve().parent / 'data' / 'faq_suggestions.yaml'
 
 # 학생용으로 따로 쓴 지시문(2~4문장, 인사말 없이)은 측정에서 사실 오류가 늘어 버렸다.
 # 검증된 관리자 초안 지시문(ADR 0010)을 그대로 쓴다 (docs/adr/0011)
@@ -27,6 +36,8 @@ SYSTEM_PROMPT = DRAFT_SYSTEM_PROMPT
 NOT_FOUND = re.compile(r'확인할 수 없|확인하기 어렵|확인되지 않|명시되어 있지 않|언급되어 있지 않|포함되어 있지 않|나와 있지 않')
 GREETING = re.compile(r'^\s*안녕하세요[.!]?\s*')
 SENTENCE_END = re.compile(r'(?<=[.!?])\s+')
+# 모델이 가끔 **굵게** 마크다운을 쓴다. 화면과 앱은 글자 그대로 보여 주므로 기호를 지운다
+MARKDOWN_BOLD = re.compile(r'\*\*(.+?)\*\*')
 
 NO_ANSWER_MESSAGE = '생활관 자료에서 답을 찾지 못했어요. 마이페이지에서 문의를 남겨 주시면 관리자가 답변해 드려요.'
 UNVERIFIED_MESSAGE = '답변의 근거를 확인하지 못해 보여 드리지 않았어요. 아래 관련 자료를 확인하시거나 문의를 남겨 주세요.'
@@ -39,6 +50,25 @@ class ChatReply:
     text: str                    # 학생에게 보여 줄 문장
     sources: list = field(default_factory=list)   # [{'number', 'title', 'url'}] 답의 출처 또는 관련 자료
     draft: object = None         # 내부 결과 (평가·로그용, 학생에게 보이지 않음)
+
+
+@lru_cache(maxsize=1)
+def load_suggestions():
+    """첫 화면의 추천 질문 [{'label', 'question'}]"""
+    with open(SUGGESTIONS_FILE, encoding='utf-8') as f:
+        return yaml.safe_load(f) or []
+
+
+def allow_request(user_id, limit=RATE_LIMIT, window=RATE_WINDOW):
+    """고정 구간 방식의 요청 제한. 이번 구간에서 limit번 이하면 True."""
+    key = f'chatbot:rate:{user_id}:{int(time.time() // window)}'
+    cache.add(key, 0, timeout=window)
+    try:
+        count = cache.incr(key)
+    except ValueError:  # 구간이 막 끝나 키가 사라진 경우
+        cache.set(key, 1, timeout=window)
+        count = 1
+    return count <= limit
 
 
 def opens_with_not_found(text, sentences=2):
@@ -65,4 +95,4 @@ def answer_question(question, known_names=(), llm=None, embedder=None, min_simil
     if draft.warnings or not draft.cited:
         related = list(range(1, min(RELATED_LINKS, len(draft.evidence)) + 1))
         return ChatReply('unverified', UNVERIFIED_MESSAGE, source_links(draft, related), draft=draft)
-    return ChatReply('answered', draft.text, source_links(draft, draft.cited), draft=draft)
+    return ChatReply('answered', MARKDOWN_BOLD.sub(r'\1', draft.text), source_links(draft, draft.cited), draft=draft)
