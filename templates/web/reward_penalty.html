@@ -85,6 +85,9 @@
 
 <div class="container">
   <h2>상벌점 관리</h2>
+  {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}">{{ message }}</div>
+  {% endfor %}
   <form method="post">
     {% csrf_token %}
     <label for="student_number" class="form-label">학생 학번</label>

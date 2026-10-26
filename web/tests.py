@@ -32,6 +32,16 @@ class RewardPenaltyTests(TestCase):
         self.client.post(self.url, self.data)
         self.assertEqual(self.reward(), 5)
 
+    def test_success_message_is_shown_on_reward_page(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(self.url, self.data, follow=True)
+        self.assertContains(response, '20250001 학생에게 5점 부여 완료!')
+
+    def test_error_message_is_shown_on_reward_page(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(self.url, {**self.data, 'points': 'abc'}, follow=True)
+        self.assertContains(response, '점수는 숫자로 입력해주세요.')
+
     def test_non_numeric_points_does_not_crash(self):
         self.client.force_login(self.staff)
         response = self.client.post(self.url, {**self.data, 'points': 'abc'})
