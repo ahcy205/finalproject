@@ -4,6 +4,7 @@ from django.urls import path, include
 from dorm.views import (
     signup_api,
     login_api,
+    logout_api,
     mypage_api,
     give_point_api,
     apply_dorm_api,
@@ -30,6 +31,7 @@ urlpatterns = [
 
     path('api/signup/', signup_api, name='signup_api'),
     path('api/login/', login_api, name='login_api'),
+    path('api/logout/', logout_api, name='logout_api'),
     path('api/mypage/', mypage_api, name='mypage_api'),
     path('api/give_point/', give_point_api, name='give_point_api'),
 

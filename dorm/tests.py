@@ -291,3 +291,35 @@ class PostApiPaginationTests(TestCase):
     def test_invalid_page_is_rejected(self):
         for bad in ('abc', '0', '-1'):
             self.assertEqual(self.get(f'?page={bad}').status_code, 400, bad)
+
+
+class LogoutApiTests(TestCase):
+    def setUp(self):
+        User.objects.create_user('20250001', password='dorm-Life-2026!')
+
+    def login(self):
+        response = APIClient().post('/api/login/', {'username': '20250001', 'password': 'dorm-Life-2026!'},
+                                    format='json')
+        return response.json()['token']
+
+    def client_with(self, token):
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+        return client
+
+    def test_logout_revokes_the_token(self):
+        token = self.login()
+        self.assertEqual(self.client_with(token).get('/api/mypage/').status_code, 200)
+        response = self.client_with(token).post('/api/logout/')
+        self.assertEqual((response.status_code, response.json()['success']), (200, True))
+        self.assertEqual(self.client_with(token).get('/api/mypage/').status_code, 401)
+
+    def test_login_again_issues_a_new_token(self):
+        old = self.login()
+        self.client_with(old).post('/api/logout/')
+        new = self.login()
+        self.assertNotEqual(new, old)
+        self.assertEqual(self.client_with(new).get('/api/mypage/').status_code, 200)
+
+    def test_logout_requires_a_token(self):
+        self.assertEqual(APIClient().post('/api/logout/').status_code, 401)

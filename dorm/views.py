@@ -92,6 +92,15 @@ def login_api(request):
     })
 
 
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def logout_api(request):
+    """앱 로그아웃: 이 사용자의 Token을 지워 더 이상 쓸 수 없게 한다. 다음 로그인 때 새 Token이 발급된다."""
+    Token.objects.filter(user=request.user).delete()
+    return JsonResponse({'success': True})
+
+
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
