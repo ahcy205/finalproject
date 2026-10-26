@@ -43,8 +43,7 @@
 			<div class="row">
 				<div class="col-md-3 col-sm-7 text-center animate-box">
 					<div class="services">
-					  {% if user.is_authenticated %}
-					  <a href="{% url 'web:check_in' %}">
+					  					  <a href="{% url 'web:check_in' %}">
 						 <span class="icon">
 							<i class="icon-home-outline"></i>
 						 </span>
@@ -54,24 +53,12 @@
 							</h3>
 						 </div>
 					  </a>
-					  {% else %}
-					  <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">
-						 <span class="icon">
-							<i class="icon-home-outline"></i>
-						 </span>
-						 <div class="desc">
-							<h3>
-							   기숙사 신청
-							</h3>
-						 </div>
-					  </a>
-					  {% endif %}
+					  
 				   </div>
 				</div>
 				<div class="col-md-3 col-sm-7 text-center animate-box">
 					<div class="services">
-					  {% if user.is_authenticated %}
-					  <a href="{% url 'web:outside' %}">
+					  					  <a href="{% url 'web:outside' %}">
 						 <span class="icon">
 							<i class="icon-calender-outline"></i>
 						 </span>
@@ -81,18 +68,7 @@
 							</h3>
 						 </div>
 					  </a>
-					  {% else %}
-					  <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">
-						 <span class="icon">
-							<i class="icon-calender-outline"></i>
-						 </span>
-						 <div class="desc">
-							<h3>
-							   외박 신청
-							</h3>
-						 </div>
-					  </a>
-					  {% endif %}
+					  
 				   </div>
 				</div>
 				<div class="col-md-3 col-sm-7 text-center animate-box">

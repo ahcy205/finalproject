@@ -99,6 +99,10 @@
     <span>회원이 아니신가요? <a href="{% url 'web:signup' %}">회원가입 하세요.</a></span>
   </div>
 
+  {% if next %}
+    <div class="alert">로그인이 필요한 페이지입니다. 로그인하면 요청한 페이지로 이동합니다.</div>
+  {% endif %}
+
   {% if form_errors %}
     {% for error in form_errors %}
       <div class="alert">{{ error }}</div>

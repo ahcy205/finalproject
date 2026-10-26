@@ -487,6 +487,7 @@ class SharedThemeAssetTests(TestCase):
         self.assertNotContains(response, 'bootstrap@5.3.0')
 
     def test_bootstrap5_option_keeps_css_order(self):
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
         html = self.client.get(reverse('web:community_home')).content.decode()
         order = [html.index(x) for x in ('bootstrap@5.3.0', 'font-awesome/6.0.0', '/static/css/bootstrap.css',
                                          '/static/css/bootstrap.min.css', '/static/css/style.css')]
@@ -521,3 +522,35 @@ class CommunityHomeQueryCountTests(TestCase):
         self.assertEqual(many, few)
         post = response.context['posts'][0]
         self.assertEqual((post.like_count, post.comment_count), (3, 3))
+
+
+class LoginRequiredLinkTests(TestCase):
+    """로그인이 필요한 링크는 알림창 대신 실제 주소로 가고, 서버가 로그인 페이지로 보낸다."""
+
+    def test_no_template_uses_the_alert_link(self):
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'web')
+        for name in os.listdir(template_dir):
+            with open(os.path.join(template_dir, name), encoding='utf-8') as f:
+                self.assertNotIn("alert('로그인이 필요한 페이지입니다.')", f.read(), name)
+
+    def test_anonymous_menu_links_point_to_real_pages(self):
+        response = self.client.get(reverse('web:home'))
+        for name in ('web:check_in', 'web:outside', 'web:notice', 'web:community_home', 'web:mypage'):
+            self.assertContains(response, f'href="{reverse(name)}"')
+
+    def test_board_lists_require_login(self):
+        for name in ('web:notice', 'web:community_home'):
+            response = self.client.get(reverse(name))
+            self.assertRedirects(response, reverse('web:login') + '?next=' + reverse(name),
+                                 fetch_redirect_response=False)
+
+    def test_login_page_explains_why_when_redirected(self):
+        self.assertContains(self.client.get(reverse('web:login'), {'next': '/check_in/'}),
+                            '로그인이 필요한 페이지입니다.')
+        self.assertNotContains(self.client.get(reverse('web:login')), '로그인이 필요한 페이지입니다.')
+
+    def test_user_returns_to_requested_page_after_login(self):
+        User.objects.create_user('20250001', password='pw12345!')
+        response = self.client.post(reverse('web:login'),
+                                    {'username': '20250001', 'password': 'pw12345!', 'next': '/notice/'})
+        self.assertRedirects(response, '/notice/')
