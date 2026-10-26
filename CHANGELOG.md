@@ -7,6 +7,45 @@
 
 
 
+## 2026-10-26 (9차) — RAG 1단계: PostgreSQL + pgvector 전환
+
+[RAG 도입 설계안](https://claude.ai/artifact/XSi6mvRkCP2sihnV5AZUPg)을 승인받아 1단계를 진행했습니다. 승인된 결정은 다음과 같습니다.
+- 임베딩은 bge-m3로 시작하고 2단계에서 KURE-v1·multilingual-e5와 측정해서 확정합니다.
+- 답변 생성은 Claude Opus 5.5를 씁니다.
+- 학생용 챗봇은 3단계 평가를 통과한 뒤 진행합니다.
+- SQLite 원본은 보관하고, SQLite로 대신 실행하는 기능은 두지 않습니다.
+
+| PR | 내용 |
+|---|---|
+| #43 | DB를 SQLite에서 PostgreSQL 17 + pgvector(Docker)로 전환, 기존 데이터 이전, CI에 PostgreSQL 추가 |
+
+### 변경
+- `docker-compose.yml`: `pgvector/pgvector:0.8.1-pg17` 이미지. 127.0.0.1에서만 접속할 수 있고, Docker Desktop 그룹 이름은 `dorm_project`입니다.
+- `settings.py`: DB 접속 정보를 환경변수(`POSTGRES_*`)에서 읽습니다. 로컬 개발 기본값이 있고, `DEBUG=False`면 비밀번호가 필수입니다.
+- `dorm/checks.py`: DB에 접속할 수 없으면 서버 실행·마이그레이션·테스트 전에 `dorm.E001` 오류와 해결 방법(`docker compose up -d db`)을 보여 줍니다.
+- `psycopg[binary]==3.3.6` 추가
+- CI: GitHub Actions에 같은 PostgreSQL 이미지를 서비스로 추가
+- 문서: README·CONTRIBUTING·CLAUDE.md 실행 방법, ADR 0005를 "채택"으로 변경, 흐름도의 DB 표기
+
+### 전환하며 고친 문제
+- **백업 불러오기 실패:** 백업을 불러올 때 "계정이 생기면 프로필 자동 생성" 신호가 실행돼 프로필이 중복으로 생겼습니다. 백업 불러오기(`raw=True`)일 때는 만들지 않도록 고쳤습니다.
+- **목록 순서:** SQLite는 정렬을 지정하지 않은 목록을 번호순으로 돌려줬지만, PostgreSQL은 순서를 보장하지 않습니다(게시글 API의 댓글 순서가 실제로 바뀜). 그래서 화면과 API의 목록 13곳에 정렬을 명시했습니다. SQLite 때와 같은 순서가 나오도록, 동점일 때는 번호 오름차순을 보조 기준으로 썼습니다.
+- **백업 파일 인코딩:** Windows에서 `dumpdata -o`가 UTF-8이 아닌 기본 인코딩(cp949)으로 저장해서, UTF-8 모드(`PYTHONUTF8=1`)로 다시 내보냈습니다.
+
+### 데이터 이전 (로컬)
+1. 원본 보관: `backups/db.sqlite3.before-postgres` (git 제외)
+2. 내보내기: `PYTHONUTF8=1 python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.permission -e sessions -o backups/sqlite-dump.json`
+3. PostgreSQL에서 `migrate` → `loaddata backups/sqlite-dump.json`
+4. 확인
+   - 14개 모델, 102건이 원본과 모두 일치
+   - 새 데이터의 번호가 기존 번호 다음부터 이어짐
+   - 관리자 로그인 정상
+   - 로그인 세션은 옮기지 않아서 다시 로그인해야 합니다.
+
+### 검증
+- 테스트 106건 통과 (PostgreSQL)
+- `tools/`로 SQLite 때와 PostgreSQL에서 99개 화면·API 응답을 비교: 모두 같음
+
 ## 2026-10-26 (8차) — 개발 규칙 문서화
 
 대화로 정해 온 작업 규칙을 저장소 문서로 옮겼습니다. 설계안을 검토·승인받아 진행했습니다.

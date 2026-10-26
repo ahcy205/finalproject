@@ -7,12 +7,13 @@
 - 돔고돔락: 기숙사 통합 관리 시스템. Django 5.2 + Django REST Framework
 - `web` 앱: HTML 화면(Django Template). 자체 모델 없음
 - `dorm` 앱: 모델 전체와 Android 앱용 REST API(`/api/`), API 문서 설명(`dorm/schema.py`)
-- DB: 현재 SQLite(`db.sqlite3`). PostgreSQL + pgvector(Docker)로 전환 예정 → [ADR 0005](docs/adr/0005-postgresql-pgvector.md)
+- DB: PostgreSQL 17 + pgvector, `docker compose up -d db`로 실행 → [ADR 0005](docs/adr/0005-postgresql-pgvector.md). DB가 꺼져 있으면 SQLite로 대신 실행하지 않고 `dorm.E001` 점검 오류로 안내한다
 - **로컬 실행 전용, 배포하지 않음** → [ADR 0002](docs/adr/0002-local-only.md)
 
 ## 명령
 
 ```
+docker compose up -d db                           # DB 먼저
 venv\Scripts\activate
 python manage.py test web dorm                    # 전체 테스트 (CI와 같음)
 python manage.py spectacular --validate --fail-on-warn --file %TEMP%\schema.yml   # API 문서 검증
@@ -31,13 +32,14 @@ python manage.py runserver 127.0.0.1:8001         # 8000이 다른 프로그램�
 ## 검증
 
 - 화면이나 API 응답이 바뀔 수 있으면 [tools/](tools/README.md)의 화면 비교로 수정 전후를 비교하고, 의도한 차이만 있는지 PR에 적는다.
-- 버그는 실제 요청으로 재현한 뒤 고친다. 재현에는 테스트 DB나 롤백되는 트랜잭션을 쓰고, 실제 `db.sqlite3`의 데이터는 바꾸지 않는다.
+- 버그는 실제 요청으로 재현한 뒤 고친다. 재현에는 테스트 DB나 롤백되는 트랜잭션을 쓰고, 개발 DB의 실제 데이터는 바꾸지 않는다.
 - "통과했다", "확인했다"는 실제로 명령을 실행한 결과가 있을 때만 말한다.
 
 ## 코드 규칙
 
 이 프로젝트에서 실제로 문제가 됐던 것들입니다.
 
+- 화면이나 API에 내보내는 목록은 `order_by`를 명시하고, 동점이 생길 수 있으면 `id`를 보조 기준으로 붙인다(PostgreSQL은 순서를 보장하지 않음).
 - 상태를 바꾸는 웹 뷰는 `@require_POST`. 권한은 `@login_required`와 `is_staff` 검사로 확인한다.
 - 사용자 입력은 폼이나 시리얼라이저로 검증한다(숫자 변환, 길이, 중복, 이미지 파일 여부). 잘못된 입력에 500이 나면 안 된다.
 - 목록 쿼리는 N+1을 피하고(`select_related`, `prefetch_related`, `annotate`), 쿼리 수 테스트로 고정한다.
@@ -50,7 +52,7 @@ python manage.py runserver 127.0.0.1:8001         # 8000이 다른 프로그램�
 - 배포 설정 변경(`DEBUG`, `ALLOWED_HOSTS`, CORS). 사용자가 배포하기로 결정하기 전까지 그대로 둔다.
 - 강제 푸시, 이력 재작성
 - 비밀번호·API 키·토큰 커밋. 비밀 값은 환경변수로 읽는다(`DJANGO_SECRET_KEY` 등).
-- `db.sqlite3`, `media/` 커밋
+- `db.sqlite3`, `backups/`(DB 백업), `media/` 커밋
 - 승인 없이 파일·데이터·계정 삭제
 
 ## 소통

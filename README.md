@@ -32,7 +32,7 @@ flowchart LR
     R -- "/api/*" --> D["dorm/views.py<br/>REST API · JSON"]
     W -- "ORM" --> M["dorm/models.py<br/>모델 9개"]
     D -- "ORM" --> M
-    M --> DB[("DB<br/>MariaDB · SQLite")]
+    M --> DB[("PostgreSQL 17<br/>+ pgvector · Docker")]
     M --> F[("media/<br/>업로드 이미지")]
 ```
 
@@ -88,8 +88,8 @@ flowchart LR
 - Kotlin (Android Studio)
 
 ### Database
-- MariaDB (배포 환경)
-- SQLite (로컬 개발, `db.sqlite3`)
+- PostgreSQL 17 + pgvector (Docker로 실행, [ADR 0005](/docs/adr/0005-postgresql-pgvector.md))
+- 팀 프로젝트 당시 배포 환경은 MariaDB, 2026-10 SQLite에서 PostgreSQL로 전환
 
 ### DevOps
 - AWS EC2
@@ -152,6 +152,7 @@ flowchart LR
 ## ▶️ 로컬 실행
 
 ```bash
+docker compose up -d db         # PostgreSQL + pgvector 실행 (Docker Desktop 필요)
 python -m venv venv
 venv\Scripts\activate          # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
@@ -163,7 +164,8 @@ python manage.py runserver
 - 웹: http://127.0.0.1:8000/
 - 앱용 REST API: http://127.0.0.1:8000/api/
 - API 문서 (Swagger): http://127.0.0.1:8000/api/docs/
-- 테스트: `python manage.py test web dorm`
+- 테스트: `python manage.py test web dorm` (DB가 켜져 있어야 함)
+- DB가 꺼져 있으면 `PostgreSQL에 접속할 수 없습니다` 안내가 나옵니다. Docker Desktop을 켜고 `docker compose up -d db`를 실행하세요.
 - 이 저장소는 로컬 실행 기준입니다. 배포용 설정(`DEBUG=False`, 허용 호스트·CORS 제한)은 적용하지 않았습니다.
 - 비밀 키: 환경변수 `DJANGO_SECRET_KEY`에서 읽습니다. 로컬 개발(`DEBUG=True`)에서는 없어도 실행되지만, 배포할 때는 반드시 설정해야 합니다.
   키 생성: `python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`

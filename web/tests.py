@@ -571,3 +571,21 @@ class StaticReferenceTests(TestCase):
                         if not finders.find(path):
                             missing.append(f'{name}: {path}')
         self.assertEqual(missing, [])
+
+
+class DatabaseSettingsTests(TestCase):
+    """DB는 PostgreSQL이고 접속 정보는 환경변수에서 읽는다 (ADR 0005)."""
+
+    def read_db_settings(self, **env):
+        code = ('import django, json; django.setup(); from django.conf import settings; '
+                'd = settings.DATABASES["default"]; print(json.dumps([d["ENGINE"], d["HOST"], str(d["PORT"]), d["NAME"]]))')
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True,
+                                env={**os.environ, 'DJANGO_SETTINGS_MODULE': 'finalproject.settings', **env})
+        import json
+        return json.loads(result.stdout.strip().splitlines()[-1])
+
+    def test_uses_postgresql_with_settings_from_environment(self):
+        engine, host, port, name = self.read_db_settings(POSTGRES_HOST='db.example', POSTGRES_PORT='6543',
+                                                         POSTGRES_DB='dorm_x')
+        self.assertEqual((engine, host, port, name),
+                         ('django.db.backends.postgresql', 'db.example', '6543', 'dorm_x'))

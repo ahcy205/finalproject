@@ -1,0 +1,30 @@
+# 개발용 PostgreSQL + pgvector (ADR 0005)
+#   docker compose up -d db     # DB 켜기
+#   docker compose stop db      # DB 끄기 (데이터는 볼륨에 남음)
+#
+# 이 DB는 이 PC(127.0.0.1)에서만 접속할 수 있다. 아래 계정은 로컬 개발 전용 기본값이고,
+# 바꾸려면 같은 이름의 환경변수(POSTGRES_PASSWORD 등)를 설정한다. Django 설정도 같은 환경변수를 읽는다.
+
+# Docker Desktop에 표시되는 그룹 이름 (지정하지 않으면 폴더 이름 finalproject가 쓰임). 소문자만 가능
+name: dorm_project
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.1-pg17
+    container_name: dorm-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dorm}
+      POSTGRES_USER: ${POSTGRES_USER:-dorm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dorm-local-dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

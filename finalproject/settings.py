@@ -62,10 +62,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'finalproject.wsgi.application'
 
+# PostgreSQL + pgvector (ADR 0005). 개발용 DB는 `docker compose up -d db`로 띄운다.
+# 접속 정보는 docker-compose.yml과 같은 환경변수를 읽는다. 기본값은 로컬 개발 전용이며,
+# DEBUG=False에서는 비밀번호 환경변수가 반드시 있어야 한다.
+POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', '')
+if not POSTGRES_PASSWORD:
+    if not DEBUG:
+        raise ImproperlyConfigured('POSTGRES_PASSWORD 환경변수를 설정해주세요.')
+    POSTGRES_PASSWORD = 'dorm-local-dev'
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB', 'dorm'),
+        'USER': os.environ.get('POSTGRES_USER', 'dorm'),
+        'PASSWORD': POSTGRES_PASSWORD,
+        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        # DB가 꺼져 있으면 오래 기다리지 않고 바로 안내한다 (dorm/checks.py)
+        'OPTIONS': {'connect_timeout': 3},
     }
 }
 

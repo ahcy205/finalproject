@@ -159,7 +159,7 @@ def give_point_api(request):
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def notices_api(request):
     if request.method == 'GET':
-        notices = Notice.objects.order_by('-date')
+        notices = Notice.objects.order_by('-date', 'id')
         data = NoticeSerializer(notices, many=True, context={'request': request}).data
         return JsonResponse({'success': True, 'notices': data})
     auth = TokenAuthentication()
@@ -248,9 +248,9 @@ def apply_outing_api(request):
 def outing_apply_status_api(request):
     user = request.user
     if user.is_staff:
-        applies = OutingApply.objects.all().order_by('-applied_at')
+        applies = OutingApply.objects.all().order_by('-applied_at', 'id')
     else:
-        applies = OutingApply.objects.filter(user=user).order_by('-applied_at')
+        applies = OutingApply.objects.filter(user=user).order_by('-applied_at', 'id')
     serializer = OutingApplySerializer(applies, many=True)
     return JsonResponse({'success': True, 'list': serializer.data})
 
@@ -293,7 +293,7 @@ POSTS_PER_PAGE = 20
 def posts_with_comments():
     """작성자·댓글·댓글 작성자를 한 번에 가져오는 게시글 쿼리 (N+1 방지)."""
     return Post.objects.select_related('author').prefetch_related(
-        Prefetch('comments', queryset=Comment.objects.select_related('author'))
+        Prefetch('comments', queryset=Comment.objects.select_related('author').order_by('id'))
     )
 
 
@@ -367,7 +367,7 @@ def comments_api(request, post_id):
     except Post.DoesNotExist:
         return Response({'success': False, 'error': 'Post not found'}, status=404)
     if request.method == 'GET':
-        qs = post.comments.order_by('created_at')
+        qs = post.comments.order_by('created_at', 'id')
         return Response(
             {'success': True, 'comments': CommentSerializer(qs, many=True, context={'request': request}).data})
     serializer = CommentSerializer(data={'content': request.data.get('content')}, context={'request': request})
@@ -383,8 +383,8 @@ def comments_api(request, post_id):
 def inquiries_api(request):
     user = request.user
     if request.method == 'GET':
-        qs = Inquiry.objects.order_by('-created_at') if user.is_staff else Inquiry.objects.filter(user=user).order_by(
-            '-created_at')
+        qs = Inquiry.objects.order_by('-created_at', 'id') if user.is_staff else Inquiry.objects.filter(user=user).order_by(
+            '-created_at', 'id')
         return Response({'success': True, 'inquiries': InquirySerializer(qs, many=True).data})
     serializer = InquiryCreateSerializer(data=request.data)
     if serializer.is_valid():

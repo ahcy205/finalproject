@@ -5,6 +5,7 @@
 ## 1. 환경 준비
 
 ```
+docker compose up -d db         # PostgreSQL + pgvector 실행 (Docker Desktop 필요)
 python -m venv venv
 venv\Scripts\activate          # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
@@ -15,7 +16,8 @@ python manage.py runserver
 
 - Python 3.12
 - 비밀 키는 환경변수 `DJANGO_SECRET_KEY`에서 읽습니다. 로컬 개발(`DEBUG=True`)에서는 없어도 실행됩니다.
-- DB는 현재 SQLite입니다. PostgreSQL + pgvector로 전환하면 Docker 실행 단계가 추가됩니다([ADR 0005](docs/adr/0005-postgresql-pgvector.md)).
+- DB는 PostgreSQL 17 + pgvector이고 Docker로 띄웁니다([ADR 0005](docs/adr/0005-postgresql-pgvector.md)). Docker Desktop을 켠 뒤 `docker compose up -d db`, 끌 때는 `docker compose stop db`입니다. 데이터는 Docker 볼륨에 남습니다.
+- DB 접속 정보는 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` 환경변수로 바꿀 수 있습니다. 기본값은 `docker-compose.yml`과 같은 로컬 개발용 값입니다.
 
 ## 2. 작업 단위
 
@@ -69,7 +71,7 @@ python manage.py test web dorm
 - 목록 화면과 API는 N+1 쿼리를 피하고, 쿼리 수 테스트로 고정합니다.
 - 앱 API는 필드를 **추가만** 합니다([ADR 0003](docs/adr/0003-api-backward-compatibility.md)). API를 바꾸면 `dorm/schema.py` 설명도 고칩니다.
 - 상단 메뉴, 테마 CSS·JS는 공통 템플릿을 씁니다([ADR 0004](docs/adr/0004-template-partials.md)).
-- 비밀번호, API 키, `db.sqlite3`, `media/`는 커밋하지 않습니다.
+- 비밀번호, API 키, `db.sqlite3`, `backups/`, `media/`는 커밋하지 않습니다.
 
 ## 8. 변경이력
 
