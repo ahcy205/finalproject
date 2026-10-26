@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from PIL import Image
 from django.urls import reverse
+from django.utils import timezone
 
 from dorm.models import Comment, Dorm, Inquiry, Like, Notice, OutingApply, Post
 
@@ -323,3 +324,23 @@ class AssignRoomTests(TestCase):
     def test_all_blank_shows_message(self):
         response = self.assign()
         self.assertContains(response, '배정할 값을 입력해주세요.')
+
+
+class PageTitleTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('20250001', password='pw12345!', is_staff=True)
+        self.client.force_login(self.user)
+        self.post = Post.objects.create(author=self.user, title='t', content='c')
+        self.notice = Notice.objects.create(title='t', content='c')
+
+    def test_post_pages_are_not_titled_as_notices(self):
+        delete_page = self.client.get(reverse('web:community_delete', args=[self.post.pk]))
+        self.assertContains(delete_page, '<title>게시글 삭제 확인</title>')
+        self.assertNotContains(delete_page, '공지사항')
+        self.assertContains(delete_page, timezone.localtime(self.post.created_at).strftime('%Y-%m-%d'))
+        self.assertContains(self.client.get(reverse('web:community_update', args=[self.post.pk])),
+                            '<title>게시글 수정</title>')
+
+    def test_notice_update_title(self):
+        self.assertContains(self.client.get(reverse('web:notice_update', args=[self.notice.pk])),
+                            '<title>공지사항 수정</title>')
