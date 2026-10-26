@@ -80,9 +80,13 @@ def mypage_view(request):
             elif field == 'penalty_point':
                 students = UserProfile.objects.filter(penalty_point__icontains=query).select_related('user').order_by('full_name')
 
-            else:
+            elif field in ('full_name', 'department'):
                 filter_kwargs = {f"{field}__icontains": query}
                 students = UserProfile.objects.filter(**filter_kwargs).order_by('full_name')
+
+            else:
+                # 화면에 있는 검색 항목 외의 필드(예: user__password)는 검색하지 않는다
+                students = UserProfile.objects.none()
 
     context = {
         'user': user,
