@@ -108,7 +108,10 @@ def give_point_api(request):
         return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
     student_id = request.data.get('student_id')
     point_type = request.data.get('point_type')
-    point = int(request.data.get('point', 0))
+    try:
+        point = int(request.data.get('point', 0))
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Point must be a number.'}, status=400)
     if not all([student_id, point_type]) or point == 0:
         return JsonResponse({'success': False, 'error': 'All fields are required.'}, status=400)
     try:
@@ -161,6 +164,8 @@ def apply_dorm_api(request):
         )
     if Dorm.objects.filter(user=user).exists():
         return JsonResponse({'success': False, 'error': 'Dorm application already exists.'}, status=400)
+    if Dorm.objects.filter(student_number=stud).exists():
+        return JsonResponse({'success': False, 'error': 'Student number already registered.'}, status=400)
 
     dorm = Dorm.objects.create(
         user=user,
@@ -185,6 +190,10 @@ def apply_outing_api(request):
             {'success': False, 'error': 'Name, student number, and outing date are required.'},
             status=400
         )
+    try:
+        outdate = date.fromisoformat(str(outdate))
+    except ValueError:
+        return JsonResponse({'success': False, 'error': 'out_date must be YYYY-MM-DD.'}, status=400)
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     if name.strip() != profile.full_name.strip() or stud.strip() != request.user.username.strip():
         return JsonResponse(
