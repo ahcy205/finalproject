@@ -52,3 +52,39 @@ class RegulationPagesTests(TestCase):
     def test_quotes_are_escaped_safely(self):
         # 데이터의 큰따옴표는 HTML 엔티티로 나가고, 화면에는 똑같이 보인다
         self.assertContains(self.client.get(reverse('web:rules')), '(이하 &quot;관생&quot;이라 한다)')
+
+
+class TableDataTests(TestCase):
+    """셔틀버스 시간표·식단 자료 형식과 화면 표시."""
+
+    def test_bus_routes_have_a_time_for_every_stop(self):
+        doc = sources.load('bus')
+        self.assertEqual([r['key'] for r in doc['routes']], ['terminal', 'asan'])
+        for route in doc['routes']:
+            self.assertEqual(route['outbound_stops'][-1], '학교 도착')
+            self.assertEqual(route['inbound_stops'][0], '학교 출발')
+            self.assertEqual(len(route['trips']), 12)
+            for trip in route['trips']:
+                self.assertEqual(len(trip['outbound']), len(route['outbound_stops']))
+                self.assertEqual(len(trip['inbound']), len(route['inbound_stops']))
+
+    def test_menu_has_a_dish_for_every_day(self):
+        doc = sources.load('menu')
+        self.assertEqual([d['weekday'] for d in doc['days']], ['월', '화', '수', '목', '금'])
+        self.assertEqual([m['name'] for m in doc['meals']], ['중식', '석식'])
+        for meal in doc['meals']:
+            for row in meal['rows']:
+                self.assertEqual(len(row['dishes']), 5)
+
+    def test_bus_page_shows_both_routes_from_the_data(self):
+        response = self.client.get(reverse('web:bus'))
+        self.assertContains(response, 'id="table-terminal"')
+        self.assertContains(response, 'id="table-asan" style="display: none;"')
+        self.assertContains(response, '<td>(1호차)</td><td>08:25</td>')
+        self.assertContains(response, '<th class="text-center" scope="col">천안 아산역(KTX)</th>')
+
+    def test_menu_page_shows_meals_and_escapes_ampersand(self):
+        response = self.client.get(reverse('web:menu'))
+        self.assertContains(response, '<td class="time-col" rowspan="3">중식<br>(4,500원)</td>')
+        self.assertContains(response, '<td>상추쌈&amp;쌈장</td>')
+        self.assertNotContains(response, '</span></td>')

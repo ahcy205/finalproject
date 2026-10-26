@@ -205,7 +205,7 @@ def notice_update(request, notice_id):
 
 
 def menu(request):
-    return render(request, 'web/menu.html')
+    return render(request, 'web/menu.html', {'doc': knowledge_sources.load('menu')})
 
 @login_required
 def check_in(request):
@@ -438,7 +438,7 @@ def community_update(request, post_id):
     return render(request, 'web/community_update.html', {'post': post})
 
 def bus(request):
-    return render(request, 'web/bus.html')
+    return render(request, 'web/bus.html', {'doc': knowledge_sources.load('bus')})
 
 def acc(request):
     return render(request, 'web/acc.html')
