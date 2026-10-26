@@ -71,6 +71,7 @@ flowchart LR
 - Django Template
 - Bootstrap
 - JavaScript
+- UI 기반: [FreeHTML5.co](https://freehtml5.co/) 무료 템플릿 ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))
 
 ### Mobile
 - Kotlin (Android Studio)
