@@ -313,7 +313,7 @@ def inquiries_api(request):
 
 @api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsInquiryUserOrAdmin])
+@permission_classes([IsAuthenticated, IsInquiryUserOrAdmin])
 def inquiry_detail_api(request, pk):
     try:
         inquiry = Inquiry.objects.get(pk=pk)
