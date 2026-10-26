@@ -347,7 +347,10 @@
       contents.forEach(el => el.classList.remove('active'));
       buttons.forEach(btn => btn.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
-      if(event) event.currentTarget.classList.add('active');
+      // 클릭이 아닌 코드로 탭을 열 때도 해당 버튼을 선택 상태로 표시
+      const button = event ? event.currentTarget
+        : document.querySelector(`.tab-buttons button[onclick*="'${tabId}'"]`);
+      if (button) button.classList.add('active');
     }
 
     // 페이지 로드 시, URL 쿼리 파라미터에 따라 탭 활성화 유지 (옵션)
