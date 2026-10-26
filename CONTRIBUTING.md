@@ -19,6 +19,8 @@ python manage.py runserver
 - DB는 PostgreSQL 17 + pgvector이고 Docker로 띄웁니다([ADR 0005](docs/adr/0005-postgresql-pgvector.md)). Docker Desktop을 켠 뒤 `docker compose up -d db`, 끌 때는 `docker compose stop db`입니다. 데이터는 Docker 볼륨에 남습니다.
 - DB 접속 정보는 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` 환경변수로 바꿀 수 있습니다. 기본값은 `docker-compose.yml`과 같은 로컬 개발용 값입니다.
 - RAG 검색 자료는 `python manage.py build_knowledge_index`로 만듭니다. 임베딩 방식은 환경변수 `KNOWLEDGE_EMBEDDING_BACKEND`(`sentence-transformers` 또는 `fake`)와 `KNOWLEDGE_EMBEDDING_MODEL`(기본 `BAAI/bge-m3`)로 정합니다. 모델 라이브러리 없이 확인할 때는 `--backend fake`를 씁니다.
+- 실제 임베딩 모델을 쓰려면 `pip install -r requirements-ml.txt`로 PyTorch(CPU)와 sentence-transformers를 추가로 설치합니다(CI에는 설치하지 않음). 모델 파일은 환경변수 `HF_HOME` 위치에 저장됩니다(용량이 커서 D 드라이브 등 여유 있는 곳을 권장).
+- 검색 방식이나 자료 나누기를 바꾸면 `python manage.py evaluate_knowledge_search`로 전후 품질을 비교하고 PR에 적습니다.
 
 ## 2. 작업 단위
 

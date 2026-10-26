@@ -12,7 +12,8 @@
 | PR | 내용 |
 |---|---|
 | [#46](https://github.com/ahcy205/finalproject/pull/46) | 검색 자료 테이블(pgvector + pg_trgm), 자료 나누기, 개인정보 가리기, 색인 명령, 가짜 임베딩 |
-| #47 | 공지·문의를 저장하거나 지울 때 검색 자료 자동 갱신 |
+| [#47](https://github.com/ahcy205/finalproject/pull/47) | 공지·문의를 저장하거나 지울 때 검색 자료 자동 갱신 |
+| #48 | 실제 임베딩 모델(bge-m3), 하이브리드 검색, 평가 질문 32개, 모델 3개 비교 (ADR 0006) |
 
 - **테이블 `KnowledgeChunk`:** 1024차원 벡터와 HNSW 인덱스(코사인)로 의미 검색, 트라이그램 GIN 인덱스로 키워드 검색을 합니다. 마이그레이션이 `vector`·`pg_trgm` 확장도 만듭니다.
 - **자료 나누기(`knowledge/chunking.py`):** 지금 데이터로 66개입니다.
@@ -36,6 +37,14 @@
   - 검색 자료 갱신이 실패해도 공지·문의 저장은 막지 않고 오류만 기록합니다. 저장점으로 감싸서 바깥 트랜잭션도 그대로 쓸 수 있습니다.
   - 백업 불러오기(`loaddata`) 중에는 건너뜁니다.
   - 테스트를 5건 추가해 총 135건입니다.
+- **검색과 모델 선택(#48):**
+  - **하이브리드 검색**(`knowledge/search.py`): 의미 검색(pgvector)과 키워드 검색(pg_trgm)의 순위를 RRF로 합칩니다. 검색 직전에 아직 벡터가 없는 새 청크를 최대 20개까지 임베딩합니다.
+  - **평가**: 학생 말투 질문 32개(`knowledge/eval/questions.yaml`)로 `python manage.py evaluate_knowledge_search`를 실행합니다.
+  - **측정 결과** (자세한 내용은 [ADR 0006](docs/adr/0006-embedding-model-and-hybrid-search.md)):
+    - 표준 RRF(k=60)는 1위 정확도를 0.72에서 0.50으로 떨어뜨렸습니다. 그래서 k=1, 키워드 비중 0.25로 바꿨습니다.
+    - 임베딩 모델은 **bge-m3**를 채택했습니다(hit@5 0.97, MRR 0.826). e5-large는 1위 정확도가 조금 높지만 512토큰 제한이 있고, KURE-v1이 가장 낮았습니다.
+  - **설치**: `requirements-ml.txt`(PyTorch CPU, sentence-transformers 등 40개)로 분리해서 CI에는 설치하지 않습니다. 모델 파일은 `HF_HOME`(이 PC는 `D:\HFCache`)에 저장합니다.
+  - **테스트**: 11건을 추가해 총 146건입니다.
 
 ## 2026-10-26 (10차) — RAG 2단계: 원본 자료 분리
 
