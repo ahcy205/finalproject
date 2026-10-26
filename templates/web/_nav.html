@@ -1,26 +1,32 @@
 {% comment %}
 모든 페이지의 상단 메뉴. 사용법: include 'web/_nav.html' with active='guide'
 - active: 강조할 메뉴 (home, guide, community)
-- admin_menu: 관리자용 메뉴 표시
+- 관리자(is_staff)에게는 입실·외박 관리 메뉴, superuser에게는 Django 관리자 링크가 보인다.
 {% endcomment %}
+{% if request.user.is_superuser %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  .admin-link {
+    margin-left: 12px;
+    border-radius: 6px;
+    background-color: #eab7b7;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  .admin-link a {
+    display: inline-block;
+    padding: 8px 14px;
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+  }
+  nav ul li.admin-link a { color: #6c757d; }
+  .admin-link i { margin-right: 6px; color: #495057; }
+  .admin-link:hover { background-color: #dee2e6; }
+  .admin-link a:hover { color: #0d6efd; }
+</style>
+{% endif %}
 <nav class="fh5co-nav" role="navigation">
-   <div class="top">
-      <div class="container">
-         <div class="row">
-            <div class="col-xs-12 text-right">
-               <p class="site"></p>
-               <p class="num">Call: +01 123 456 7890</p>
-               <ul class="fh5co-social">
-                  <li><a href="#"><i class="icon-facebook2"></i></a></li>
-                  <li><a href="#"><i class="icon-twitter2"></i></a></li>
-                  <li><a href="#"><i class="icon-dribbble2"></i></a></li>
-                  <li><a href="#"><i class="icon-github"></i></a></li>
-               </ul>
-            </div>
-         </div>
-      </div>
-   </div>
-
    <div class="top-menu">
       <div class="container">
          <div class="row">
@@ -34,7 +40,7 @@
                      <a href="{% url 'web:guide' %}">생활관 안내</a>
                      <ul class="dropdown">
                         {% if user.is_authenticated %}
-                        {% if admin_menu and user.is_staff %}
+                        {% if user.is_staff %}
                         <li><a href="{% url 'web:dorminfo' %}">입실 신청 관리</a></li>
                         <li><a href="{% url 'web:outside_manage' %}">외박 신청 관리</a></li>
                         {% else %}
@@ -70,9 +76,9 @@
                         <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">마이페이지</a>
                      {% endif %}
                   </li>
-                  {% if admin_menu and request.user.is_superuser %}
+                  {% if request.user.is_superuser %}
                   <li class="nav-item admin-link">
-                     <a href="http://43.202.118.147:8000//admin/" target="_blank">
+                     <a href="{% url 'admin:index' %}" target="_blank">
                         <i class="fas fa-user-shield"></i> 관리자
                      </a>
                   </li>

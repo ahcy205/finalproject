@@ -385,7 +385,28 @@ class SharedNavTests(TestCase):
         self.assertContains(guide, 'class="has-dropdown active"', count=1)
         self.assertNotContains(self.client.get(reverse('web:bus')), 'has-dropdown active')
 
-    def test_home_keeps_admin_menu_for_staff(self):
+    def test_staff_sees_admin_menu_on_every_page(self):
         staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
         self.client.force_login(staff)
-        self.assertContains(self.client.get(reverse('web:home')), '입실 신청 관리')
+        for name in ('web:home', 'web:bus', 'web:guide'):
+            response = self.client.get(reverse(name))
+            self.assertContains(response, '입실 신청 관리')
+            self.assertContains(response, '외박 신청 관리')
+
+    def test_superuser_admin_link_uses_this_site(self):
+        boss = User.objects.create_superuser('boss', password='pw12345!')
+        self.client.force_login(boss)
+        response = self.client.get(reverse('web:bus'))
+        self.assertContains(response, 'href="/admin/"')
+        self.assertNotContains(response, '43.202.118.147')
+
+    def test_student_does_not_see_admin_menu(self):
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        response = self.client.get(reverse('web:home'))
+        self.assertNotContains(response, '입실 신청 관리')
+        self.assertNotContains(response, 'href="/admin/"')
+
+    def test_template_placeholders_are_gone(self):
+        response = self.client.get(reverse('web:home'))
+        self.assertNotContains(response, '+01 123 456 7890')
+        self.assertNotContains(response, 'fh5co-social')
