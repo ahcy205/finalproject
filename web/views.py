@@ -101,7 +101,10 @@ def mypage_view(request):
 def inquiry_detail_view(request, pk):
     inquiry = get_object_or_404(Inquiry, pk=pk)
     user = request.user
-    is_admin = user.is_superuser
+    # 다른 관리자 기능과 같이 스태프 계정이면 모든 문의를 보고 답변할 수 있다
+    is_admin = user.is_staff
+    if not is_admin and inquiry.user != user:
+        return redirect('web:mypage')
 
     try:
         answer_instance = InquiryAnswer.objects.get(inquiry=inquiry)
@@ -118,9 +121,6 @@ def inquiry_detail_view(request, pk):
             return redirect('web:inquiry_detail', pk=pk)
     else:
         form = InquiryAnswerForm(instance=answer_instance)
-
-    if not is_admin and inquiry.user != user:
-        return redirect('web:mypage')
 
     context = {
         'inquiry': inquiry,

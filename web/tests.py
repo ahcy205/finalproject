@@ -13,7 +13,7 @@ from PIL import Image
 from django.urls import reverse
 from django.utils import timezone
 
-from dorm.models import Comment, Dorm, Inquiry, Like, Notice, OutingApply, Post
+from dorm.models import Comment, Dorm, Inquiry, InquiryAnswer, Like, Notice, OutingApply, Post
 
 
 class RewardPenaltyTests(TestCase):
@@ -410,3 +410,31 @@ class SharedNavTests(TestCase):
         response = self.client.get(reverse('web:home'))
         self.assertNotContains(response, '+01 123 456 7890')
         self.assertNotContains(response, 'fh5co-social')
+
+
+class InquiryDetailWebTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user('20250001', password='pw12345!')
+        self.inquiry = Inquiry.objects.create(user=self.owner, title='문의', content='내용')
+        self.url = reverse('web:inquiry_detail', args=[self.inquiry.pk])
+
+    def test_staff_can_view_and_answer(self):
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.client.force_login(staff)
+        self.assertContains(self.client.get(self.url), '내용')
+        self.client.post(self.url, {'answer': '답변입니다'})
+        self.inquiry.refresh_from_db()
+        self.assertEqual(self.inquiry.inquiryanswer.answer, '답변입니다')
+        self.assertEqual(self.inquiry.inquiryanswer.admin, staff)
+
+    def test_other_student_cannot_view_or_answer(self):
+        self.client.force_login(User.objects.create_user('20250002', password='pw12345!'))
+        self.assertRedirects(self.client.get(self.url), reverse('web:mypage'))
+        self.client.post(self.url, {'answer': '셀프 답변'})
+        self.assertFalse(InquiryAnswer.objects.exists())
+
+    def test_owner_can_view_but_not_answer(self):
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        self.client.post(self.url, {'answer': '셀프 답변'})
+        self.assertFalse(InquiryAnswer.objects.exists())
