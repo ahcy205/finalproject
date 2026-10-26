@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from .models import (
     Dorm, OutingApply, Notice, Post, Comment,
@@ -20,10 +21,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'is_staff', 'is_superuser'
         ]
 
-    def get_is_staff(self, obj):
+    def get_is_staff(self, obj) -> bool:
         return obj.user.is_staff
 
-    def get_is_superuser(self, obj):
+    def get_is_superuser(self, obj) -> bool:
         return obj.user.is_superuser
 
 class DormSerializer(serializers.ModelSerializer):
@@ -60,7 +61,7 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ['id', 'author_id', 'anon_author', 'content', 'created_at']
 
-    def get_anon_author(self, obj):
+    def get_anon_author(self, obj) -> str:
         return f"{obj.author_id % 10000:04d}"
 
     def create(self, validated_data):
@@ -82,7 +83,7 @@ class PostSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at', 'comments'
         ]
 
-    def get_anon_author(self, obj):
+    def get_anon_author(self, obj) -> str:
         return f"{obj.author_id % 10000:04d}"
 
     def create(self, validated_data):
@@ -90,6 +91,14 @@ class PostSerializer(serializers.ModelSerializer):
         if request and hasattr(request, "user"):
             validated_data['author'] = request.user
         return super().create(validated_data)
+
+class InquiryAnswerSerializer(serializers.ModelSerializer):
+    admin_id = serializers.IntegerField(source='admin.id', read_only=True)
+    admin_username = serializers.CharField(source='admin.username', read_only=True)
+
+    class Meta:
+        model = InquiryAnswer
+        fields = ['id', 'admin_id', 'admin_username', 'answer', 'answered_at']
 
 class InquirySerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
@@ -100,6 +109,7 @@ class InquirySerializer(serializers.ModelSerializer):
         model = Inquiry
         fields = ['id', 'user_id', 'username', 'title', 'content', 'created_at', 'answer']
 
+    @extend_schema_field(InquiryAnswerSerializer(allow_null=True))
     def get_answer(self, obj):
         try:
             return InquiryAnswerSerializer(obj.inquiryanswer).data
@@ -110,14 +120,6 @@ class InquiryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Inquiry
         fields = ['title', 'content']
-
-class InquiryAnswerSerializer(serializers.ModelSerializer):
-    admin_id = serializers.IntegerField(source='admin.id', read_only=True)
-    admin_username = serializers.CharField(source='admin.username', read_only=True)
-
-    class Meta:
-        model = InquiryAnswer
-        fields = ['id', 'admin_id', 'admin_username', 'answer', 'answered_at']
 
 class InquiryAnswerCreateSerializer(serializers.ModelSerializer):
     class Meta:

@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'drf_spectacular',
     'dorm',
     'web',
 ]
@@ -117,5 +118,25 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# API 문서 (/api/docs/)
+SPECTACULAR_SETTINGS = {
+    'TITLE': '돔고돔락 API',
+    'DESCRIPTION': '기숙사 통합 관리 시스템의 Android 앱용 REST API. '
+                   '로그인 API에서 받은 Token을 `Authorization: Token <token>` 헤더에 넣어 호출한다.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # 문서에 표시할 그룹 순서 (앱에서 쓰는 순서)
+    'TAGS': [
+        {'name': '인증', 'description': '회원가입, 로그인(Token 발급), 로그아웃'},
+        {'name': '마이페이지·상벌점'},
+        {'name': '기숙사', 'description': '입실 신청과 방 배정'},
+        {'name': '외박', 'description': '외박 신청과 승인'},
+        {'name': '공지'},
+        {'name': '게시판', 'description': '익명 자유게시판: 글, 댓글, 좋아요'},
+        {'name': '문의', 'description': '학생 문의와 관리자 답변'},
     ],
 }

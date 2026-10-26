@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from dorm.views import (
     signup_api,
@@ -52,6 +53,10 @@ urlpatterns = [
 
     path('api/inquiries/', inquiries_api, name='inquiries_api'),
     path('api/inquiries/<int:pk>/', inquiry_detail_api, name='inquiry_detail_api'),
+
+    # API 문서
+    path('api/schema/', SpectacularAPIView.as_view(), name='api_schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api_schema'), name='api_docs'),
 
     path('', include('web.urls')),
 ]
