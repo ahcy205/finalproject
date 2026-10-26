@@ -61,7 +61,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ['id', 'author_id', 'anon_author', 'content', 'created_at']
 
     def get_anon_author(self, obj):
-        return f"{obj.author.id % 10000:04d}"
+        return f"{obj.author_id % 10000:04d}"
 
     def create(self, validated_data):
         request = self.context.get('request', None)
@@ -83,7 +83,7 @@ class PostSerializer(serializers.ModelSerializer):
         ]
 
     def get_anon_author(self, obj):
-        return f"{obj.author.id % 10000:04d}"
+        return f"{obj.author_id % 10000:04d}"
 
     def create(self, validated_data):
         request = self.context.get('request', None)

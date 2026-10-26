@@ -12,8 +12,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticate
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
+from django.db.models import Prefetch
+
 from .models import (
-    Dorm, OutingApply, Notice, Post,
+    Comment, Dorm, OutingApply, Notice, Post,
     UserProfile, Inquiry, InquiryAnswer, Like
 )
 from .serializers import (
@@ -263,12 +265,19 @@ def reject_outing_api(request, pk):
     return JsonResponse({'success': True})
 
 
+def posts_with_comments():
+    """작성자·댓글·댓글 작성자를 한 번에 가져오는 게시글 쿼리 (N+1 방지)."""
+    return Post.objects.select_related('author').prefetch_related(
+        Prefetch('comments', queryset=Comment.objects.select_related('author'))
+    )
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticatedOrReadOnly])
 @parser_classes([MultiPartParser, FormParser])
 def posts_api(request):
     if request.method == 'GET':
-        qs = Post.objects.order_by('-created_at')
+        qs = posts_with_comments().order_by('-created_at')
         return Response({
             'success': True,
             'posts': PostSerializer(qs, many=True, context={'request': request}).data
@@ -285,7 +294,7 @@ def posts_api(request):
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def post_detail_api(request, pk):
     try:
-        post = Post.objects.get(pk=pk)
+        post = posts_with_comments().get(pk=pk)
     except Post.DoesNotExist:
         return Response({'success': False, 'error': 'Not found'}, status=404)
 

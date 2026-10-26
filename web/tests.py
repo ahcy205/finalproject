@@ -12,6 +12,8 @@ from django.test import TestCase, override_settings
 from PIL import Image
 from django.urls import reverse
 from django.utils import timezone
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from dorm.models import Comment, Dorm, Inquiry, InquiryAnswer, Like, Notice, OutingApply, Post
 
@@ -489,3 +491,33 @@ class SharedThemeAssetTests(TestCase):
         order = [html.index(x) for x in ('bootstrap@5.3.0', 'font-awesome/6.0.0', '/static/css/bootstrap.css',
                                          '/static/css/bootstrap.min.css', '/static/css/style.css')]
         self.assertEqual(order, sorted(order))
+
+
+class CommunityHomeQueryCountTests(TestCase):
+    """자유게시판 목록의 쿼리 수는 글 수와 상관없이 일정해야 한다."""
+
+    def setUp(self):
+        self.users = [User.objects.create_user(f'2025000{i}', password='pw12345!') for i in range(3)]
+        self.client.force_login(self.users[0])
+
+    def add_posts(self, n):
+        for i in range(n):
+            post = Post.objects.create(author=self.users[i % 3], title=f'글 {i}', content='내용')
+            for user in self.users:
+                Comment.objects.create(post=post, author=user, content='댓글')
+                Like.objects.create(post=post, user=user)
+
+    def count_queries(self):
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(reverse('web:community_home'))
+        self.assertEqual(response.status_code, 200)
+        return len(ctx.captured_queries), response
+
+    def test_query_count_is_constant_and_counts_are_right(self):
+        self.add_posts(2)
+        few, _ = self.count_queries()
+        self.add_posts(8)
+        many, response = self.count_queries()
+        self.assertEqual(many, few)
+        post = response.context['posts'][0]
+        self.assertEqual((post.like_count, post.comment_count), (3, 3))

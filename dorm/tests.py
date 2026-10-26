@@ -8,10 +8,11 @@ from PIL import Image
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase, TransactionTestCase, override_settings
 
-from dorm.models import Dorm, Inquiry, Notice, OutingApply
+from dorm.models import Comment, Dorm, Inquiry, Notice, OutingApply, Post
 
 
 def token_client(user):
@@ -224,3 +225,37 @@ class SignupApiPasswordTests(TestCase):
         response = self.signup('dorm-Life-2026!')
         self.assertEqual(response.status_code, 200)
         self.assertTrue(User.objects.get(username='20250001').check_password('dorm-Life-2026!'))
+
+
+class PostApiQueryCountTests(TestCase):
+    """글이 늘어도 게시글 API의 쿼리 수는 늘지 않아야 한다 (N+1 방지)."""
+
+    def setUp(self):
+        self.users = [User.objects.create_user(f'2025000{i}', password='pw12345!') for i in range(3)]
+
+    def add_posts(self, n):
+        for i in range(n):
+            post = Post.objects.create(author=self.users[i % 3], title=f'글 {i}', content='내용')
+            for user in self.users:
+                Comment.objects.create(post=post, author=user, content='댓글')
+
+    def count_queries(self, url):
+        with CaptureQueriesContext(connection) as ctx:
+            response = APIClient().get(url)
+        self.assertEqual(response.status_code, 200)
+        return len(ctx.captured_queries)
+
+    def test_post_list_query_count_is_constant(self):
+        self.add_posts(5)
+        few = self.count_queries('/api/posts/')
+        self.add_posts(15)
+        self.assertEqual(self.count_queries('/api/posts/'), few)
+        self.assertLessEqual(few, 5)
+
+    def test_post_detail_query_count_is_constant(self):
+        self.add_posts(1)
+        post = Post.objects.get()
+        few = self.count_queries(f'/api/posts/{post.pk}/')
+        for i in range(10):
+            Comment.objects.create(post=post, author=self.users[i % 3], content='추가 댓글')
+        self.assertEqual(self.count_queries(f'/api/posts/{post.pk}/'), few)

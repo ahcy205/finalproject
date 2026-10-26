@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
+from django.db.models import Count
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -319,7 +320,10 @@ def reject_outing(request, pk):
 
 def community_home(request):
     kw = request.GET.get('kw', '')
-    post_list = Post.objects.all().order_by('-created_at')
+    # 좋아요·댓글 수와 작성자를 목록 쿼리에서 한 번에 가져온다 (글마다 따로 조회하지 않음)
+    post_list = (Post.objects.select_related('author')
+                 .annotate(like_count=Count('likes', distinct=True), comment_count=Count('comments', distinct=True))
+                 .order_by('-created_at'))
 
     if kw:
         post_list = post_list.filter(title__icontains=kw)
