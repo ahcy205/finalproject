@@ -11,7 +11,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
 from .models import (
-    Dorm, OutingApply, Notice, Post, Comment,
+    Dorm, OutingApply, Notice, Post,
     UserProfile, Inquiry, InquiryAnswer, Like
 )
 from .serializers import (

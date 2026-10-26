@@ -1,14 +1,12 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login as auth_login, logout, login
+from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
-from django.views.generic import TemplateView
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
 from django.shortcuts import get_object_or_404
 
@@ -570,21 +568,21 @@ def assign_room(request, dorm_id):
 
     if not (building or room or position):
         messages.error(request, '배정할 값을 입력해주세요.')
-        return redirect('web:dorm_info')
+        return redirect('web:dorminfo')
 
     if room:
         if not room.isdigit():
             messages.error(request, '방 번호는 숫자로 입력해주세요.')
-            return redirect('web:dorm_info')
+            return redirect('web:dorminfo')
         dorm.r_number = int(room)
     if position:
         if position not in ('1', '2', '3', '4'):
             messages.error(request, '침대 위치는 1~4 중에서 입력해주세요.')
-            return redirect('web:dorm_info')
+            return redirect('web:dorminfo')
         dorm.position = int(position)
     if building:
         dorm.building_name = building
 
     dorm.save()
     messages.success(request, f'{dorm.name} 학생의 방 배정을 저장했습니다.')
-    return redirect('web:dorm_info')
+    return redirect('web:dorminfo')
