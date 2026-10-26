@@ -3,7 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from django.test import TestCase
 
-from dorm.models import Inquiry, OutingApply
+from dorm.models import Dorm, Inquiry, OutingApply
 
 
 def token_client(user):
@@ -63,4 +63,30 @@ class OutingApplyApiTests(TestCase):
         response = self.client.post('/api/outing_apply/',
                                     {'name': '김철수', 'student_number': '20259999', 'out_date': '2026-11-01'}, format='json')
         self.assertEqual(response.status_code, 403)
+        self.assertFalse(OutingApply.objects.exists())
+
+
+class InputValidationApiTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+
+    def test_give_point_rejects_non_numeric_point(self):
+        response = token_client(self.staff).post(
+            '/api/give_point/', {'student_id': '20250001', 'point_type': 'reward', 'point': 'abc'}, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_dorm_apply_rejects_duplicate_student_number(self):
+        Dorm.objects.create(name='다른 학생', student_number='20250001', gender='male')
+        response = token_client(self.student).post(
+            '/api/dorm_apply/', {'name': '홍길동', 'student_number': '20250001', 'gender': 'male'}, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Dorm.objects.filter(user=self.student).exists())
+
+    def test_outing_apply_rejects_bad_date(self):
+        response = token_client(self.student).post(
+            '/api/outing_apply/', {'name': '홍길동', 'student_number': '20250001', 'out_date': '11월 1일'}, format='json')
+        self.assertEqual(response.status_code, 400)
         self.assertFalse(OutingApply.objects.exists())

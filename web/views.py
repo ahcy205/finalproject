@@ -225,6 +225,10 @@ def check_in(request):
             messages.error(request, '이미 신청한 기록이 있습니다.')
             return render(request, 'web/check_in.html')
 
+        if Dorm.objects.filter(student_number=student_number).exists():
+            messages.error(request, '이미 등록된 학번입니다. 학번을 확인해주세요.')
+            return render(request, 'web/check_in.html')
+
         Dorm.objects.create(
             user=request.user,
             name=name,
@@ -538,26 +542,6 @@ def toggle_like(request, pk):
         like.delete()
     return redirect('web:community_detail', pk=pk)
 
-@require_POST
-@user_passes_test(lambda u: u.is_staff)
-def assign_room(request, dorm_id):
-    dorm = get_object_or_404(Dorm, id=dorm_id)
-    dorm.building_name = request.POST.get('building_name')
-    dorm.r_number = request.POST.get('r_number')
-    dorm.position = request.POST.get('position')
-    dorm.save()
-    return redirect('web:dorm_info')
-
-@login_required
-def dorm_info_view(request):
-    is_admin = request.user.is_staff
-    if is_admin:
-        dorms = Dorm.objects.all()
-    else:
-        dorms = Dorm.objects.filter(user=request.user)
-    return render(request, 'web/dorminfo.html', {'dorms': dorms, 'is_admin': is_admin})
-
-
 @login_required
 def apply_outing(request):
     if request.method == 'POST':
@@ -578,9 +562,29 @@ def dorm_info_view(request):
 @require_POST
 @user_passes_test(lambda u: u.is_staff)
 def assign_room(request, dorm_id):
+    """빈칸은 기존 값을 유지하고, 입력한 값만 검증해서 반영한다."""
     dorm = get_object_or_404(Dorm, id=dorm_id)
-    dorm.building_name = request.POST.get('building_name')
-    dorm.r_number = request.POST.get('r_number')
-    dorm.position = request.POST.get('position')
+    building = request.POST.get('building_name', '').strip()
+    room = request.POST.get('r_number', '').strip()
+    position = request.POST.get('position', '').strip()
+
+    if not (building or room or position):
+        messages.error(request, '배정할 값을 입력해주세요.')
+        return redirect('web:dorm_info')
+
+    if room:
+        if not room.isdigit():
+            messages.error(request, '방 번호는 숫자로 입력해주세요.')
+            return redirect('web:dorm_info')
+        dorm.r_number = int(room)
+    if position:
+        if position not in ('1', '2', '3', '4'):
+            messages.error(request, '침대 위치는 1~4 중에서 입력해주세요.')
+            return redirect('web:dorm_info')
+        dorm.position = int(position)
+    if building:
+        dorm.building_name = building
+
     dorm.save()
+    messages.success(request, f'{dorm.name} 학생의 방 배정을 저장했습니다.')
     return redirect('web:dorm_info')

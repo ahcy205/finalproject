@@ -9,7 +9,7 @@ from django.test import TestCase, override_settings
 from PIL import Image
 from django.urls import reverse
 
-from dorm.models import Comment, Inquiry, Like, Notice, OutingApply, Post
+from dorm.models import Comment, Dorm, Inquiry, Like, Notice, OutingApply, Post
 
 
 class RewardPenaltyTests(TestCase):
@@ -267,3 +267,59 @@ class AdminStudentSearchTests(TestCase):
         response = self.search('nope', 'x')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['students']), 0)
+
+
+class CheckInDuplicateTests(TestCase):
+    def setUp(self):
+        first = User.objects.create_user('20250001', password='pw12345!')
+        Dorm.objects.create(user=first, name='홍길동', student_number='20250001', gender='male')
+        self.student = User.objects.create_user('20250002', password='pw12345!')
+        self.client.force_login(self.student)
+
+    def test_duplicate_student_number_shows_error(self):
+        response = self.client.post(reverse('web:check_in'),
+                                    {'name': '김철수', 'student_number': '20250001', 'gender': 'male'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '이미 등록된 학번입니다.')
+        self.assertFalse(Dorm.objects.filter(user=self.student).exists())
+
+
+class AssignRoomTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.client.force_login(self.staff)
+        self.dorm = Dorm.objects.create(name='홍길동', student_number='20250001', gender='male',
+                                        building_name='A동', r_number=101, position=1)
+        self.url = reverse('web:assign_room', args=[self.dorm.pk])
+
+    def assign(self, **data):
+        base = {'building_name': '', 'r_number': '', 'position': ''}
+        return self.client.post(self.url, {**base, **data}, follow=True)
+
+    def test_blank_fields_keep_existing_values(self):
+        response = self.assign(building_name='B동')
+        self.assertEqual(response.status_code, 200)
+        self.dorm.refresh_from_db()
+        self.assertEqual((self.dorm.building_name, self.dorm.r_number, self.dorm.position), ('B동', 101, 1))
+
+    def test_full_assignment(self):
+        self.assign(building_name='C동', r_number='305', position='3')
+        self.dorm.refresh_from_db()
+        self.assertEqual((self.dorm.building_name, self.dorm.r_number, self.dorm.position), ('C동', 305, 3))
+
+    def test_invalid_numbers_are_rejected(self):
+        response = self.assign(r_number='abc', position='7')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '방 번호는 숫자로 입력해주세요.')
+        self.dorm.refresh_from_db()
+        self.assertEqual((self.dorm.r_number, self.dorm.position), (101, 1))
+
+    def test_position_out_of_range_is_rejected(self):
+        response = self.assign(position='7')
+        self.assertContains(response, '침대 위치는 1~4 중에서 입력해주세요.')
+        self.dorm.refresh_from_db()
+        self.assertEqual(self.dorm.position, 1)
+
+    def test_all_blank_shows_message(self):
+        response = self.assign()
+        self.assertContains(response, '배정할 값을 입력해주세요.')
