@@ -1,6 +1,8 @@
 # 🏠 돔고돔락(DORM苦DORM樂)
 기숙사의 원활한 관리를 위한 통합 관리 시스템
 
+[![tests](https://github.com/ahcy205/finalproject/actions/workflows/test.yml/badge.svg)](https://github.com/ahcy205/finalproject/actions/workflows/test.yml)
+
 ---
 
 실제 구현 이미지
