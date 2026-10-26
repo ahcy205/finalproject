@@ -24,6 +24,7 @@ def guide(request):
 def community(request):
     return render(request, 'web/community.html')
 
+@login_required
 def mypage_view(request):
     user = request.user
     is_admin = user.is_staff or user.is_superuser

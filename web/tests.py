@@ -78,3 +78,13 @@ class GetRequestsDoNotChangeStateTests(TestCase):
         self.client.post(reverse('web:toggle_like', args=[self.post.pk]))
         self.assertTrue(Like.objects.filter(user=self.staff, post=self.post).exists())
 
+
+class LoginRedirectTests(TestCase):
+    def test_anonymous_mypage_redirects_to_login(self):
+        response = self.client.get(reverse('web:mypage'))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse('web:login')))
+
+    def test_login_required_pages_redirect_to_web_login(self):
+        response = self.client.get(reverse('web:check_in'))
+        self.assertTrue(response.url.startswith(reverse('web:login')))
