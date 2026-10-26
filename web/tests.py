@@ -208,3 +208,35 @@ class NoticeImageTests(TestCase):
     def test_create_rejects_non_image_file(self):
         self.client.post(reverse('web:notice_create'), {'title': 't', 'content': 'c', 'image': html_file()})
         self.assertFalse(Notice.objects.filter(title='t').exists())
+
+
+class OutingIdentityTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+        self.client.force_login(self.student)
+        self.mine = {'name': '홍길동', 'student_number': '20250001', 'out_date': '2026-11-01'}
+        self.other = {'name': '김철수', 'student_number': '20259999', 'out_date': '2026-11-01'}
+
+    def test_apply_outing_saves_own_application(self):
+        response = self.client.post(reverse('web:apply_outing'), self.mine)
+        self.assertRedirects(response, reverse('web:apply_success'))
+        self.assertTrue(OutingApply.objects.filter(student_number='20250001').exists())
+
+    def test_apply_outing_rejects_other_student(self):
+        self.client.post(reverse('web:apply_outing'), self.other)
+        self.assertFalse(OutingApply.objects.exists())
+
+    def test_outside_post_rejects_other_student(self):
+        self.client.post(reverse('web:outside'), self.other)
+        self.assertFalse(OutingApply.objects.exists())
+
+    def test_outside_post_saves_own_application(self):
+        self.client.post(reverse('web:outside'), self.mine)
+        self.assertTrue(OutingApply.objects.filter(student_number='20250001').exists())
+
+    def test_missing_date_does_not_crash(self):
+        response = self.client.post(reverse('web:apply_outing'), {**self.mine, 'out_date': ''})
+        self.assertRedirects(response, reverse('web:outside'))
+        self.assertFalse(OutingApply.objects.exists())

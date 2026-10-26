@@ -185,6 +185,12 @@ def apply_outing_api(request):
             {'success': False, 'error': 'Name, student number, and outing date are required.'},
             status=400
         )
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    if name.strip() != profile.full_name.strip() or stud.strip() != request.user.username.strip():
+        return JsonResponse(
+            {'success': False, 'error': 'Name or student number does not match the logged-in user.'},
+            status=403
+        )
     outing = OutingApply.objects.create(
         name=name,
         student_number=stud,
