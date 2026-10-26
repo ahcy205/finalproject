@@ -223,6 +223,10 @@ def check_in(request):
             messages.error(request, '이미 신청한 기록이 있습니다.')
             return render(request, 'web/check_in.html')
 
+        if len(student_number) > 10:
+            messages.error(request, '학번은 10자 이하로 입력해주세요.')
+            return render(request, 'web/check_in.html')
+
         if Dorm.objects.filter(student_number=student_number).exists():
             messages.error(request, '이미 등록된 학번입니다. 학번을 확인해주세요.')
             return render(request, 'web/check_in.html')

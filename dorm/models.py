@@ -36,7 +36,7 @@ class Dorm(models.Model):
     building_name = models.CharField(max_length=50, blank=True, default="")
     r_number = models.IntegerField(default=0)
     position = models.IntegerField(
-        choices=[(1, "1"), (2, "2"), (3, "3"), (4, "4")],
+        choices=[(0, "미배정"), (1, "1"), (2, "2"), (3, "3"), (4, "4")],
         default=0
     )
     is_available = models.BooleanField(default=True)
