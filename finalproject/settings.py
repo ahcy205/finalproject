@@ -138,6 +138,13 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+# RAG 검색 자료의 임베딩 (knowledge/embeddings.py)
+# BACKEND: 'sentence-transformers'(로컬 모델, requirements-ml.txt 필요) 또는 'fake'(테스트·CI용)
+KNOWLEDGE_EMBEDDING = {
+    'BACKEND': os.environ.get('KNOWLEDGE_EMBEDDING_BACKEND', 'sentence-transformers'),
+    'MODEL': os.environ.get('KNOWLEDGE_EMBEDDING_MODEL', 'BAAI/bge-m3'),
+}
+
 # API 문서 (/api/docs/)
 SPECTACULAR_SETTINGS = {
     'TITLE': '돔고돔락 API',

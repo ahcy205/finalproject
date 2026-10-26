@@ -165,6 +165,7 @@ python manage.py runserver
 - 앱용 REST API: http://127.0.0.1:8000/api/
 - API 문서 (Swagger): http://127.0.0.1:8000/api/docs/
 - 테스트: `python manage.py test web dorm knowledge` (DB가 켜져 있어야 함)
+- RAG 검색 자료 만들기: `python manage.py build_knowledge_index --backend fake` (임베딩 모델 설치 전에는 `fake`로 확인)
 - DB가 꺼져 있으면 `PostgreSQL에 접속할 수 없습니다` 안내가 나옵니다. Docker Desktop을 켜고 `docker compose up -d db`를 실행하세요.
 - 이 저장소는 로컬 실행 기준입니다. 배포용 설정(`DEBUG=False`, 허용 호스트·CORS 제한)은 적용하지 않았습니다.
 - 비밀 키: 환경변수 `DJANGO_SECRET_KEY`에서 읽습니다. 로컬 개발(`DEBUG=True`)에서는 없어도 실행되지만, 배포할 때는 반드시 설정해야 합니다.

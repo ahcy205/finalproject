@@ -18,6 +18,7 @@ python manage.py runserver
 - 비밀 키는 환경변수 `DJANGO_SECRET_KEY`에서 읽습니다. 로컬 개발(`DEBUG=True`)에서는 없어도 실행됩니다.
 - DB는 PostgreSQL 17 + pgvector이고 Docker로 띄웁니다([ADR 0005](docs/adr/0005-postgresql-pgvector.md)). Docker Desktop을 켠 뒤 `docker compose up -d db`, 끌 때는 `docker compose stop db`입니다. 데이터는 Docker 볼륨에 남습니다.
 - DB 접속 정보는 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` 환경변수로 바꿀 수 있습니다. 기본값은 `docker-compose.yml`과 같은 로컬 개발용 값입니다.
+- RAG 검색 자료는 `python manage.py build_knowledge_index`로 만듭니다. 임베딩 방식은 환경변수 `KNOWLEDGE_EMBEDDING_BACKEND`(`sentence-transformers` 또는 `fake`)와 `KNOWLEDGE_EMBEDDING_MODEL`(기본 `BAAI/bge-m3`)로 정합니다. 모델 라이브러리 없이 확인할 때는 `--backend fake`를 씁니다.
 
 ## 2. 작업 단위
 

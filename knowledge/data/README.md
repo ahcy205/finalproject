@@ -54,6 +54,6 @@ meals:
 
 ## 고칠 때
 
-- 문구를 고치면 화면에는 바로 반영됩니다. RAG 검색 자료는 색인을 다시 만들 때 반영됩니다.
+- 문구를 고치면 화면에는 바로 반영됩니다. RAG 검색 자료는 `python manage.py build_knowledge_index`를 실행할 때 반영됩니다(바뀐 조항만 다시 임베딩).
 - 규칙 화면은 줄바꿈이 그대로 보이는 스타일(`white-space: pre-line`)이라, 템플릿(`templates/web/rules.html`)의 줄 구조는 바꾸지 않습니다.
 - 고친 뒤 `python manage.py test knowledge`로 형식이 맞는지 확인합니다.
