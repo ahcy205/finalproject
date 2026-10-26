@@ -240,3 +240,30 @@ class OutingIdentityTests(TestCase):
         response = self.client.post(reverse('web:apply_outing'), {**self.mine, 'out_date': ''})
         self.assertRedirects(response, reverse('web:outside'))
         self.assertFalse(OutingApply.objects.exists())
+
+
+class AdminStudentSearchTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.department = '컴퓨터공학과'
+        self.student.userprofile.save()
+        self.client.force_login(self.staff)
+
+    def search(self, field, query):
+        return self.client.get(reverse('web:mypage'), {'field': field, 'query': query})
+
+    def test_search_by_name_and_department(self):
+        self.assertEqual(list(self.search('full_name', '길동').context['students']), [self.student.userprofile])
+        self.assertEqual(list(self.search('department', '컴퓨터').context['students']), [self.student.userprofile])
+
+    def test_password_field_cannot_be_searched(self):
+        response = self.search('user__password', 'pbkdf2')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['students']), 0)
+
+    def test_unknown_field_does_not_crash(self):
+        response = self.search('nope', 'x')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['students']), 0)
