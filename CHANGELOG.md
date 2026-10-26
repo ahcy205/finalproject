@@ -4,6 +4,39 @@
 
 
 
+
+## 2026-10-26 (5차) — 남은 과제 정리
+
+남은 과제를 처리했습니다(PR #25–#31). 이 프로젝트는 배포하지 않기로 해서, 배포 설정은 그대로 두고 "로컬 실행 전용"으로 문서에 적었습니다.
+
+| PR | 구분 | 내용 |
+|---|---|---|
+| [#25](https://github.com/ahcy205/finalproject/pull/25) | API | 외박 응답에 `status`, 공지 응답에 `image` 추가. 공지 작성 API에서 이미지 업로드 가능 (기존 필드 유지) |
+| [#26](https://github.com/ahcy205/finalproject/pull/26) | 권한 | 웹 문의 상세도 `is_staff` 기준으로 통일. 스태프가 열람·답변 가능 |
+| [#27](https://github.com/ahcy205/finalproject/pull/27) | 데이터 | `OutingApply.user` 외래키 추가, 기존 신청을 학번이 같은 계정에 연결하는 마이그레이션 `0005` |
+| [#28](https://github.com/ahcy205/finalproject/pull/28) | 검증 | 침대 번호 선택지에 `0 = 미배정` 추가(마이그레이션 `0006`, DB 변경 없음), 10자 넘는 학번 거부 |
+| [#29](https://github.com/ahcy205/finalproject/pull/29) | 검증 | 앱 회원가입 API에도 비밀번호 규칙 적용 |
+| [#30](https://github.com/ahcy205/finalproject/pull/30) | 리팩터링 | 테마 CSS·JS 로드 코드를 `_theme_css.html`, `_theme_js.html`로 분리 (878줄 삭제) |
+| #31 | 문서 | 변경이력·README·흐름도 갱신 |
+
+### 로컬 DB에 적용한 마이그레이션
+- `0005_outingapply_user`: 기존 외박 기록 5건 중 3건이 계정에 연결됐습니다. 나머지 2건은 같은 학번의 계정이 없어서 연결되지 않았고, 관리자 목록에서만 보입니다. 이 2건은 이전에도 학생 목록에 나오지 않던 기록입니다.
+- `0006_dorm_position_unassigned_choice`: 선택지 정보만 바꿔서 실제 DB 변경이 없습니다.
+- 되돌리려면 `python manage.py migrate dorm 0004`를 실행하면 됩니다.
+
+### 앱 영향
+- API 응답에는 필드를 **추가만** 해서 기존 앱이 쓰던 값은 그대로입니다.
+- 회원가입 API는 이제 약한 비밀번호를 400으로 거부합니다. 앱 화면에 서버 오류 메시지를 보여 주면 됩니다.
+
+### 테스트
+
+`python manage.py test web dorm`: 총 81건 (웹 60, API 21)
+
+### 남은 사항
+
+- **로컬 실행 전용:** 배포하지 않으므로 `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용을 그대로 둡니다. 배포하려면 이 설정부터 바꿔야 합니다.
+- **일부 화면의 head 구성:** `mypage.html`, `reward_penalty.html`, `inquiry_detail.html`은 불러오는 CSS·JS 구성이 달라서 공통 템플릿을 쓰지 않습니다.
+
 ## 2026-10-26 (4차) — 포트폴리오 정리
 
 포트폴리오로 보여 주기 좋게 README, 화면 코드, 설정을 다듬었습니다(PR #19–#24).
@@ -33,14 +66,6 @@
 ### 테스트
 
 `python manage.py test web dorm`: 총 61건 (웹 51, API 10)
-
-### 남은 과제
-
-- **API 누락 필드:** `OutingApplySerializer`에 `status`가 없어 앱에서 외박 승인 상태를 볼 수 없습니다. 공지 시리얼라이저에도 `image`가 없습니다.
-- **권한 불일치:** 웹 문의 상세는 superuser만, API는 스태프도 답변할 수 있습니다.
-- **데이터 구조:** `OutingApply`에 외래키가 없어 이름·학번 문자열로만 계정과 연결됩니다. 학번 길이 제한(10자)이 SQLite에서는 적용되지 않습니다. `Dorm.position` 기본값 `0`이 선택지(1–4)에 없습니다.
-- **배포 설정 (방식 미정):** `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용, API 회원가입 비밀번호 규칙 미적용
-- **화면 코드:** 상단 메뉴는 공통화했지만, 각 페이지의 `<head>`(CSS·JS 로드)와 하단 스크립트는 아직 파일마다 복사되어 있습니다.
 
 ## 2026-10-26 (3차) — 코드 · git 정리
 
