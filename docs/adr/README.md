@@ -12,6 +12,7 @@
 | [0006](0006-embedding-model-and-hybrid-search.md) | 임베딩 모델은 bge-m3, 하이브리드 검색은 의미 검색 중심으로 합친다 | 채택 |
 | [0007](0007-local-llm-answer-draft.md) | 문의 답변 초안은 로컬 LLM(Ollama)으로 만들고, 근거가 약하면 모델을 부르지 않는다 | 채택 |
 | [0008](0008-answer-draft-llm-choice.md) | 답변 초안 기본 모델은 exaone3.5:7.8b로 정한다 | 채택 |
+| [0009](0009-query-synonyms.md) | 학생이 쓰는 말을 규정 용어로 바꿔 검색어를 보강한다 | 채택 |
 
 ## 새 ADR 쓰는 법
 

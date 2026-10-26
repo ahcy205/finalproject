@@ -11,6 +11,10 @@
 많이 밀려 있으면 나머지는 `build_knowledge_index`가 채운다.
 """
 from dataclasses import dataclass, field
+from functools import lru_cache
+from pathlib import Path
+
+import yaml
 
 from django.contrib.postgres.search import TrigramWordSimilarity
 from pgvector.django import CosineDistance
@@ -27,6 +31,27 @@ KEYWORD_MIN_SIMILARITY = 0.1
 PENDING_EMBED_LIMIT = 20  # 검색 직전에 임베딩할 최대 청크 수
 # 키워드 검색 점수의 비중 (의미 검색 = 1). 평가 결과로 정한다 (docs/adr/0006)
 KEYWORD_WEIGHT = 0.25
+
+
+SYNONYMS_FILE = Path(__file__).resolve().parent / 'data' / 'synonyms.yaml'
+
+
+@lru_cache(maxsize=1)
+def load_synonyms():
+    with open(SYNONYMS_FILE, encoding='utf-8') as f:
+        return yaml.safe_load(f) or {}
+
+
+def expand_query(query):
+    """학생이 쓰는 말을 규정 용어로 보강한다. "전기장판 써도 돼?" → "전기장판 써도 돼? (전열기 난방 도구)"
+
+    규칙에 "전열기"라고만 적혀 있으면 "전기장판"으로는 의미 검색도 키워드 검색도 찾지 못한다 (docs/adr/0009).
+    """
+    terms = []
+    for word, replacements in load_synonyms().items():
+        if word in query:
+            terms += [t for t in replacements if t not in query and t not in terms]
+    return f'{query} ({" ".join(terms)})' if terms else query
 
 
 @dataclass
@@ -52,6 +77,7 @@ class SearchResult:
 def search(query, k=5, sources=None, embedder=None, use_vector=True, use_keyword=True, embed_new=True,
            keyword_weight=None):
     """질문과 가까운 청크 k개를 돌려준다. sources: KnowledgeChunk.Source 값 목록으로 자료를 제한."""
+    query = expand_query(query)
     base = KnowledgeChunk.objects.all()
     if sources:
         base = base.filter(source__in=sources)

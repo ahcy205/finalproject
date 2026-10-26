@@ -588,3 +588,28 @@ class AnswerDraftEvaluationTests(TestCase):
         table = out.getvalue()
         self.assertIn('| fake |', table)
         self.assertIn('답할 수 있는 질문 3개, 범위 밖 질문 3개', table)
+
+
+class QueryExpansionTests(TestCase):
+    """학생이 쓰는 말을 규정 용어로 보강하는 검색어 확장."""
+
+    def test_everyday_words_get_regulation_terms(self):
+        from knowledge.search import expand_query
+        self.assertEqual(expand_query('전기장판 써도 돼?'), '전기장판 써도 돼? (전열기 난방 도구)')
+        self.assertEqual(expand_query('룸메랑 안 맞아'), '룸메랑 안 맞아 (실원 실 이동)')
+
+    def test_terms_already_in_the_question_are_not_repeated(self):
+        from knowledge.search import expand_query
+        self.assertEqual(expand_query('통금 출입시간 알려줘'), '통금 출입시간 알려줘')
+        self.assertEqual(expand_query('담배랑 전자담배'), '담배랑 전자담배 (흡연)')
+
+    def test_other_questions_are_unchanged(self):
+        from knowledge.search import expand_query
+        self.assertEqual(expand_query('수요일 점심 메뉴 뭐야?'), '수요일 점심 메뉴 뭐야?')
+
+    def test_search_uses_the_expanded_query(self):
+        selected = ['rules']
+        sync_chunks(build_chunks(selected), selected)
+        embed_pending(FakeEmbedder())
+        keys = [h.chunk.key for h in search('전기장판 써도 돼?', embedder=FakeEmbedder(), use_vector=False).hits]
+        self.assertIn('rules:article:10', keys)
