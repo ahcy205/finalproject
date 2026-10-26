@@ -30,9 +30,9 @@ def mypage_view(request):
     is_admin = user.is_staff or user.is_superuser
 
     dorm = Dorm.objects.filter(user=user).first()
-    inquiries = Inquiry.objects.filter(user=user).order_by('-created_at')
+    inquiries = Inquiry.objects.filter(user=user).order_by('-created_at', 'id')
     if is_admin:
-        inquiries = Inquiry.objects.all().order_by('-created_at')
+        inquiries = Inquiry.objects.all().order_by('-created_at', 'id')
 
     if request.method == 'POST' and 'submit_inquiry' in request.POST and not is_admin:
         form = InquiryForm(request.POST)
@@ -55,33 +55,33 @@ def mypage_view(request):
                 gender_value = gender_map.get(query)
                 if gender_value:
                     dorm_user_ids = Dorm.objects.filter(gender=gender_value).values_list('user_id', flat=True)
-                    students = UserProfile.objects.filter(user_id__in=dorm_user_ids).order_by('full_name')
+                    students = UserProfile.objects.filter(user_id__in=dorm_user_ids).order_by('full_name', 'id')
                 else:
                     students = UserProfile.objects.none()
 
             elif field == 'building_name':
                 dorm_user_ids = Dorm.objects.filter(building_name__icontains=query).values_list('user_id', flat=True)
-                students = UserProfile.objects.filter(user_id__in=dorm_user_ids).order_by('full_name')
+                students = UserProfile.objects.filter(user_id__in=dorm_user_ids).order_by('full_name', 'id')
 
             elif field == 'r_number':
                 dorm_user_ids = Dorm.objects.filter(r_number__icontains=query).values_list('user_id', flat=True)
-                students = UserProfile.objects.filter(user_id__in=dorm_user_ids).order_by('full_name')
+                students = UserProfile.objects.filter(user_id__in=dorm_user_ids).order_by('full_name', 'id')
 
             elif field == 'student_number':
-                students = UserProfile.objects.filter(user__username__icontains=query).order_by('full_name')
+                students = UserProfile.objects.filter(user__username__icontains=query).order_by('full_name', 'id')
 
             elif field == 'phone_number':
-                students = UserProfile.objects.filter(phone_number__icontains=query).select_related('user').order_by('full_name')
+                students = UserProfile.objects.filter(phone_number__icontains=query).select_related('user').order_by('full_name', 'id')
 
             elif field == 'reward_point':
-                students = UserProfile.objects.filter(reward_point__icontains=query).select_related('user').order_by('full_name')
+                students = UserProfile.objects.filter(reward_point__icontains=query).select_related('user').order_by('full_name', 'id')
 
             elif field == 'penalty_point':
-                students = UserProfile.objects.filter(penalty_point__icontains=query).select_related('user').order_by('full_name')
+                students = UserProfile.objects.filter(penalty_point__icontains=query).select_related('user').order_by('full_name', 'id')
 
             elif field in ('full_name', 'department'):
                 filter_kwargs = {f"{field}__icontains": query}
-                students = UserProfile.objects.filter(**filter_kwargs).order_by('full_name')
+                students = UserProfile.objects.filter(**filter_kwargs).order_by('full_name', 'id')
 
             else:
                 # 화면에 있는 검색 항목 외의 필드(예: user__password)는 검색하지 않는다
@@ -290,9 +290,9 @@ def apply_success(request):
 @login_required
 def outing_info(request):
     if request.user.is_staff:
-        applications = OutingApply.objects.all()
+        applications = OutingApply.objects.order_by('id')
     else:
-        applications = OutingApply.objects.filter(user=request.user)
+        applications = OutingApply.objects.filter(user=request.user).order_by('id')
     return render(request, 'web/outinfo.html', {
         'applications': applications,
         'is_admin': request.user.is_staff
@@ -325,7 +325,7 @@ def community_home(request):
     # 좋아요·댓글 수와 작성자를 목록 쿼리에서 한 번에 가져온다 (글마다 따로 조회하지 않음)
     post_list = (Post.objects.select_related('author')
                  .annotate(like_count=Count('likes', distinct=True), comment_count=Count('comments', distinct=True))
-                 .order_by('-created_at'))
+                 .order_by('-created_at', 'id'))
 
     if kw:
         post_list = post_list.filter(title__icontains=kw)
@@ -375,7 +375,7 @@ def community_delete(request, pk):
 @login_required
 def community_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    comments = Comment.objects.filter(post=post).order_by('created_at')
+    comments = Comment.objects.filter(post=post).order_by('created_at', 'id')
     comment_form = CommentForm()
 
     context = {
@@ -559,9 +559,9 @@ def apply_outing(request):
 def dorm_info_view(request):
     is_admin = request.user.is_staff
     if is_admin:
-        dorms = Dorm.objects.all()
+        dorms = Dorm.objects.order_by('id')
     else:
-        dorms = Dorm.objects.filter(user=request.user)
+        dorms = Dorm.objects.filter(user=request.user).order_by('id')
     return render(request, 'web/dorminfo.html', {'dorms': dorms, 'is_admin': is_admin})
 
 

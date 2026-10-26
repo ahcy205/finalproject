@@ -9,6 +9,30 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # 로컬 docker-compose.yml과 같은 PostgreSQL + pgvector 이미지 (ADR 0005)
+    services:
+      db:
+        image: pgvector/pgvector:0.8.1-pg17
+        env:
+          POSTGRES_DB: dorm
+          POSTGRES_USER: dorm
+          POSTGRES_PASSWORD: dorm-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dorm -d dorm"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      POSTGRES_DB: dorm
+      POSTGRES_USER: dorm
+      POSTGRES_PASSWORD: dorm-ci
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+
     steps:
       - uses: actions/checkout@v4
 

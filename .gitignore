@@ -189,3 +189,6 @@ media/
 
 # 검증 도구가 만드는 화면 스냅샷 (tools/README.md)
 tools/snapshots/
+
+# 로컬 DB 백업 (개인정보 포함, 커밋 금지)
+backups/

@@ -8,7 +8,7 @@
 | [0002](0002-local-only.md) | 로컬 실행 전용, 배포하지 않는다 | 채택 |
 | [0003](0003-api-backward-compatibility.md) | 앱 API는 하위 호환을 지킨다 | 채택 |
 | [0004](0004-template-partials.md) | 화면 공통 부분은 include 조각으로 나눈다 | 채택 |
-| [0005](0005-postgresql-pgvector.md) | PostgreSQL + pgvector로 전환한다 | 제안 |
+| [0005](0005-postgresql-pgvector.md) | PostgreSQL + pgvector로 전환한다 | 채택 |
 
 ## 새 ADR 쓰는 법
 

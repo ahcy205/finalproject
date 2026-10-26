@@ -21,8 +21,9 @@ class UserProfile(models.Model):
 
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
+def create_user_profile(sender, instance, created, raw=False, **kwargs):
+    # loaddata로 백업을 불러올 때(raw=True)는 백업 안의 프로필을 그대로 쓰므로 새로 만들지 않는다
+    if created and not raw:
         UserProfile.objects.create(user=instance)
 
 

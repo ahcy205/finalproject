@@ -1,4 +1,5 @@
 import io
+import os
 import shutil
 import tempfile
 
@@ -350,3 +351,66 @@ class ApiDocsTests(TestCase):
         response = self.client.get('/api/docs/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'swagger')
+
+
+class DatabaseCheckTests(TestCase):
+    """DB에 접속할 수 없으면 원인과 해결 방법을 알려 준다 (SQLite로 대신 실행하지 않음)."""
+
+    def test_unreachable_database_reports_how_to_start_it(self):
+        from unittest import mock
+        from django.db import OperationalError
+        from dorm.checks import check_database_connection
+        with mock.patch('django.db.backends.base.base.BaseDatabaseWrapper.ensure_connection',
+                        side_effect=OperationalError('connection refused')):
+            errors = check_database_connection(app_configs=None)
+        self.assertEqual([e.id for e in errors], ['dorm.E001'])
+        self.assertIn('docker compose up -d db', errors[0].hint)
+
+    def test_reachable_database_has_no_errors(self):
+        from dorm.checks import check_database_connection
+        self.assertEqual(check_database_connection(app_configs=None), [])
+
+
+class UserProfileSignalTests(TestCase):
+    """회원가입 때는 프로필을 자동으로 만들고, 백업 데이터(loaddata)를 불러올 때는 만들지 않는다."""
+
+    def test_profile_is_created_for_new_user(self):
+        from dorm.models import UserProfile
+        user = User.objects.create_user('20250001', password='pw12345!')
+        self.assertTrue(UserProfile.objects.filter(user=user).exists())
+
+    def test_loading_a_fixture_keeps_the_saved_profile(self):
+        import json
+        import tempfile as tf
+        from django.core.management import call_command
+        from dorm.models import UserProfile
+        fixture = [
+            {'model': 'auth.user', 'pk': 900, 'fields': {'username': 'fixture_user', 'password': '!'}},
+            {'model': 'dorm.userprofile', 'pk': 900, 'fields': {'user': 900, 'full_name': '백업 이름',
+                                                                 'department': '', 'phone_number': '',
+                                                                 'reward_point': 3, 'penalty_point': 1}},
+        ]
+        with tf.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8') as f:
+            json.dump(fixture, f, ensure_ascii=False)
+        try:
+            call_command('loaddata', f.name, verbosity=0)
+        finally:
+            os.remove(f.name)
+        profile = UserProfile.objects.get(user_id=900)
+        self.assertEqual((profile.full_name, profile.reward_point), ('백업 이름', 3))
+
+
+class StableOrderingTests(TestCase):
+    """PostgreSQL은 정렬을 지정하지 않으면 순서를 보장하지 않으므로, 목록 순서를 명시적으로 고정한다."""
+
+    def test_post_comments_come_in_id_order_even_with_equal_times(self):
+        author = User.objects.create_user('20250001', password='pw12345!')
+        post = Post.objects.create(author=author, title='t', content='c')
+        ids = [Comment.objects.create(post=post, author=author, content=str(i)).pk for i in range(5)]
+        Comment.objects.update(created_at=Comment.objects.first().created_at)  # 작성 시각이 모두 같은 경우
+        for url in (f'/api/posts/{post.pk}/', '/api/posts/'):
+            body = APIClient().get(url).json()
+            comments = body['post']['comments'] if 'post' in body else body['posts'][0]['comments']
+            self.assertEqual([c['id'] for c in comments], ids, url)
+        listed = APIClient().get(f'/api/posts/{post.pk}/comments/').json()['comments']
+        self.assertEqual([c['id'] for c in listed], ids)

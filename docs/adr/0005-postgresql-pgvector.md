@@ -1,16 +1,18 @@
 # 0005. PostgreSQL + pgvector로 전환한다
 
-- 상태: 제안 (RAG 도입 설계안이 승인되면 "채택"으로 바꾼다)
+- 상태: 채택 (2026-10-26, RAG 도입 설계안 승인)
 - 날짜: 2026-10-26
 
 ## 배경
 
 생활관 규칙·안내·공지·답변 완료 문의를 근거로 문의 답변 초안과 학생용 챗봇을 만드는 RAG 기능을 넣기로 했다. 문서를 의미로 검색하려면 벡터를 저장하고 검색할 곳이 필요하다. 지금 DB는 SQLite이고, README에는 배포 당시 DB가 MariaDB로 적혀 있다.
 
-## 결정 (제안)
+## 결정
 
 - DB를 SQLite에서 **PostgreSQL**로 바꾸고, 벡터 검색은 **pgvector** 확장으로 같은 DB에서 처리한다.
-- 개발 PC와 CI에서는 pgvector가 포함된 공식 PostgreSQL 이미지를 **Docker**로 띄운다. Django 코드는 그대로 쓰고 DB 접속 설정만 바꾼다.
+- 개발 PC와 CI에서는 pgvector가 포함된 공식 이미지 `pgvector/pgvector:0.8.1-pg17`(PostgreSQL 17 + pgvector 0.8.1)을 **Docker**로 띄운다. Django 코드는 그대로 쓰고 DB 접속 설정만 환경변수로 바꾼다.
+- DB가 꺼져 있을 때 SQLite로 대신 실행하지 않는다. DB가 두 종류면 동작 차이가 생기고 벡터 검색은 SQLite에서 동작하지 않기 때문이다. 대신 시스템 점검(`dorm.E001`)으로 DB를 켜는 방법을 안내한다.
+- 기존 SQLite 데이터는 `dumpdata`/`loaddata`로 옮기고, 원본 `db.sqlite3`는 보관한다.
 - 키워드 검색은 `pg_trgm`으로 보완해서 의미 검색과 합친다. PostgreSQL 기본 전문 검색은 한국어 형태소를 잘 처리하지 못하기 때문이다.
 
 ## 검토한 다른 안
@@ -26,4 +28,5 @@
 
 - 좋아지는 점: 일반 데이터와 벡터가 한 DB에 있어 **같은 트랜잭션**으로 저장된다. SQL로 기존 테이블과 조인해 필터를 걸 수 있다. 실무에서 많이 쓰는 DB를 쓴다.
 - 감수하는 점: 개발 환경에 Docker가 필요하다. 기존 SQLite 데이터를 옮겨야 한다. CI에 PostgreSQL 서비스를 추가해야 한다.
-- 자세한 설계: RAG 도입 설계안(검토 중)
+- 전환하며 드러난 것: SQLite는 정렬을 지정하지 않은 목록을 번호순으로 돌려줬지만 PostgreSQL은 순서를 보장하지 않는다. 화면에 내보내는 목록은 모두 `order_by`를 명시했다.
+- 자세한 설계: [RAG 도입 설계안](https://claude.ai/artifact/XSi6mvRkCP2sihnV5AZUPg)
