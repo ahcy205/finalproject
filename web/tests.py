@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from dorm.models import Comment, Like, OutingApply, Post
+from dorm.models import Comment, Inquiry, Like, OutingApply, Post
 
 
 class RewardPenaltyTests(TestCase):
@@ -88,3 +88,23 @@ class LoginRedirectTests(TestCase):
     def test_login_required_pages_redirect_to_web_login(self):
         response = self.client.get(reverse('web:check_in'))
         self.assertTrue(response.url.startswith(reverse('web:login')))
+
+
+class MypageInquiryTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.client.force_login(self.student)
+        self.url = reverse('web:mypage')
+
+    def test_student_can_submit_inquiry(self):
+        response = self.client.post(self.url, {'title': '문의', 'content': '내용', 'submit_inquiry': ''})
+        self.assertRedirects(response, self.url + '?tab=inquiry')
+        inquiry = Inquiry.objects.get()
+        self.assertEqual(inquiry.user, self.student)
+        self.assertEqual(inquiry.title, '문의')
+
+    def test_invalid_inquiry_is_not_saved(self):
+        response = self.client.post(self.url, {'title': '', 'content': '', 'submit_inquiry': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].errors)
+        self.assertFalse(Inquiry.objects.exists())

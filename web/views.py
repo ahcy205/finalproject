@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
@@ -34,7 +35,15 @@ def mypage_view(request):
     if is_admin:
         inquiries = Inquiry.objects.all().order_by('-created_at')
 
-    form = InquiryForm()
+    if request.method == 'POST' and 'submit_inquiry' in request.POST and not is_admin:
+        form = InquiryForm(request.POST)
+        if form.is_valid():
+            inquiry = form.save(commit=False)
+            inquiry.user = user
+            inquiry.save()
+            return redirect(reverse('web:mypage') + '?tab=inquiry')
+    else:
+        form = InquiryForm()
     students = []
 
     if is_admin and 'query' in request.GET and 'field' in request.GET:
