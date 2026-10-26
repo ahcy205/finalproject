@@ -14,6 +14,7 @@ from knowledge.embeddings import FakeEmbedder, get_embedder
 from knowledge.indexing import embed_pending, sync_chunks
 from knowledge.models import EMBEDDING_DIMENSIONS, KnowledgeChunk
 from knowledge.privacy import mask_personal_info
+from knowledge.search import search
 
 
 class RegulationDataTests(TestCase):
@@ -308,3 +309,101 @@ class AutoSyncTests(TestCase):
             os.remove(f.name)
         self.assertTrue(Notice.objects.filter(pk=901).exists())
         self.assertIsNone(self.chunk('notice:901'))  # 불러온 뒤 색인 명령으로 만든다
+
+
+class SearchTests(TestCase):
+    """하이브리드 검색 (가짜 임베딩으로 확인)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        selected = ['rules', 'info', 'bus', 'menu']
+        sync_chunks(build_chunks(selected), selected)
+        embed_pending(cls.embedder)
+
+    def test_finds_the_curfew_article(self):
+        result = search('생활관 출입시간 06:00-23:00', k=5, embedder=self.embedder)
+        self.assertEqual(result.hits[0].chunk.key, 'rules:article:3')
+        self.assertEqual(set(result.hits[0].found_by), {'vector', 'keyword'})
+        self.assertIsNotNone(result.best_similarity)
+
+    def test_source_filter(self):
+        result = search('셔틀버스 시간', k=5, sources=['bus'], embedder=self.embedder)
+        self.assertTrue(result.hits)
+        self.assertTrue(all(h.chunk.source == 'bus' for h in result.hits))
+
+    def test_chunk_without_embedding_is_found_by_keyword(self):
+        notice = Notice.objects.create(title='보일러 점검', content='이번 주 금요일 보일러 점검으로 온수가 끊깁니다')
+        # 검색 직전 임베딩을 끄면 키워드로만 찾힌다
+        result = search('보일러 점검 온수', k=20, embedder=self.embedder, embed_new=False)
+        hit = next(h for h in result.hits if h.chunk.key == f'notice:{notice.pk}')
+        self.assertEqual(hit.found_by, ['keyword'])
+
+    def test_new_chunk_is_embedded_right_before_search(self):
+        notice = Notice.objects.create(title='보일러 점검', content='이번 주 금요일 보일러 점검으로 온수가 끊깁니다')
+        result = search('보일러 점검 온수', k=3, embedder=self.embedder)
+        self.assertEqual(result.hits[0].chunk.key, f'notice:{notice.pk}')
+        self.assertEqual(set(result.hits[0].found_by), {'vector', 'keyword'})
+
+    def test_keyword_only_has_no_similarity(self):
+        result = search('출입시간', k=3, use_vector=False)
+        self.assertTrue(result.hits)
+        self.assertIsNone(result.best_similarity)
+
+    def test_vectors_from_another_model_are_ignored(self):
+        class OtherModel(FakeEmbedder):
+            name = 'other-model'
+
+        result = search('출입시간', k=3, embedder=OtherModel(), use_keyword=False)
+        self.assertEqual(result.hits, [])
+
+
+class EvaluateCommandTests(TestCase):
+    def setUp(self):
+        selected = ['rules', 'info', 'bus', 'menu']
+        sync_chunks(build_chunks(selected), selected)
+
+    def test_question_file_points_at_existing_chunks(self):
+        from knowledge.management.commands.evaluate_knowledge_search import load_questions
+        keys = set(KnowledgeChunk.objects.values_list('key', flat=True))
+        questions = load_questions()
+        self.assertGreaterEqual(len(questions), 30)
+        for item in questions:
+            self.assertTrue(set(item['expected']) <= keys, item['q'])
+
+    def test_command_reports_metrics_for_each_mode(self):
+        out = io.StringIO()
+        call_command('evaluate_knowledge_search', '--backend', 'fake', stdout=out)
+        text = out.getvalue()
+        for mode in ('hybrid', 'vector', 'keyword'):
+            self.assertIn(f'| {mode} |', text)
+
+    def test_evaluate_counts_hits_and_mrr(self):
+        from knowledge.management.commands.evaluate_knowledge_search import evaluate
+        embedder = FakeEmbedder()
+        embed_pending(embedder)
+        questions = [{'q': '생활관 출입시간 06:00-23:00', 'expected': ['rules:article:3']},
+                     {'q': '존재하지않는질문쀍', 'expected': ['rules:article:999']}]
+        result = evaluate(questions, embedder, True, True)
+        self.assertEqual((result['hit@1'], result['hit@5'], result['mrr']), (0.5, 0.5, 0.5))
+        self.assertEqual(result['misses'][0]['q'], '존재하지않는질문쀍')
+
+
+class KeywordWeightTests(TestCase):
+    """키워드 비중 0이면 의미 검색 순위 그대로, 기본값은 ADR 0006의 측정값."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(cls.embedder)
+
+    def test_zero_keyword_weight_keeps_vector_order(self):
+        query = '세탁실 이용 시간'
+        vector_only = [h.chunk.key for h in search(query, k=5, embedder=self.embedder, use_keyword=False).hits]
+        weighted = [h.chunk.key for h in search(query, k=5, embedder=self.embedder, keyword_weight=0).hits]
+        self.assertEqual(weighted, vector_only)
+
+    def test_defaults_match_the_measured_choice(self):
+        from knowledge import search as search_module
+        self.assertEqual((search_module.RRF_K, search_module.KEYWORD_WEIGHT), (1, 0.25))

@@ -9,6 +9,7 @@
 | [0003](0003-api-backward-compatibility.md) | 앱 API는 하위 호환을 지킨다 | 채택 |
 | [0004](0004-template-partials.md) | 화면 공통 부분은 include 조각으로 나눈다 | 채택 |
 | [0005](0005-postgresql-pgvector.md) | PostgreSQL + pgvector로 전환한다 | 채택 |
+| [0006](0006-embedding-model-and-hybrid-search.md) | 임베딩 모델은 bge-m3, 하이브리드 검색은 의미 검색 중심으로 합친다 | 채택 |
 
 ## 새 ADR 쓰는 법
 

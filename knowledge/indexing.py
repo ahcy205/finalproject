@@ -46,11 +46,15 @@ def delete_chunks(keys):
     return KnowledgeChunk.objects.filter(key__in=keys).delete()[0]
 
 
-def embed_pending(embedder, batch_size=32):
-    """벡터가 없거나 embedder와 다른 모델로 만든 청크를 임베딩한다. 반환: 임베딩한 청크 수"""
-    pending = KnowledgeChunk.objects.filter(Q(embedding__isnull=True) | ~Q(embedding_model=embedder.name)).order_by('id')
+def embed_pending(embedder, batch_size=32, limit=None, only_missing=False):
+    """벡터가 없거나 embedder와 다른 모델로 만든 청크를 임베딩한다. 반환: 임베딩한 청크 수
+
+    limit: 최대 개수. only_missing: 벡터가 아예 없는 청크만 (검색 직전에 쓰며, 모델 교체 시 전체 재임베딩은 하지 않음)
+    """
+    condition = Q(embedding__isnull=True) if only_missing else Q(embedding__isnull=True) | ~Q(embedding_model=embedder.name)
+    pending = KnowledgeChunk.objects.filter(condition).order_by('id')
     done = 0
-    ids = list(pending.values_list('id', flat=True))
+    ids = list(pending.values_list('id', flat=True)[:limit])
     for start in range(0, len(ids), batch_size):
         batch = list(KnowledgeChunk.objects.filter(id__in=ids[start:start + batch_size]).order_by('id'))
         vectors = embedder.embed_documents([c.embedding_text() for c in batch])
