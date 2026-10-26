@@ -2,6 +2,48 @@
 
 돔고돔락 프로젝트의 수정 내역입니다. 변경할 때마다 PR을 하나씩 만들어 `main`에 머지했습니다.
 
+
+## 2026-10-26 (3차) — 코드 · git 정리
+
+동작은 바꾸지 않고 코드와 저장소를 정리했습니다(PR #15–#18). 정리하다가 발견한 화면 버그 1건(게시글 삭제 화면의 작성일)도 함께 고쳤습니다.
+
+| PR | 구분 | 내용 |
+|---|---|---|
+| [#15](https://github.com/ahcy205/finalproject/pull/15) | 정리 | 사용하지 않는 코드와 중복 URL 정리 |
+| [#16](https://github.com/ahcy205/finalproject/pull/16) | 버그 | 잘못된 페이지 제목과 게시글 삭제 화면의 작성일 표시 수정 |
+| [#17](https://github.com/ahcy205/finalproject/pull/17) | git | 업로드 파일·개인 설정 추적 해제, `requirements.txt` 추가 |
+| #18 | 문서 | README 실행 방법·DB 표기, 변경이력 갱신 |
+
+### #15 사용하지 않는 코드 정리
+- `SignupSerializer`, `LoginSerializer`, `dorm/urls.py`(어디에도 include되지 않음) 삭제
+- pyflakes로 찾은 미사용 import 삭제
+- `web/urls.py`에 두 번씩 있던 `dorminfo/`, `assign_room/` 패턴을 하나로 정리하고, URL 이름을 `web:dorminfo`로 통일
+- `dorm/app.py` → `dorm/apps.py`: Django는 `apps.py`에서만 AppConfig를 찾기 때문에 기존 `DormConfig`가 무시되고 있었습니다.
+
+### #16 페이지 제목 · 작성일
+- 게시글 삭제·수정 페이지가 "공지사항 …"으로 표시되던 제목과 문구를 "게시글 …"로 수정
+- 공지 수정 페이지의 탭 제목 "공지사항 상세보기"를 "공지사항 수정"으로 수정
+- 게시글 삭제 확인 화면이 없는 필드 `post.date`를 써서 작성일이 항상 빈칸이었습니다. `created_at`으로 고쳤습니다.
+
+### #17 git 정리
+- `media/`(업로드 이미지 16개), `.idea/`(5개), `.DS_Store`(6개)를 git 추적에서 빼고 `.gitignore`에 추가
+- 가상환경 기준 `requirements.txt` 추가
+- **주의:** 다른 PC에서 pull하면 그쪽 작업 폴더에서 위 파일들이 삭제됩니다. 필요하면 pull 전에 백업하거나, pull 후에 `git restore --source=593905b --worktree -- media .idea`로 되살릴 수 있습니다.
+
+### #18 문서
+- README: DB 항목을 "MariaDB (배포) / SQLite (로컬 개발)"로 구분하고, 로컬 실행 방법·테스트 명령·흐름도·변경이력 링크 추가
+
+### 테스트
+
+`python manage.py test web dorm`: 총 53건 (웹 43, API 10)
+
+### 남은 과제
+
+- **API 누락 필드:** `OutingApplySerializer`에 `status`가 없어 앱에서 외박 승인 상태를 볼 수 없습니다. 공지 시리얼라이저에도 `image`가 없습니다.
+- **권한 불일치:** 웹 문의 상세는 superuser만, API는 스태프도 답변할 수 있습니다.
+- **데이터 구조:** `OutingApply`에 외래키가 없어 이름·학번 문자열로만 계정과 연결됩니다. 학번 길이 제한(10자)이 SQLite에서는 적용되지 않습니다. `Dorm.position` 기본값 `0`이 선택지(1–4)에 없습니다.
+- **배포 설정 (방식 미정):** `SECRET_KEY` 하드코딩, `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용, API 회원가입 비밀번호 규칙 미적용
+
 ## 2026-10-26 (2차) — 보안 · 입력 검증
 
 전체를 다시 점검하면서 찾은 보안 문제 4건과 500 에러를 고쳤습니다(PR #9–#13). 문제는 모두 롤백되는 테스트 데이터로 실제 요청을 보내 재현했고, 재현용 데이터와 파일은 남기지 않았습니다. API 테스트(`dorm/tests.py`)를 이번에 처음 추가했습니다.
@@ -61,14 +103,6 @@ venv\Scripts\python manage.py test web dorm
 | `OutingIdentityTests`, `OutingApplyApiTests` | 본인 명의만 저장, 빈 날짜 처리 |
 | `AdminStudentSearchTests` | 이름·학과 검색, 비밀번호 필드 차단, 없는 필드 처리 |
 | `CheckInDuplicateTests`, `AssignRoomTests`, `InputValidationApiTests` | 학번 중복, 방 배정 입력, API 점수·날짜 형식 |
-
-### 남은 과제
-
-- **API 누락 필드:** `OutingApplySerializer`에 `status`가 없어 앱에서 외박 승인 상태를 볼 수 없습니다. 공지 시리얼라이저에도 `image`가 없습니다.
-- **권한 불일치:** 웹 문의 상세는 superuser만, API는 스태프도 답변할 수 있습니다.
-- **데이터 구조:** `OutingApply`에 외래키가 없어 이름·학번 문자열로만 계정과 연결됩니다. 학번 길이 제한(10자)이 SQLite에서는 적용되지 않습니다. `Dorm.position` 기본값 `0`이 선택지(1–4)에 없습니다.
-- **배포 설정 (방식 미정):** `SECRET_KEY` 하드코딩, `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용, API 회원가입 비밀번호 규칙 미적용
-- **정리:** 사용하지 않는 `SignupSerializer`·`LoginSerializer`·`dorm/urls.py`, 게시글 삭제·수정 페이지 제목 오류("공지사항 …"), 커밋된 `media/`·`.idea/`·`.DS_Store`, 커밋되지 않은 `requirements.txt`, README의 DB 표기(MariaDB, 실제는 SQLite)
 
 ## 2026-10-26 — 보안 및 웹 기능 버그 수정
 
