@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
@@ -47,6 +49,12 @@ def signup_api(request):
         return JsonResponse({'success': False, 'error': 'Username already exists.'}, status=400)
     if User.objects.filter(email=email).exists():
         return JsonResponse({'success': False, 'error': 'Email already registered.'}, status=400)
+
+    # 웹 회원가입과 같은 비밀번호 규칙(AUTH_PASSWORD_VALIDATORS)을 적용한다
+    try:
+        validate_password(password, user=User(username=username, email=email))
+    except ValidationError as e:
+        return JsonResponse({'success': False, 'error': ' '.join(e.messages)}, status=400)
 
     user = User.objects.create_user(username=username, password=password, email=email)
     profile, created = UserProfile.objects.get_or_create(

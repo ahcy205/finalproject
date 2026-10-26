@@ -207,3 +207,20 @@ class DormApplyLengthApiTests(TestCase):
             '/api/dorm_apply/', {'name': '홍길동', 'student_number': '12345678901', 'gender': 'male'}, format='json')
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Dorm.objects.exists())
+
+
+class SignupApiPasswordTests(TestCase):
+    def signup(self, password):
+        return APIClient().post('/api/signup/', {'username': '20250001', 'password': password,
+                                                 'email': 's@example.com', 'full_name': '홍길동'}, format='json')
+
+    def test_weak_password_is_rejected(self):
+        for weak in ('1234', 'password', '20250001a'):
+            response = self.signup(weak)
+            self.assertEqual(response.status_code, 400, weak)
+        self.assertFalse(User.objects.filter(username='20250001').exists())
+
+    def test_strong_password_is_accepted(self):
+        response = self.signup('dorm-Life-2026!')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(User.objects.get(username='20250001').check_password('dorm-Life-2026!'))
