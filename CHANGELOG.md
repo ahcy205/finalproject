@@ -2,6 +2,74 @@
 
 돔고돔락 프로젝트의 수정 내역입니다. 변경할 때마다 PR을 하나씩 만들어 `main`에 머지했습니다.
 
+## 2026-10-26 (2차) — 보안 · 입력 검증
+
+전체를 다시 점검하면서 찾은 보안 문제 4건과 500 에러를 고쳤습니다(PR #9–#13). 문제는 모두 롤백되는 테스트 데이터로 실제 요청을 보내 재현했고, 재현용 데이터와 파일은 남기지 않았습니다. API 테스트(`dorm/tests.py`)를 이번에 처음 추가했습니다.
+
+### 요약
+
+| PR | 구분 | 내용 | 변경 파일 |
+|---|---|---|---|
+| [#9](https://github.com/ahcy205/finalproject/pull/9) | 보안 | 문의 상세 API를 작성자와 관리자만 볼 수 있게 수정 | `dorm/permissions.py`, `dorm/views.py` |
+| [#10](https://github.com/ahcy205/finalproject/pull/10) | 보안 | 공지 수정 시 이미지 파일만 업로드되게 검증 | `web/views.py` |
+| [#11](https://github.com/ahcy205/finalproject/pull/11) | 보안 | 외박 신청 시 로그인한 본인 명의인지 확인 | `web/views.py`, `dorm/views.py` |
+| [#12](https://github.com/ahcy205/finalproject/pull/12) | 보안 | 관리자 학생 검색을 화면의 검색 항목으로 제한 | `web/views.py` |
+| [#13](https://github.com/ahcy205/finalproject/pull/13) | 버그 | 잘못된 입력으로 나던 500 에러를 오류 메시지로 처리 | `web/views.py`, `dorm/views.py`, `templates/web/check_in.html`, `templates/web/dorminfo.html` |
+| #14 | 문서 | 변경이력 갱신, 흐름도(`docs/flowchart.html`) 추가 | `CHANGELOG.md`, `docs/flowchart.html` |
+
+---
+
+### #9 문의 상세 API 권한
+- **문제:** `IsInquiryUserOrAdmin`이 GET 요청을 무조건 허용했습니다. 그래서 문의 id만 알면 **로그인하지 않은 사람이나 다른 학생도** `/api/inquiries/<id>/`로 남의 문의와 답변을 읽을 수 있었습니다.
+- **변경:** 로그인한 작성자나 스태프만 허용합니다. 비로그인 요청은 401, 다른 학생은 403으로 거부합니다. 답변(POST)은 기존대로 스태프만 할 수 있습니다.
+
+### #10 공지 이미지 검증
+- **문제:** `notice_update`가 업로드된 파일을 검사하지 않고 저장해서, 스크립트가 든 `.html` 파일도 `media/`에 저장되고 사이트 주소로 열렸습니다.
+- **변경:** 공지 작성처럼 `NoticeForm`(Pillow 이미지 검증)을 거칩니다. 이미지가 아니면 오류 메시지를 보여 주고, 새 파일이 없으면 기존 이미지를 유지합니다.
+
+### #11 외박 신청 본인 확인
+- **문제:** 웹 `/outside/` POST와 앱 `/api/outing_apply/`가 이름·학번을 로그인 계정과 비교하지 않아서, 다른 학생 이름으로 신청할 수 있었습니다. `/apply_outing/`은 날짜가 비면 500 에러가 났습니다.
+- **변경:** 웹의 두 경로가 같은 `_save_outing` 함수(폼 검증 + 본인 확인)를 씁니다. API는 본인이 아니면 403으로 응답합니다.
+
+### #12 관리자 학생 검색 필드 제한
+- **문제:** 검색의 `else` 분기가 URL의 `field` 값을 그대로 조회 조건으로 써서, `field=user__password`로 비밀번호 해시를 조건 검색할 수 있었습니다. 없는 필드를 넣으면 500 에러가 났습니다.
+- **변경:** 화면에 있는 이름·학과만 허용하고, 그 외 필드는 결과 없음으로 처리합니다.
+
+### #13 입력 검증 (500 에러)
+| 위치 | 입력 | 변경 후 |
+|---|---|---|
+| 웹 `/check_in/`, API `/api/dorm_apply/` | 이미 등록된 학번 | 오류 메시지 / 400 |
+| 웹 `/assign_room/<id>/` | 빈칸, 숫자가 아닌 값 | 빈칸은 기존 값 유지, 방 번호는 숫자, 침대는 1~4만 허용 |
+| API `/api/give_point/` | 숫자가 아닌 점수 | 400 |
+| API `/api/outing_apply/` | 날짜 형식 오류 | 400 |
+
+- `check_in.html`, `dorminfo.html`에 메시지 표시 영역을 추가했습니다. 기존에는 오류 메시지가 화면에 보이지 않았습니다.
+- `web/views.py`에 두 번씩 정의되어 있던 `assign_room`, `dorm_info_view` 중 쓰이지 않던 앞쪽 정의를 삭제했습니다.
+
+### 테스트
+
+```
+venv\Scripts\python manage.py test web dorm
+```
+
+웹 41건, API 10건, 총 51건입니다.
+
+| 테스트 클래스 | 확인 내용 |
+|---|---|
+| `InquiryDetailApiTests` | 비로그인·다른 학생 차단, 작성자·관리자 조회, 작성자 답변 차단 |
+| `NoticeImageTests` | html 업로드 거부, 이미지 허용, 기존 이미지 유지 |
+| `OutingIdentityTests`, `OutingApplyApiTests` | 본인 명의만 저장, 빈 날짜 처리 |
+| `AdminStudentSearchTests` | 이름·학과 검색, 비밀번호 필드 차단, 없는 필드 처리 |
+| `CheckInDuplicateTests`, `AssignRoomTests`, `InputValidationApiTests` | 학번 중복, 방 배정 입력, API 점수·날짜 형식 |
+
+### 남은 과제
+
+- **API 누락 필드:** `OutingApplySerializer`에 `status`가 없어 앱에서 외박 승인 상태를 볼 수 없습니다. 공지 시리얼라이저에도 `image`가 없습니다.
+- **권한 불일치:** 웹 문의 상세는 superuser만, API는 스태프도 답변할 수 있습니다.
+- **데이터 구조:** `OutingApply`에 외래키가 없어 이름·학번 문자열로만 계정과 연결됩니다. 학번 길이 제한(10자)이 SQLite에서는 적용되지 않습니다. `Dorm.position` 기본값 `0`이 선택지(1–4)에 없습니다.
+- **배포 설정 (방식 미정):** `SECRET_KEY` 하드코딩, `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용, API 회원가입 비밀번호 규칙 미적용
+- **정리:** 사용하지 않는 `SignupSerializer`·`LoginSerializer`·`dorm/urls.py`, 게시글 삭제·수정 페이지 제목 오류("공지사항 …"), 커밋된 `media/`·`.idea/`·`.DS_Store`, 커밋되지 않은 `requirements.txt`, README의 DB 표기(MariaDB, 실제는 SQLite)
+
 ## 2026-10-26 — 보안 및 웹 기능 버그 수정
 
 코드 분석에서 나온 우선순위 높은 문제 4건을 고쳤습니다(PR #1–#4). 이어서 고친 내용을 다시 검토했고, 그때 발견한 후속 문제 3건도 고쳤습니다(PR #5–#7).
@@ -79,12 +147,3 @@ venv\Scripts\python manage.py test web
 | `LoginRedirectTests` | 비로그인 시 웹 로그인 페이지로 이동 |
 | `MypageInquiryTests` | 문의 정상 등록, 빈 입력은 저장하지 않음 |
 | `LoginNextTests` | `next` 유지·이동, 외부 URL 차단, 실패 시 유지 |
-
-### 남은 과제 (이번 범위 밖)
-
-- **API:** `OutingApplySerializer`에 `status`가 없어 앱에서 외박 승인 상태를 볼 수 없습니다. Notice 시리얼라이저에도 `image`가 빠져 있습니다.
-- **API:** `apply_outing_api`와 웹 `outside` 뷰가 신청자 이름·학번을 로그인 사용자와 대조하지 않습니다.
-- **입력 검증:** API `give_point_api`의 `int()` 변환, `assign_room`의 빈 값 처리에서 500 에러가 날 수 있습니다.
-- **권한 일관성:** `inquiry_detail_view`만 `is_superuser`로 검사해서 스태프 계정이 웹에서 문의에 답변할 수 없습니다.
-- **배포 설정:** `SECRET_KEY` 하드코딩, `DEBUG=True`, `ALLOWED_HOSTS=['*']`, CORS 전체 허용
-- **정리:** `web/views.py`의 `dorm_info_view`·`assign_room` 중복 정의, 사용하지 않는 시리얼라이저와 `dorm/urls.py`
