@@ -1,5 +1,8 @@
 import io
+import json
 import math
+import urllib.error
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -14,6 +17,8 @@ from knowledge.embeddings import FakeEmbedder, get_embedder
 from knowledge.indexing import embed_pending, sync_chunks
 from knowledge.models import EMBEDDING_DIMENSIONS, KnowledgeChunk
 from knowledge.privacy import mask_personal_info
+from knowledge.answering import draft_answer, draft_for_text
+from knowledge.llm import FakeLLM, LLMError, OllamaLLM, get_llm
 from knowledge.search import search
 
 
@@ -407,3 +412,134 @@ class KeywordWeightTests(TestCase):
     def test_defaults_match_the_measured_choice(self):
         from knowledge import search as search_module
         self.assertEqual((search_module.RRF_K, search_module.KEYWORD_WEIGHT), (1, 0.25))
+
+
+class RecordingLLM(FakeLLM):
+    """FakeLLM과 같게 답하고(또는 정해 둔 답을 돌려주고), 받은 지시와 근거를 기록한다."""
+
+    def __init__(self, reply=None):
+        self.calls = []
+        self.reply = reply
+
+    def generate(self, system, prompt):
+        self.calls.append((system, prompt))
+        return self.reply if self.reply is not None else super().generate(system, prompt)
+
+
+class AnswerDraftTests(TestCase):
+    """문의 답변 초안: 근거 부족 판단, 개인정보 가리기, 인용 검사 (모델은 대역 사용)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        selected = ['rules', 'info']
+        sync_chunks(build_chunks(selected), selected)
+        embed_pending(cls.embedder)
+
+    def draft(self, title, content, llm, **kwargs):
+        # 가짜 임베딩의 유사도는 bge-m3와 눈금이 달라 기준값을 테스트마다 직접 준다
+        kwargs.setdefault('min_similarity', 0.0)
+        return draft_for_text(title, content, llm=llm, embedder=self.embedder, **kwargs)
+
+    def test_draft_cites_the_evidence_it_was_given(self):
+        llm = RecordingLLM()
+        draft = self.draft('출입시간 문의', '생활관 출입시간이 06:00-23:00 맞나요?', llm)
+        self.assertEqual(draft.status, 'ok')
+        self.assertEqual(len(draft.evidence), 5)
+        self.assertEqual(draft.cited, [1])
+        self.assertEqual(draft.warnings, [])
+        self.assertEqual(draft.model, 'fake')
+        system, prompt = llm.calls[0]
+        self.assertIn('근거]에 적힌 내용만', system)
+        self.assertIn(f'[1] {draft.evidence[0].chunk.title}', prompt)
+
+    def test_personal_info_never_reaches_the_model_or_the_draft(self):
+        llm = RecordingLLM(reply='홍길동 학생(010-1234-5678), 출입시간은 23:00까지입니다 [1]')
+        draft = self.draft('외박 문의', '저는 홍길동, 22041013, 010-1234-5678 입니다. 출입시간 알려주세요',
+                           llm, known_names=['홍길동'])
+        prompt = llm.calls[0][1]
+        for secret in ('홍길동', '22041013', '010-1234-5678'):
+            self.assertNotIn(secret, prompt)
+            self.assertNotIn(secret, draft.text)
+
+    def test_weak_evidence_skips_the_model(self):
+        llm = RecordingLLM()
+        draft = self.draft('날씨', '오늘 서울 날씨 어때요?', llm, min_similarity=0.99)
+        self.assertEqual(draft.status, 'insufficient_evidence')
+        self.assertEqual(llm.calls, [])
+        self.assertIn('직접 답변', draft.warnings[0])
+
+    def test_made_up_citation_numbers_are_flagged(self):
+        draft = self.draft('출입시간', '출입시간 알려주세요', RecordingLLM(reply='23:00까지입니다 [1][9]'))
+        self.assertEqual(draft.cited, [1])
+        self.assertIn('[9]', draft.warnings[0])
+
+    def test_missing_citations_are_flagged(self):
+        draft = self.draft('출입시간', '출입시간 알려주세요', RecordingLLM(reply='23:00까지입니다.'))
+        self.assertIn('근거 번호가 없습니다', draft.warnings[0])
+
+    def test_refusal_without_citations_is_not_a_warning(self):
+        draft = self.draft('출입시간', '출입시간 알려주세요', RecordingLLM(reply='근거 자료에서 확인할 수 없습니다.'))
+        self.assertEqual(draft.warnings, [])
+
+    def test_model_failure_is_reported_not_raised(self):
+        class Broken(FakeLLM):
+            def generate(self, system, prompt):
+                raise LLMError('Ollama에 연결할 수 없습니다')
+
+        draft = self.draft('출입시간', '출입시간 알려주세요', Broken())
+        self.assertEqual(draft.status, 'error')
+        self.assertIn('연결할 수 없습니다', draft.warnings[0])
+
+    def test_inquiry_draft_does_not_use_its_own_answer_as_evidence(self):
+        student = User.objects.create_user('20250001', password='pw12345!')
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        inquiry = Inquiry.objects.create(user=student, title='출입시간', content='생활관 출입시간 알려주세요')
+        InquiryAnswer.objects.create(inquiry=inquiry, admin=staff, answer='06:00-23:00입니다')
+        own_key = f'inquiry:{inquiry.pk}'
+        embed_pending(self.embedder)
+        self.assertIn(own_key, [h.chunk.key for h in search('출입시간\n생활관 출입시간 알려주세요',
+                                                             embedder=self.embedder).hits])
+        draft = draft_answer(inquiry, llm=RecordingLLM(), embedder=self.embedder, min_similarity=0.0)
+        self.assertEqual(len(draft.evidence), 5)
+        self.assertNotIn(own_key, [h.chunk.key for h in draft.evidence])
+
+
+class LLMBackendTests(TestCase):
+    def test_ollama_sends_a_chat_request_and_strips_thinking(self):
+        captured = {}
+
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def fake_urlopen(request, timeout):
+            captured['url'] = request.full_url
+            captured['body'] = json.loads(request.data.decode('utf-8'))
+            reply = {'message': {'content': '<think>고민</think>출입시간은 23:00까지입니다 [1]'}}
+            return Response(json.dumps(reply).encode('utf-8'))
+
+        with mock.patch('urllib.request.urlopen', fake_urlopen):
+            text = OllamaLLM('exaone3.5:7.8b', 'http://127.0.0.1:11434/').generate('규칙', '문의')
+        self.assertEqual(text, '출입시간은 23:00까지입니다 [1]')
+        self.assertEqual(captured['url'], 'http://127.0.0.1:11434/api/chat')
+        self.assertEqual(captured['body']['model'], 'exaone3.5:7.8b')
+        self.assertFalse(captured['body']['stream'])
+        self.assertEqual([m['role'] for m in captured['body']['messages']], ['system', 'user'])
+
+    def test_ollama_connection_failure_becomes_llm_error(self):
+        def refuse(request, timeout):
+            raise urllib.error.URLError('connection refused')
+
+        with mock.patch('urllib.request.urlopen', refuse), self.assertRaises(LLMError) as ctx:
+            OllamaLLM('m', 'http://127.0.0.1:11434').generate('s', 'p')
+        self.assertIn('Ollama', str(ctx.exception))
+
+    def test_get_llm_backends(self):
+        self.assertIsInstance(get_llm('fake'), FakeLLM)
+        self.assertEqual(get_llm('ollama', 'qwen3:8b').name, 'qwen3:8b')
+        with self.assertRaises(ValueError):
+            get_llm('nope')

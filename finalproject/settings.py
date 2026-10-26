@@ -145,6 +145,14 @@ KNOWLEDGE_EMBEDDING = {
     'MODEL': os.environ.get('KNOWLEDGE_EMBEDDING_MODEL', 'BAAI/bge-m3'),
 }
 
+# RAG 답변 초안을 쓰는 언어 모델 (knowledge/llm.py, ADR 0007)
+# BACKEND: 'ollama'(이 PC의 로컬 모델) 또는 'fake'(테스트·CI용)
+KNOWLEDGE_LLM = {
+    'BACKEND': os.environ.get('KNOWLEDGE_LLM_BACKEND', 'ollama'),
+    'MODEL': os.environ.get('KNOWLEDGE_LLM_MODEL', 'exaone3.5:7.8b'),
+    'HOST': os.environ.get('OLLAMA_HOST', 'http://127.0.0.1:11434'),
+}
+
 # API 문서 (/api/docs/)
 SPECTACULAR_SETTINGS = {
     'TITLE': '돔고돔락 API',

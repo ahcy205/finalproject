@@ -167,6 +167,7 @@ python manage.py runserver
 - 테스트: `python manage.py test web dorm knowledge` (DB가 켜져 있어야 함)
 - RAG 검색 자료 만들기: `pip install -r requirements-ml.txt`(임베딩 모델, 선택) 후 `python manage.py build_knowledge_index`. 모델 없이 확인할 때는 `--backend fake`
 - 검색 품질 측정: `python manage.py evaluate_knowledge_search`
+- 문의 답변 초안(관리자용): [Ollama](https://ollama.com) 설치 후 `ollama pull exaone3.5:7.8b`. 로컬에서만 실행하며 무료입니다 ([ADR 0007](docs/adr/0007-local-llm-answer-draft.md))
 - DB가 꺼져 있으면 `PostgreSQL에 접속할 수 없습니다` 안내가 나옵니다. Docker Desktop을 켜고 `docker compose up -d db`를 실행하세요.
 - 이 저장소는 로컬 실행 기준입니다. 배포용 설정(`DEBUG=False`, 허용 호스트·CORS 제한)은 적용하지 않았습니다.
 - 비밀 키: 환경변수 `DJANGO_SECRET_KEY`에서 읽습니다. 로컬 개발(`DEBUG=True`)에서는 없어도 실행되지만, 배포할 때는 반드시 설정해야 합니다.
