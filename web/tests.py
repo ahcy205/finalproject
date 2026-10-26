@@ -118,3 +118,30 @@ class MypageInquiryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['form'].errors)
         self.assertFalse(Inquiry.objects.exists())
+
+
+class LoginNextTests(TestCase):
+    def setUp(self):
+        User.objects.create_user('20250001', password='pw12345!')
+        self.url = reverse('web:login')
+
+    def login(self, next_url):
+        return self.client.post(self.url, {'username': '20250001', 'password': 'pw12345!', 'next': next_url})
+
+    def test_login_page_keeps_next_in_form(self):
+        response = self.client.get(self.url, {'next': '/mypage/'})
+        self.assertContains(response, 'name="next" value="/mypage/"')
+
+    def test_login_redirects_to_next(self):
+        self.assertRedirects(self.login('/mypage/'), '/mypage/')
+
+    def test_login_ignores_external_next(self):
+        response = self.login('https://evil.example.com/')
+        self.assertRedirects(response, reverse('web:home'))
+
+    def test_login_without_next_goes_home(self):
+        self.assertRedirects(self.login(''), reverse('web:home'))
+
+    def test_failed_login_keeps_next(self):
+        response = self.client.post(self.url, {'username': '20250001', 'password': 'wrong', 'next': '/mypage/'})
+        self.assertContains(response, 'name="next" value="/mypage/"')
