@@ -158,7 +158,13 @@ class ChunkingTests(TestCase):
 
 
 class IndexingTests(TestCase):
+    """색인 명령(sync_chunks / embed_pending) 자체의 동작. 저장 시 자동 갱신(AutoSyncTests)은 꺼 두고 확인한다."""
+
     def setUp(self):
+        from unittest import mock
+        patcher = mock.patch('knowledge.signals._safely')
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.embedder = FakeEmbedder()
         self.notice = Notice.objects.create(title='소등 안내', content='00:00 소등')
 
@@ -229,3 +235,76 @@ class KnowledgeIndexCommandTests(TestCase):
             self.assertEqual([r[0] for r in cursor.fetchall()], ['pg_trgm', 'vector'])
             cursor.execute("select indexdef from pg_indexes where indexname = 'knowledge_embedding_hnsw'")
             self.assertIn('USING hnsw (embedding vector_cosine_ops)', cursor.fetchone()[0])
+
+
+class AutoSyncTests(TestCase):
+    """공지·문의를 저장하거나 지우면 검색 자료가 바로 바뀐다."""
+
+    def chunk(self, key):
+        return KnowledgeChunk.objects.filter(key=key).first()
+
+    def test_notice_create_update_delete(self):
+        notice = Notice.objects.create(title='점호 안내', content='매일 24:00, 문의 010-1111-2222')
+        key = f'notice:{notice.pk}'
+        self.assertEqual(self.chunk(key).title, '공지: 점호 안내')
+        self.assertIn('[전화번호]', self.chunk(key).content)
+
+        embed_pending(FakeEmbedder())
+        notice.content = '매일 23:30으로 변경'
+        notice.save()
+        changed = self.chunk(key)
+        self.assertIn('23:30', changed.content)
+        self.assertIsNone(changed.embedding)  # 내용이 바뀌면 예전 벡터를 쓰지 않는다
+
+        notice.delete()
+        self.assertIsNone(self.chunk(key))
+
+    def test_inquiry_appears_only_after_it_is_answered(self):
+        student = User.objects.create_user('20250001', password='pw12345!')
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        inquiry = Inquiry.objects.create(user=student, title='소음 문의', content='옆방이 시끄러워요')
+        key = f'inquiry:{inquiry.pk}'
+        self.assertIsNone(self.chunk(key))
+
+        answer = InquiryAnswer.objects.create(inquiry=inquiry, admin=staff, answer='생활감에게 전달했습니다.')
+        self.assertIn('답변: 생활감에게 전달했습니다.', self.chunk(key).content)
+
+        inquiry.content = '옆방이 밤마다 시끄러워요'
+        inquiry.save()
+        self.assertIn('밤마다', self.chunk(key).content)
+
+        answer.delete()
+        self.assertIsNone(self.chunk(key))
+
+    def test_deleting_an_answered_inquiry_removes_its_chunk(self):
+        student = User.objects.create_user('20250001', password='pw12345!')
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        inquiry = Inquiry.objects.create(user=student, title='t', content='c')
+        InquiryAnswer.objects.create(inquiry=inquiry, admin=staff, answer='a')
+        inquiry.delete()  # 답변도 함께 삭제됨(CASCADE)
+        self.assertFalse(KnowledgeChunk.objects.filter(source='inquiry').exists())
+
+    def test_index_failure_does_not_block_saving_a_notice(self):
+        from unittest import mock
+        with mock.patch('knowledge.signals.notice_chunk', side_effect=RuntimeError('boom')), \
+                self.assertLogs('knowledge.signals', level='ERROR') as logs:
+            notice = Notice.objects.create(title='저장은 되어야 함', content='내용')
+        self.assertTrue(Notice.objects.filter(pk=notice.pk).exists())
+        self.assertIn('검색 자료 갱신 실패', logs.output[0])
+        # 같은 트랜잭션에서 다른 쿼리도 계속 쓸 수 있어야 한다
+        self.assertEqual(Notice.objects.count(), 1)
+
+    def test_loading_a_fixture_skips_auto_sync(self):
+        import json
+        import os
+        import tempfile
+        fixture = [{'model': 'dorm.notice', 'pk': 901, 'fields': {'title': '백업 공지', 'content': '내용',
+                                                                   'image': '', 'date': '2026-01-01'}}]
+        with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8') as f:
+            json.dump(fixture, f, ensure_ascii=False)
+        try:
+            call_command('loaddata', f.name, verbosity=0)
+        finally:
+            os.remove(f.name)
+        self.assertTrue(Notice.objects.filter(pk=901).exists())
+        self.assertIsNone(self.chunk('notice:901'))  # 불러온 뒤 색인 명령으로 만든다
