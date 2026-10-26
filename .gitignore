@@ -179,3 +179,10 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+# 프로젝트 전용
+# 사용자가 올린 이미지 (공지·게시글 첨부)
+media/
+# 개인 IDE 설정
+.idea/
+# macOS 폴더 메타데이터
+.DS_Store
