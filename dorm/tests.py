@@ -3,7 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from django.test import TestCase
 
-from dorm.models import Inquiry
+from dorm.models import Inquiry, OutingApply
 
 
 def token_client(user):
@@ -44,3 +44,23 @@ class InquiryDetailApiTests(TestCase):
     def test_owner_cannot_answer(self):
         response = token_client(self.owner).post(self.url, {'answer': '셀프 답변'}, format='json')
         self.assertEqual(response.status_code, 403)
+
+
+class OutingApplyApiTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+        self.client = token_client(self.student)
+
+    def test_own_application_is_saved(self):
+        response = self.client.post('/api/outing_apply/',
+                                    {'name': '홍길동', 'student_number': '20250001', 'out_date': '2026-11-01'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(OutingApply.objects.filter(student_number='20250001').exists())
+
+    def test_other_student_is_rejected(self):
+        response = self.client.post('/api/outing_apply/',
+                                    {'name': '김철수', 'student_number': '20259999', 'out_date': '2026-11-01'}, format='json')
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(OutingApply.objects.exists())

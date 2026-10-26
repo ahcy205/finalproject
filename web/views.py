@@ -10,7 +10,6 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
-from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
 from web.forms import CustomSignupForm, CommentForm, PostForm, InquiryForm, InquiryAnswerForm, OutingApplyForm, \
@@ -241,15 +240,30 @@ def outside(request):
         return redirect('web:outside_manage')
 
     if request.method == 'POST':
-        form = OutingApplyForm(request.POST)
-        if form.is_valid():
-            form.save()
-            request.session['show_success_alert'] = True
-            return redirect('web:apply_success')
-    else:
-        form = OutingApplyForm()
+        return _save_outing(request)
 
-    return render(request, 'web/outside.html', {'form': form})
+    return render(request, 'web/outside.html', {'form': OutingApplyForm()})
+
+
+def _save_outing(request):
+    """외박 신청서를 검증하고, 로그인한 본인 명의일 때만 저장한다."""
+    form = OutingApplyForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "이름, 학번, 외박 날짜를 모두 올바르게 입력해주세요.")
+        return redirect('web:outside')
+
+    name = form.cleaned_data['name'].strip()
+    student_number = form.cleaned_data['student_number'].strip()
+    if name != request.user.userprofile.full_name.strip() or student_number != request.user.username.strip():
+        messages.error(request, "제출한 이름 또는 학번이 로그인 정보와 일치하지 않습니다.")
+        return redirect('web:outside')
+
+    outing = form.save(commit=False)
+    outing.name = name
+    outing.student_number = student_number
+    outing.save()
+    request.session['show_success_alert'] = True
+    return redirect('web:apply_success')
 
 
 def apply_success(request):
@@ -543,25 +557,9 @@ def dorm_info_view(request):
 @login_required
 def apply_outing(request):
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
-        student_number = request.POST.get('student_number', '').strip()
+        return _save_outing(request)
 
-        user_name = request.user.userprofile.full_name.strip()
-        user_number = request.user.username.strip()
-
-        if name != user_name or student_number != user_number:
-            messages.error(request, "제출한 이름 또는 학번이 로그인 정보와 일치하지 않습니다.")
-            return redirect('web:outside')
-        OutingApply.objects.create(
-            name=name,
-            student_number=student_number,
-            out_date=request.POST.get('out_date'),
-            applied_at=timezone.now()
-        )
-
-        return redirect('web:apply_success')
-
-    return render(request, 'web/outside.html')
+    return redirect('web:outside')
 
 @login_required
 def dorm_info_view(request):
