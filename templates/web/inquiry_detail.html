@@ -60,6 +60,38 @@
     .btn-primary {
       padding: 8px 25px;
     }
+    .draft-panel {
+      background: #fafbfc;
+      border: 1px solid #e3e6ea;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+    .draft-hint {
+      font-size: 0.9rem;
+      color: #666;
+      margin-left: 8px;
+    }
+    .draft-evidence summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .draft-evidence ol {
+      margin: 8px 0 0;
+      padding-left: 1.4rem;
+    }
+    .draft-evidence li {
+      margin-bottom: 8px;
+    }
+    .draft-evidence li.cited {
+      font-weight: 600;
+    }
+    .evidence-text {
+      font-size: 0.88rem;
+      font-weight: 400;
+      color: #555;
+      white-space: pre-line;
+    }
   </style>
 </head>
 <body>
@@ -83,7 +115,52 @@
 
     {% if is_admin %}
       <h3 class="mt-5 mb-3">답변 작성/수정</h3>
-      <form method="post">
+
+      <div class="draft-panel">
+        <form method="post" action="{% url 'web:inquiry_draft' inquiry.pk %}" class="draft-request"
+              onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='초안 만드는 중… (수십 초 걸릴 수 있음)';">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-primary btn-sm">AI 답변 초안 만들기</button>
+          <span class="draft-hint">규칙·안내·공지·이전 답변을 근거로 초안을 만듭니다. 학생에게 자동으로 보내지 않습니다.</span>
+        </form>
+
+        {% if draft %}
+          {% if draft.status == 'ok' %}
+            <div class="alert alert-info mt-3 mb-2">
+              AI 초안을 아래 답변 칸에 채웠습니다. <strong>근거와 맞는지 확인하고 고친 뒤 저장하세요.</strong>
+              <small class="d-block text-muted">모델 {{ draft.model }} · {{ draft.seconds|floatformat:1 }}초</small>
+            </div>
+          {% elif draft.status == 'insufficient_evidence' %}
+            <div class="alert alert-secondary mt-3 mb-2">관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요.</div>
+          {% else %}
+            <div class="alert alert-danger mt-3 mb-2">초안을 만들지 못했습니다.</div>
+          {% endif %}
+
+          {% if draft.status != 'insufficient_evidence' %}
+            {% for warning in draft.warnings %}
+              <div class="alert alert-warning py-2 mb-2">{{ warning }}</div>
+            {% endfor %}
+          {% endif %}
+
+          {% if draft.evidence and draft.status != 'error' %}
+            <details class="draft-evidence" {% if draft.status == 'ok' %}open{% endif %}>
+              <summary>근거 {{ draft.evidence|length }}개</summary>
+              <ol>
+                {% for hit in draft.evidence %}
+                  <li class="{% if forloop.counter in draft.cited %}cited{% endif %}">
+                    {% if hit.chunk.url %}<a href="{{ hit.chunk.url }}" target="_blank" rel="noopener">{{ hit.chunk.title }}</a>{% else %}{{ hit.chunk.title }}{% endif %}
+                    {% if forloop.counter in draft.cited %}<span class="badge bg-primary">인용됨</span>{% endif %}
+                    {% if hit.similarity is not None %}<small class="text-muted">유사도 {{ hit.similarity|floatformat:2 }}</small>{% endif %}
+                    <div class="evidence-text">{{ hit.chunk.content|truncatechars:160 }}</div>
+                  </li>
+                {% endfor %}
+              </ol>
+            </details>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <form method="post" action="{% url 'web:inquiry_detail' inquiry.pk %}">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn btn-primary">저장</button>

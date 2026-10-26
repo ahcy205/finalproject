@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from knowledge import sources as knowledge_sources
+from knowledge.answering import Draft, draft_answer
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
 from django.shortcuts import get_object_or_404
 
@@ -130,6 +131,29 @@ def inquiry_detail_view(request, pk):
         'is_admin': is_admin,
     }
     return render(request, 'web/inquiry_detail.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def inquiry_draft_view(request, pk):
+    """AI 답변 초안을 만들어 답변 칸에 채워 보여 준다. 저장·발송은 관리자가 확인 후 직접 한다 (ADR 0007)."""
+    inquiry = get_object_or_404(Inquiry.objects.select_related('user__userprofile'), pk=pk)
+    answer_instance = InquiryAnswer.objects.filter(inquiry=inquiry).first()
+    try:
+        draft = draft_answer(inquiry)
+    except RuntimeError as exc:  # 임베딩 모델 미설치 등. LLM 오류는 draft_answer가 Draft로 돌려준다
+        draft = Draft(status='error', warnings=[str(exc)])
+
+    form = InquiryAnswerForm(instance=answer_instance)
+    if draft.status == 'ok':
+        form = InquiryAnswerForm(instance=answer_instance, initial={'answer': draft.text})
+    return render(request, 'web/inquiry_detail.html', {
+        'inquiry': inquiry,
+        'form': form,
+        'is_admin': True,
+        'draft': draft,
+    })
 
 
 @login_required

@@ -10,6 +10,7 @@ urlpatterns = [
     path('community/', views.community, name='community'),
     path('mypage/', views.mypage_view, name='mypage'),
     path('inquiry/<int:pk>/', views.inquiry_detail_view, name='inquiry_detail'),
+    path('inquiry/<int:pk>/draft/', views.inquiry_draft_view, name='inquiry_draft'),
     path('signup/', views.signup_views, name='signup'),
     path('dorminfo/', views.dorm_info_view, name='dorminfo'),
     path('assign_room/<int:dorm_id>/', views.assign_room, name='assign_room'),
