@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
@@ -451,6 +452,8 @@ def signup_views(request):
 
 
 def login_views(request):
+    next_url = request.POST.get('next') or request.GET.get('next', '')
+
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -458,13 +461,18 @@ def login_views(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
+            # 같은 사이트 주소일 때만 이동 (외부 사이트로의 리다이렉트 방지)
+            if url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+            ):
+                return redirect(next_url)
             return redirect('web:home')
         else:
             messages.error(request, "아이디 또는 비밀번호가 올바르지 않습니다.")
-            return render(request, 'web/login.html', {'username': username})
+            return render(request, 'web/login.html', {'username': username, 'next': next_url})
 
     else:
-        return render(request, 'web/login.html')
+        return render(request, 'web/login.html', {'next': next_url})
 
 
 @require_POST
