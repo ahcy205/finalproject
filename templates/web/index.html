@@ -35,14 +35,7 @@
                            <h1>돔고돔락 공지사항</h1>
                            <h2>기숙사 생활에 필요한 소식을 확인하세요</h2>
                            <p>
-                              {% if user.is_authenticated %}
                               <a class="btn btn-primary btn-lg" href="{% url 'web:notice' %}">공지사항 가기</a>
-                              {% else %}
-                              <a class="btn btn-primary btn-lg" href=""
-                                 onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">
-                                 공지사항 가기
-                              </a>
-                              {% endif %}
                            </p>
                         </div>
                      </div>
@@ -86,49 +79,31 @@
        <div class="row">
          <div class="col-md-3 col-sm-6 text-center animate-box">
            <div class="services">
-             {% if user.is_authenticated %}
-             <a href="{% url 'web:check_in' %}">
+                          <a href="{% url 'web:check_in' %}">
                <span class="icon"><i class="icon-home-outline"></i></span>
                <div class="desc"><h3>기숙사 신청</h3></div>
              </a>
-             {% else %}
-             <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">
-               <span class="icon"><i class="icon-home-outline"></i></span>
-               <div class="desc"><h3>기숙사 신청</h3></div>
-             </a>
-             {% endif %}
+             
            </div>
          </div>
 
          <div class="col-md-3 col-sm-6 text-center animate-box">
            <div class="services">
-             {% if user.is_authenticated %}
-             <a href="{% url 'web:outside' %}">
+                          <a href="{% url 'web:outside' %}">
                <span class="icon"><i class="icon-calender-outline"></i></span>
                <div class="desc"><h3>외박 신청</h3></div>
              </a>
-             {% else %}
-             <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">
-               <span class="icon"><i class="icon-calender-outline"></i></span>
-               <div class="desc"><h3>외박 신청</h3></div>
-             </a>
-             {% endif %}
+             
            </div>
          </div>
 
          <div class="col-md-3 col-sm-6 text-center animate-box">
            <div class="services">
-             {% if user.is_authenticated %}
-             <a href="{% url 'web:notice' %}">
+                          <a href="{% url 'web:notice' %}">
                <span class="icon"><i class="icon-megaphone2"></i></span>
                <div class="desc"><h3>공지 사항</h3></div>
              </a>
-             {% else %}
-             <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">
-               <span class="icon"><i class="icon-megaphone2"></i></span>
-               <div class="desc"><h3>공지 사항</h3></div>
-             </a>
-             {% endif %}
+             
            </div>
          </div>
 
@@ -161,17 +136,11 @@
 
          <div class="col-md-3 col-sm-6 text-center animate-box">
            <div class="services">
-             {% if user.is_authenticated %}
-             <a href="{% url 'web:community_home' %}">
+                          <a href="{% url 'web:community_home' %}">
                <span class="icon"><i class="icon-messages"></i></span>
                <div class="desc"><h3>자유게시판</h3></div>
              </a>
-             {% else %}
-             <a href="" onclick="alert('로그인이 필요한 페이지입니다.'); window.location.href='{% url 'web:login' %}'; return false;">
-               <span class="icon"><i class="icon-messages"></i></span>
-               <div class="desc"><h3>자유게시판</h3></div>
-             </a>
-             {% endif %}
+             
            </div>
          </div>
 

@@ -131,6 +131,7 @@ def inquiry_detail_view(request, pk):
     return render(request, 'web/inquiry_detail.html', context)
 
 
+@login_required
 def notice_list(request):
     kw = request.GET.get('kw', '')
     notices = Notice.objects.all()
@@ -318,6 +319,7 @@ def reject_outing(request, pk):
     return redirect('web:outing_info')
 
 
+@login_required
 def community_home(request):
     kw = request.GET.get('kw', '')
     # 좋아요·댓글 수와 작성자를 목록 쿼리에서 한 번에 가져온다 (글마다 따로 조회하지 않음)
