@@ -186,3 +186,6 @@ media/
 .idea/
 # macOS 폴더 메타데이터
 .DS_Store
+
+# 검증 도구가 만드는 화면 스냅샷 (tools/README.md)
+tools/snapshots/
