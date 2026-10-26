@@ -357,6 +357,10 @@
         // 검색 탭 활성화
         showTab('search');
       }
+      // 문의 등록 후 또는 입력 오류 시 문의하기 탭 유지
+      if (urlParams.get('tab') === 'inquiry'{% if form.errors %} || true{% endif %}) {
+        showTab('inquiry');
+      }
     });
   </script>
 
