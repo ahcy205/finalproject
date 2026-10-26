@@ -198,3 +198,12 @@ class OutingUserMigrationTests(TransactionTestCase):
         Outing = new_apps.get_model('dorm', 'OutingApply')
         self.assertEqual(Outing.objects.get(student_number='20250001').user_id, student.pk)
         self.assertIsNone(Outing.objects.get(student_number='99999999').user_id)
+
+
+class DormApplyLengthApiTests(TestCase):
+    def test_long_student_number_is_rejected(self):
+        student = User.objects.create_user('20250001', password='pw12345!')
+        response = token_client(student).post(
+            '/api/dorm_apply/', {'name': '홍길동', 'student_number': '12345678901', 'gender': 'male'}, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Dorm.objects.exists())

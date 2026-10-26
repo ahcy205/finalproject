@@ -459,3 +459,17 @@ class OutingUserLinkWebTests(TestCase):
         self.student.userprofile.save()
         apps = self.client.get(reverse('web:outing_info')).context['applications']
         self.assertEqual([str(a.out_date) for a in apps], ['2026-11-01'])
+
+
+class DormFieldValidationTests(TestCase):
+    def test_unassigned_bed_is_a_valid_choice(self):
+        dorm = Dorm(name='홍길동', student_number='20250001', gender='male')
+        dorm.full_clean()  # position 기본값 0(미배정)도 유효해야 한다
+        self.assertEqual(dorm.get_position_display(), '미배정')
+
+    def test_check_in_rejects_long_student_number(self):
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        response = self.client.post(reverse('web:check_in'),
+                                    {'name': '홍길동', 'student_number': '12345678901', 'gender': 'male'})
+        self.assertContains(response, '학번은 10자 이하로 입력해주세요.')
+        self.assertFalse(Dorm.objects.exists())

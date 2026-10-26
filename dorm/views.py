@@ -165,6 +165,8 @@ def apply_dorm_api(request):
         )
     if Dorm.objects.filter(user=user).exists():
         return JsonResponse({'success': False, 'error': 'Dorm application already exists.'}, status=400)
+    if len(stud) > 10:
+        return JsonResponse({'success': False, 'error': 'Student number must be 10 characters or fewer.'}, status=400)
     if Dorm.objects.filter(student_number=stud).exists():
         return JsonResponse({'success': False, 'error': 'Student number already registered.'}, status=400)
 
