@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticate
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
+from django.core.paginator import Paginator
 from django.db.models import Prefetch
 
 from .models import (
@@ -265,6 +266,9 @@ def reject_outing_api(request, pk):
     return JsonResponse({'success': True})
 
 
+POSTS_PER_PAGE = 20
+
+
 def posts_with_comments():
     """작성자·댓글·댓글 작성자를 한 번에 가져오는 게시글 쿼리 (N+1 방지)."""
     return Post.objects.select_related('author').prefetch_related(
@@ -277,10 +281,27 @@ def posts_with_comments():
 @parser_classes([MultiPartParser, FormParser])
 def posts_api(request):
     if request.method == 'GET':
-        qs = posts_with_comments().order_by('-created_at')
+        # 작성 시각이 같은 글도 순서가 흔들리지 않게 글 번호를 보조 정렬로 쓴다 (페이지 중복·누락 방지)
+        qs = posts_with_comments().order_by('-created_at', '-id')
+        if 'page' not in request.query_params:
+            # page 없이 요청하면 기존 앱과의 호환을 위해 전체를 돌려준다
+            return Response({
+                'success': True,
+                'posts': PostSerializer(qs, many=True, context={'request': request}).data
+            })
+
+        raw_page = request.query_params['page']
+        if not raw_page.isdigit() or int(raw_page) < 1:
+            return Response({'success': False, 'error': 'page must be a positive integer.'}, status=400)
+        page_number = int(raw_page)
+        paginator = Paginator(qs, POSTS_PER_PAGE)
+        posts = paginator.page(page_number).object_list if page_number <= paginator.num_pages else []
         return Response({
             'success': True,
-            'posts': PostSerializer(qs, many=True, context={'request': request}).data
+            'posts': PostSerializer(posts, many=True, context={'request': request}).data,
+            'page': page_number,
+            'total_pages': paginator.num_pages,
+            'has_next': page_number < paginator.num_pages,
         })
     serializer = PostSerializer(data=request.data, context={'request': request})
     serializer.is_valid(raise_exception=True)

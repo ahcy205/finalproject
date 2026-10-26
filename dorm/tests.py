@@ -259,3 +259,35 @@ class PostApiQueryCountTests(TestCase):
         for i in range(10):
             Comment.objects.create(post=post, author=self.users[i % 3], content='추가 댓글')
         self.assertEqual(self.count_queries(f'/api/posts/{post.pk}/'), few)
+
+
+class PostApiPaginationTests(TestCase):
+    """?page= 를 주면 20개씩, 주지 않으면 기존처럼 전체를 돌려준다 (기존 앱 호환)."""
+
+    def setUp(self):
+        author = User.objects.create_user('20250001', password='pw12345!')
+        for i in range(45):
+            Post.objects.create(author=author, title=f'글 {i}', content='내용')
+
+    def get(self, query=''):
+        return APIClient().get('/api/posts/' + query)
+
+    def test_without_page_returns_everything_as_before(self):
+        body = self.get().json()
+        self.assertEqual(len(body['posts']), 45)
+        self.assertNotIn('page', body)
+
+    def test_pages_of_twenty(self):
+        first = self.get('?page=1').json()
+        self.assertEqual((len(first['posts']), first['page'], first['total_pages'], first['has_next']), (20, 1, 3, True))
+        last = self.get('?page=3').json()
+        self.assertEqual((len(last['posts']), last['has_next']), (5, False))
+        self.assertEqual(first['posts'][0]['title'], '글 44')  # 최신 글부터
+
+    def test_page_past_the_end_is_empty(self):
+        body = self.get('?page=999').json()
+        self.assertEqual((body['posts'], body['has_next']), ([], False))
+
+    def test_invalid_page_is_rejected(self):
+        for bad in ('abc', '0', '-1'):
+            self.assertEqual(self.get(f'?page={bad}').status_code, 400, bad)
