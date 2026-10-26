@@ -34,7 +34,8 @@
 - Kotlin (Android Studio)
 
 ### Database
-- MariaDB
+- MariaDB (배포 환경)
+- SQLite (로컬 개발, `db.sqlite3`)
 
 ### DevOps
 - AWS EC2
@@ -94,8 +95,27 @@
 
 ---
 
+## ▶️ 로컬 실행
+
+```bash
+python -m venv venv
+venv\Scripts\activate          # macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser   # 관리자 계정 (선택)
+python manage.py runserver
+```
+
+- 웹: http://127.0.0.1:8000/
+- 앱용 REST API: http://127.0.0.1:8000/api/
+- 테스트: `python manage.py test web dorm`
+
+---
+
 ## 📄 문서
 
 - [📘 결과보고서](/docs/결과보고서.pdf)
 - [📑 화면정의서](/docs/화면정의서.pdf)
+- [🗺️ 흐름도](/docs/flowchart.html) — 시스템 구조, 업무 흐름, 데이터 구조, 권한 (다운로드 후 브라우저로 열기)
+- [📝 변경이력](/CHANGELOG.md)
 
