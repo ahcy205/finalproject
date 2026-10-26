@@ -133,7 +133,8 @@ def give_point_api(request):
 def notices_api(request):
     if request.method == 'GET':
         notices = Notice.objects.order_by('-date')
-        return JsonResponse({'success': True, 'notices': NoticeSerializer(notices, many=True).data})
+        data = NoticeSerializer(notices, many=True, context={'request': request}).data
+        return JsonResponse({'success': True, 'notices': data})
     auth = TokenAuthentication()
     auth_result = auth.authenticate(request)
     if not auth_result:
@@ -145,7 +146,7 @@ def notices_api(request):
     if not serializer.is_valid():
         return JsonResponse({'success': False, 'error': serializer.errors}, status=400)
     notice = serializer.save()
-    return JsonResponse({'success': True, 'notice': NoticeSerializer(notice).data})
+    return JsonResponse({'success': True, 'notice': NoticeSerializer(notice, context={'request': request}).data})
 
 
 @api_view(['POST'])
