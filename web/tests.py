@@ -5,6 +5,7 @@ import subprocess
 import sys
 import shutil
 import tempfile
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -16,6 +17,9 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
 from dorm.models import Comment, Dorm, Inquiry, InquiryAnswer, Like, Notice, OutingApply, Post
+from knowledge.chunking import build_chunks
+from knowledge.embeddings import FakeEmbedder
+from knowledge.indexing import embed_pending, sync_chunks
 
 
 class RewardPenaltyTests(TestCase):
@@ -589,3 +593,73 @@ class DatabaseSettingsTests(TestCase):
                                                          POSTGRES_DB='dorm_x')
         self.assertEqual((engine, host, port, name),
                          ('django.db.backends.postgresql', 'db.example', '6543', 'dorm_x'))
+
+
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+class AnswerDraftPanelTests(TestCase):
+    """관리자 문의 화면의 AI 답변 초안: 만들기만 하고 저장·발송은 관리자가 한다."""
+
+    @classmethod
+    def setUpTestData(cls):
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(FakeEmbedder())
+        cls.owner = User.objects.create_user('20250001', password='pw12345!')
+        cls.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        cls.inquiry = Inquiry.objects.create(user=cls.owner, title='출입시간', content='생활관 출입시간 알려주세요')
+        cls.url = reverse('web:inquiry_draft', args=[cls.inquiry.pk])
+
+    def setUp(self):
+        # 가짜 임베딩은 bge-m3와 유사도 눈금이 달라 근거 부족 기준을 끈다
+        patcher = mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_staff_gets_an_editable_draft_with_evidence(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200)
+        draft = response.context['draft']
+        self.assertEqual(draft.status, 'ok')
+        self.assertEqual(response.context['form']['answer'].value(), draft.text)
+        self.assertContains(response, draft.evidence[0].chunk.title)
+        self.assertContains(response, f'action="{reverse("web:inquiry_detail", args=[self.inquiry.pk])}"')
+        self.assertFalse(InquiryAnswer.objects.exists())  # 초안은 저장되지 않는다
+
+    def test_detail_page_offers_the_draft_button_only_to_staff(self):
+        self.client.force_login(self.staff)
+        self.assertContains(self.client.get(reverse('web:inquiry_detail', args=[self.inquiry.pk])), self.url)
+        self.client.force_login(self.owner)
+        self.assertNotContains(self.client.get(reverse('web:inquiry_detail', args=[self.inquiry.pk])), self.url)
+
+    def test_students_cannot_request_a_draft(self):
+        self.client.force_login(self.owner)
+        with mock.patch('web.views.draft_answer') as draft_answer:
+            response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 302)
+        draft_answer.assert_not_called()
+
+    def test_draft_needs_post(self):
+        self.client.force_login(self.staff)
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+
+    def test_weak_evidence_shows_a_notice_and_leaves_the_answer_empty(self):
+        self.client.force_login(self.staff)
+        with mock.patch('knowledge.answering.MIN_SIMILARITY', 1.1):
+            response = self.client.post(self.url)
+        self.assertEqual(response.context['draft'].status, 'insufficient_evidence')
+        self.assertContains(response, '직접 답변해 주세요')
+        self.assertFalse(response.context['form']['answer'].value())
+
+    def test_existing_answer_is_kept_when_no_draft_is_made(self):
+        InquiryAnswer.objects.create(inquiry=self.inquiry, admin=self.staff, answer='기존 답변')
+        self.client.force_login(self.staff)
+        with mock.patch('knowledge.answering.MIN_SIMILARITY', 1.1):
+            response = self.client.post(self.url)
+        self.assertEqual(response.context['form']['answer'].value(), '기존 답변')
+
+    def test_model_or_search_failure_is_shown_not_raised(self):
+        self.client.force_login(self.staff)
+        with mock.patch('web.views.draft_answer', side_effect=RuntimeError('임베딩 모델 라이브러리가 설치되지 않았습니다.')):
+            response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '임베딩 모델 라이브러리가 설치되지 않았습니다.')
