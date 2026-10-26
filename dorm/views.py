@@ -202,6 +202,7 @@ def apply_outing_api(request):
             status=403
         )
     outing = OutingApply.objects.create(
+        user=request.user,
         name=name,
         student_number=stud,
         out_date=outdate
@@ -217,7 +218,7 @@ def outing_apply_status_api(request):
     if user.is_staff:
         applies = OutingApply.objects.all().order_by('-applied_at')
     else:
-        applies = OutingApply.objects.filter(student_number=user.username).order_by('-applied_at')
+        applies = OutingApply.objects.filter(user=user).order_by('-applied_at')
     serializer = OutingApplySerializer(applies, many=True)
     return JsonResponse({'success': True, 'list': serializer.data})
 

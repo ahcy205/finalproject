@@ -265,6 +265,7 @@ def _save_outing(request):
         return redirect('web:outside')
 
     outing = form.save(commit=False)
+    outing.user = request.user
     outing.name = name
     outing.student_number = student_number
     outing.save()
@@ -285,10 +286,7 @@ def outing_info(request):
     if request.user.is_staff:
         applications = OutingApply.objects.all()
     else:
-        applications = OutingApply.objects.filter(
-            name=request.user.userprofile.full_name,
-            student_number=request.user.username
-        )
+        applications = OutingApply.objects.filter(user=request.user)
     return render(request, 'web/outinfo.html', {
         'applications': applications,
         'is_admin': request.user.is_staff
