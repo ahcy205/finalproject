@@ -7,7 +7,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
-from django.test import TestCase, override_settings
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TestCase, TransactionTestCase, override_settings
 
 from dorm.models import Dorm, Inquiry, Notice, OutingApply
 
@@ -103,8 +105,8 @@ class OutingStatusApiTests(TestCase):
         self.student = User.objects.create_user('20250001', password='pw12345!')
         self.student.userprofile.full_name = '홍길동'
         self.student.userprofile.save()
-        self.outing = OutingApply.objects.create(name='홍길동', student_number='20250001', out_date='2026-11-01',
-                                                 status='approved')
+        self.outing = OutingApply.objects.create(user=self.student, name='홍길동', student_number='20250001',
+                                                 out_date='2026-11-01', status='approved')
 
     def test_status_list_includes_approval_state(self):
         response = token_client(self.student).get('/api/sleepover/status/')
@@ -155,3 +157,44 @@ class NoticeImageApiTests(TestCase):
             '/api/notices/', {'title': '공지', 'content': '내용', 'image': html}, format='multipart')
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Notice.objects.exists())
+
+
+class OutingUserLinkApiTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+
+    def test_application_is_linked_to_account(self):
+        token_client(self.student).post(
+            '/api/outing_apply/', {'name': '홍길동', 'student_number': '20250001', 'out_date': '2026-11-02'},
+            format='json')
+        self.assertEqual(OutingApply.objects.get().user, self.student)
+
+    def test_status_list_follows_account_not_typed_name(self):
+        OutingApply.objects.create(user=self.student, name='예전 이름', student_number='20250001', out_date='2026-11-01')
+        OutingApply.objects.create(name='남의 신청', student_number='20250001', out_date='2026-11-03')
+        listed = token_client(self.student).get('/api/sleepover/status/').json()['list']
+        self.assertEqual([o['name'] for o in listed], ['예전 이름'])
+
+
+class OutingUserMigrationTests(TransactionTestCase):
+    """0005 마이그레이션이 기존 신청을 학번이 같은 계정에 연결한다."""
+
+    def test_existing_outings_are_linked_by_student_number(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate([('dorm', '0004_notice_image_userprofile_phone_number')])
+        old_apps = executor.loader.project_state([('dorm', '0004_notice_image_userprofile_phone_number')]).apps
+        User = old_apps.get_model('auth', 'User')
+        Outing = old_apps.get_model('dorm', 'OutingApply')
+        student = User.objects.create(username='20250001')
+        Outing.objects.create(name='홍길동', student_number='20250001', out_date='2026-11-01')
+        Outing.objects.create(name='모름', student_number='99999999', out_date='2026-11-01')
+
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate([('dorm', '0005_outingapply_user')])
+        new_apps = executor.loader.project_state([('dorm', '0005_outingapply_user')]).apps
+        Outing = new_apps.get_model('dorm', 'OutingApply')
+        self.assertEqual(Outing.objects.get(student_number='20250001').user_id, student.pk)
+        self.assertIsNone(Outing.objects.get(student_number='99999999').user_id)

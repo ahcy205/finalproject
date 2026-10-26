@@ -52,6 +52,8 @@ class OutingApply(models.Model):
         ('rejected', 'not approve'),
     ]
 
+    # 신청한 계정. 이름·학번은 신청서에 적은 값 그대로 보관한다.
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='outing_applies')
     name = models.CharField(max_length=20)
     student_number = models.CharField(max_length=10)
     out_date = models.DateField()

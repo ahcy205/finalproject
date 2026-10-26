@@ -438,3 +438,24 @@ class InquiryDetailWebTests(TestCase):
         self.assertEqual(self.client.get(self.url).status_code, 200)
         self.client.post(self.url, {'answer': '셀프 답변'})
         self.assertFalse(InquiryAnswer.objects.exists())
+
+
+class OutingUserLinkWebTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+        self.client.force_login(self.student)
+
+    def test_web_application_is_linked_to_account(self):
+        self.client.post(reverse('web:apply_outing'),
+                         {'name': '홍길동', 'student_number': '20250001', 'out_date': '2026-11-01'})
+        self.assertEqual(OutingApply.objects.get().user, self.student)
+
+    def test_outing_list_shows_own_applications_after_name_change(self):
+        OutingApply.objects.create(user=self.student, name='홍길동', student_number='20250001', out_date='2026-11-01')
+        OutingApply.objects.create(name='홍길동', student_number='20250001', out_date='2026-11-09')
+        self.student.userprofile.full_name = '홍길순'
+        self.student.userprofile.save()
+        apps = self.client.get(reverse('web:outing_info')).context['applications']
+        self.assertEqual([str(a.out_date) for a in apps], ['2026-11-01'])
