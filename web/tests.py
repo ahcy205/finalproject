@@ -365,3 +365,27 @@ class SecretKeySettingsTests(TestCase):
         settings_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'finalproject', 'settings.py')
         with open(settings_file, encoding='utf-8') as f:
             self.assertNotIn('98z%w$o&kv', f.read())
+
+
+class SharedNavTests(TestCase):
+    """상단 메뉴는 templates/web/_nav.html 한 곳에만 있다."""
+
+    def test_nav_markup_lives_only_in_partial(self):
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'web')
+        holders = []
+        for name in os.listdir(template_dir):
+            with open(os.path.join(template_dir, name), encoding='utf-8') as f:
+                if '<nav class="fh5co-nav"' in f.read():
+                    holders.append(name)
+        self.assertEqual(holders, ['_nav.html'])
+
+    def test_pages_render_one_nav_with_active_menu(self):
+        guide = self.client.get(reverse('web:guide'))
+        self.assertContains(guide, '<nav class="fh5co-nav"', count=1)
+        self.assertContains(guide, 'class="has-dropdown active"', count=1)
+        self.assertNotContains(self.client.get(reverse('web:bus')), 'has-dropdown active')
+
+    def test_home_keeps_admin_menu_for_staff(self):
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.client.force_login(staff)
+        self.assertContains(self.client.get(reverse('web:home')), '입실 신청 관리')
