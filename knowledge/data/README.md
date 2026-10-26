@@ -6,6 +6,8 @@
 |---|---|---|
 | `rules.yaml` | `/rules/` 생활관 규칙 | 조항 15개 + 제14조의2 + 부칙, 벌점표, 벌점 안내문 |
 | `info.yaml` | `/info/` 생활관 안내 | 8개 장, 조항 27개 |
+| `bus.yaml` | `/bus/` 셔틀버스 | 노선 2개(천안 터미널·천안아산역 방면), 노선마다 12편 |
+| `menu.yaml` | `/menu/` 주간 식단표 | 5일 × 중식·석식 (2025년 6월 16–20일 예시 식단) |
 
 ## 형식
 
@@ -23,6 +25,32 @@ sections:              # 장. 장이 없는 문서는 title: null 인 장 하나
 ```
 
 `rules.yaml`에는 위 형식 외에 벌점표(`penalty_table`)와 표 아래 안내문(`notes`)이 있습니다.
+
+### 표 형식 (bus, menu)
+
+```yaml
+# bus.yaml
+routes:
+- key: terminal                 # 화면의 표 id (table-terminal)
+  title: 천안 터미널 방면
+  outbound_stops: [천안 터미널, ..., 학교 도착]   # 학교로 오는 편
+  inbound_stops: [학교 출발, ..., 천안 터미널]    # 학교에서 나가는 편
+  trips:
+  - bus: (1호차)
+    outbound: ['08:25', ...]     # outbound_stops와 같은 순서·개수
+    inbound: ['09:20', ...]
+
+# menu.yaml
+days: [{date: 06월 16일, weekday: 월}, ...]
+meals:
+- name: 중식
+  price: 4,500원
+  rows:                          # 화면의 표 한 줄
+  - time: '11:00'
+    dishes: [떡만두국, ...]       # days와 같은 순서·개수
+```
+
+`bus.yaml`과 `menu.yaml`의 `notes`는 화면에 표시되지 않고, 검색 자료를 만들 때 함께 쓰는 설명입니다.
 
 ## 고칠 때
 
