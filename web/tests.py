@@ -473,3 +473,19 @@ class DormFieldValidationTests(TestCase):
                                     {'name': '홍길동', 'student_number': '12345678901', 'gender': 'male'})
         self.assertContains(response, '학번은 10자 이하로 입력해주세요.')
         self.assertFalse(Dorm.objects.exists())
+
+
+class SharedThemeAssetTests(TestCase):
+    """테마 CSS·JS는 _theme_css.html / _theme_js.html 에서 한 번씩만 로드된다."""
+
+    def test_theme_css_and_js_load_once(self):
+        response = self.client.get(reverse('web:guide'))
+        self.assertContains(response, 'css/style.css', count=1)
+        self.assertContains(response, 'js/main.js', count=1)
+        self.assertNotContains(response, 'bootstrap@5.3.0')
+
+    def test_bootstrap5_option_keeps_css_order(self):
+        html = self.client.get(reverse('web:community_home')).content.decode()
+        order = [html.index(x) for x in ('bootstrap@5.3.0', 'font-awesome/6.0.0', '/static/css/bootstrap.css',
+                                         '/static/css/bootstrap.min.css', '/static/css/style.css')]
+        self.assertEqual(order, sorted(order))
