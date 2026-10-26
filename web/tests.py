@@ -1,5 +1,8 @@
 from datetime import date
 import io
+import os
+import subprocess
+import sys
 import shutil
 import tempfile
 
@@ -344,3 +347,21 @@ class PageTitleTests(TestCase):
     def test_notice_update_title(self):
         self.assertContains(self.client.get(reverse('web:notice_update', args=[self.notice.pk])),
                             '<title>공지사항 수정</title>')
+
+
+class SecretKeySettingsTests(TestCase):
+    """SECRET_KEY는 코드가 아니라 환경변수에서 읽는다."""
+
+    def read_secret_key(self, **env):
+        code = 'import django; django.setup(); from django.conf import settings; print(settings.SECRET_KEY)'
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True,
+                                env={**os.environ, 'DJANGO_SETTINGS_MODULE': 'finalproject.settings', **env})
+        return result.stdout.strip().splitlines()[-1]
+
+    def test_secret_key_comes_from_environment(self):
+        self.assertEqual(self.read_secret_key(DJANGO_SECRET_KEY='from-env-1234'), 'from-env-1234')
+
+    def test_leaked_key_is_not_in_settings(self):
+        settings_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'finalproject', 'settings.py')
+        with open(settings_file, encoding='utf-8') as f:
+            self.assertNotIn('98z%w$o&kv', f.read())

@@ -1,10 +1,20 @@
-#asd
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-*98z%w$o&kv)8%)ygn%hoxkgsu7_3%11xv-$t%eu9^o!yw!e-2'
 DEBUG = True
+
+# 비밀 키는 코드에 두지 않고 환경변수 DJANGO_SECRET_KEY에서 읽는다.
+# 로컬 개발(DEBUG=True)에서만 개발용 키를 허용하고, 배포(DEBUG=False)에서는 반드시 설정해야 한다.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('DJANGO_SECRET_KEY 환경변수를 설정해주세요.')
+    SECRET_KEY = 'django-insecure-local-development-only'
+
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [

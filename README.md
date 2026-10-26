@@ -152,6 +152,8 @@ python manage.py runserver
 - 웹: http://127.0.0.1:8000/
 - 앱용 REST API: http://127.0.0.1:8000/api/
 - 테스트: `python manage.py test web dorm`
+- 비밀 키: 환경변수 `DJANGO_SECRET_KEY`에서 읽습니다. 로컬 개발(`DEBUG=True`)에서는 없어도 실행되지만, 배포할 때는 반드시 설정해야 합니다.
+  키 생성: `python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`
 
 ---
 
