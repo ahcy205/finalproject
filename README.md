@@ -176,4 +176,7 @@ python manage.py runserver
 - [📑 화면정의서](/docs/화면정의서.pdf)
 - [🗺️ 흐름도](/docs/flowchart.html) — 시스템 구조, 업무 흐름, 데이터 구조, 권한 (다운로드 후 브라우저로 열기)
 - [📝 변경이력](/CHANGELOG.md)
+- [🧑‍💻 개발 규칙](/CONTRIBUTING.md) — 브랜치·커밋·PR·테스트 규칙 ([AI 작업 규칙](/CLAUDE.md))
+- [🧭 결정 기록 (ADR)](/docs/adr/) — DB, API 호환성, 배포 여부 등 주요 결정과 이유
+- [🔍 검증 도구](/tools/README.md) — 화면 전후 비교
 
