@@ -23,6 +23,8 @@ python manage.py build_knowledge_index --backend fake   # RAG 검색 자료 다�
 python manage.py evaluate_knowledge_search              # 검색 품질 측정 (knowledge/eval/questions.yaml)
 python manage.py evaluate_answer_drafts                 # 답변 초안 품질 측정 (Ollama 필요, 모델 비교는 --model 여러 번)
 python manage.py evaluate_answer_drafts --mode chat     # 학생 챗봇 품질 측정 (학생에게 보이는 답만 채점)
+python manage.py export_chat_misses                     # 챗봇이 못 답한 질문·👎 → 평가 질문 후보 (docs/adr/0012)
+python manage.py purge_chat_logs                        # 180일 지난 챗봇 대화 기록 삭제
 ```
 
 ## 작업 순서

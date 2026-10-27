@@ -53,3 +53,49 @@ class KnowledgeChunk(models.Model):
     def embedding_text(self):
         """임베딩할 문장. 제목에 조항 번호·공지 제목 같은 핵심 단어가 있어 함께 넣는다."""
         return f'{self.title}\n{self.content}'
+
+
+class ChatLog(models.Model):
+    """학생 챗봇 대화 기록 (docs/adr/0012). 못 답한 질문을 찾아 자료를 보강하는 데만 쓴다.
+
+    - 누가 물었는지 저장하지 않는다(사용자·IP 없음). 질문은 개인정보를 가린 뒤 저장한다.
+    - 👍/👎는 답을 받은 사람만 한 번 줄 수 있다. 답과 함께 준 일회용 키를 해시로만 저장해 확인한다.
+    - RETENTION_DAYS(180일)가 지나면 `python manage.py purge_chat_logs`로 지운다.
+    """
+
+    class Channel(models.TextChoices):
+        WEB = 'web', '웹'
+        API = 'api', '앱'
+
+    class Feedback(models.TextChoices):
+        UP = 'up', '👍'
+        DOWN = 'down', '👎'
+
+    class Reason(models.TextChoices):
+        WRONG = 'wrong', '틀림'
+        IRRELEVANT = 'irrelevant', '질문과 관계없음'
+        INSUFFICIENT = 'insufficient', '부족함'
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    channel = models.CharField(max_length=10, choices=Channel.choices)
+    question = models.TextField(help_text='개인정보를 가린 질문')
+    status = models.CharField(max_length=20, help_text='answered / no_answer / unverified / error')
+    answer = models.TextField(help_text='학생에게 보여 준 문장')
+    model_text = models.TextField(blank=True, help_text='모델이 쓴 원래 답 (숨긴 답도 포함, 개인정보 가림)')
+    cited_keys = models.JSONField(default=list, blank=True)
+    evidence_keys = models.JSONField(default=list, blank=True)
+    best_similarity = models.FloatField(null=True, blank=True)
+    model = models.CharField(max_length=100, blank=True)
+    seconds = models.FloatField(default=0)
+    feedback = models.CharField(max_length=10, choices=Feedback.choices, blank=True)
+    feedback_reason = models.CharField(max_length=20, choices=Reason.choices, blank=True)
+    feedback_at = models.DateTimeField(null=True, blank=True)
+    feedback_token_hash = models.CharField(max_length=64)
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+        indexes = [models.Index(fields=['status'], name='chatlog_status_idx'),
+                   models.Index(fields=['feedback'], name='chatlog_feedback_idx')]
+
+    def __str__(self):
+        return f'[{self.status}] {self.question[:40]}'

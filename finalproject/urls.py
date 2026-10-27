@@ -23,6 +23,7 @@ from dorm.views import (
     reject_outing_api,
     like_post_api,
     chatbot_api,
+    chatbot_feedback_api,
 )
 
 from django.conf import settings
@@ -55,6 +56,7 @@ urlpatterns = [
     path('api/inquiries/', inquiries_api, name='inquiries_api'),
     path('api/inquiries/<int:pk>/', inquiry_detail_api, name='inquiry_detail_api'),
     path('api/chatbot/', chatbot_api, name='chatbot_api'),
+    path('api/chatbot/feedback/', chatbot_feedback_api, name='chatbot_feedback_api'),
 
     # API 문서
     path('api/schema/', SpectacularAPIView.as_view(), name='api_schema'),

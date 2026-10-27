@@ -338,7 +338,8 @@ class ApiDocsTests(TestCase):
                     '/api/outing_apply/', '/api/sleepover/status/', '/api/sleepover/approve/{id}/',
                     '/api/sleepover/reject/{id}/', '/api/notices/', '/api/posts/', '/api/posts/{id}/',
                     '/api/posts/{id}/like/', '/api/posts/{post_id}/comments/', '/api/inquiries/',
-                    '/api/inquiries/{id}/', '/api/chatbot/'}
+                    '/api/inquiries/{id}/', '/api/chatbot/',
+                    '/api/chatbot/feedback/'}
         self.assertEqual(paths, expected)
 
     def test_login_is_documented_with_its_token_response(self):
@@ -466,3 +467,40 @@ class ChatbotApiTests(TestCase):
 
     def test_only_post_is_allowed(self):
         self.assertEqual(self.client.get('/api/chatbot/').status_code, 405)
+
+
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+class ChatbotFeedbackApiTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from knowledge.chunking import build_chunks
+        from knowledge.embeddings import FakeEmbedder
+        from knowledge.indexing import embed_pending, sync_chunks
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(FakeEmbedder())
+        cls.student = User.objects.create_user('20250001', password='pw12345!')
+
+    def setUp(self):
+        from unittest import mock
+        from django.core.cache import cache
+        cache.clear()
+        patcher = mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.client = token_client(self.student)
+
+    def test_api_answer_can_be_rated(self):
+        from knowledge.models import ChatLog
+        data = self.client.post('/api/chatbot/', {'question': '생활관 출입시간 알려주세요'}, format='json').json()
+        self.assertEqual(ChatLog.objects.get(pk=data['log_id']).channel, 'api')
+        body = {'log_id': data['log_id'], 'token': data['feedback_token'], 'rating': 'down', 'reason': 'irrelevant'}
+        response = self.client.post('/api/chatbot/feedback/', body, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        body['rating'] = 'up'
+        self.assertEqual(self.client.post('/api/chatbot/feedback/', body, format='json').status_code, 409)
+
+    def test_bad_feedback_is_rejected(self):
+        response = self.client.post('/api/chatbot/feedback/', {'log_id': 1, 'token': 'x', 'rating': 'meh'},
+                                    format='json')
+        self.assertEqual(response.status_code, 400)
