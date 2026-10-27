@@ -61,6 +61,7 @@ class ChatReply:
     question: str = ''           # 개인정보를 가린 질문 (대화 기록용)
     kind: str = 'new'            # 메시지 종류: smalltalk / meta / followup / new (router.py)
     verdict: object = None       # 판단 모델의 답 검증 결과 (verify.Verdict, 검증하지 않았으면 None)
+    rewritten_question: str = '' # 이어지는 질문을 다시 쓴 질문 (docs/adr/0016, 다시 쓰지 않았으면 '')
 
 
 WARM_UP_INTERVAL = 300  # 이 시간(초) 안에 이미 깨웠으면 다시 하지 않는다

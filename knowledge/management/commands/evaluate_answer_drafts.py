@@ -17,13 +17,16 @@
 import json
 import re
 import statistics
+import time
+from pathlib import Path
 
 from django.core.management.base import BaseCommand
 
 from knowledge.answering import REFUSAL_PHRASE, draft_for_text
-from knowledge.chat import answer_question
+from knowledge.chat import PUBLIC_SOURCES, answer_question
 from knowledge.chat_log import verdict_record
-from knowledge.conversation import meta_reply
+from knowledge.conversation import meta_reply, rewrite_followup
+from knowledge.search import search
 from knowledge.embeddings import get_embedder
 from knowledge.llm import LLMError, get_llm
 from knowledge.management.commands.evaluate_knowledge_search import QUESTIONS
@@ -32,6 +35,7 @@ from knowledge.models import KnowledgeChunk
 import yaml
 
 REFUSAL = REFUSAL_PHRASE
+FOLLOWUP_DIALOGUES = Path(QUESTIONS).parent / 'followup_dialogues.yaml'
 META_REQUESTS = ['요약해줘', '다시 말해줘', '더 쉽게 설명해줘']
 CITATION_MARK = re.compile(r'\[\d+\]')
 TIME = re.compile(r'\b(\d{1,2}):(\d{2})\b')
@@ -135,9 +139,11 @@ class Command(BaseCommand):
         parser.add_argument('--questions', default=str(QUESTIONS), help='평가 질문 파일')
         parser.add_argument('--limit', type=int, help='질문 수 제한 (빠른 확인용)')
         parser.add_argument('--output', help='초안 원문과 채점 결과를 저장할 JSON 파일')
-        parser.add_argument('--mode', choices=['draft', 'chat', 'meta'], default='draft',
+        parser.add_argument('--mode', choices=['draft', 'chat', 'meta', 'followup'], default='draft',
                             help="draft: 관리자 답변 초안, chat: 학생 챗봇 (학생에게 보이는 답만 채점), "
-                                 "meta: 챗봇 답을 '요약해줘/다시 말해줘/더 쉽게'로 다시 쓰게 해 사실 유지·새 숫자를 잼")
+                                 "meta: 챗봇 답을 '요약해줘/다시 말해줘/더 쉽게'로 다시 쓰게 해 사실 유지·새 숫자를 잼, "
+                                 "followup: 이어지는 질문을 다시 써서 검색 적중·최종 답의 사실을 잼 (docs/adr/0016)")
+        parser.add_argument('--dialogues', default=str(FOLLOWUP_DIALOGUES), help='이어지는 질문 평가 파일')
 
     def handle(self, *args, **options):
         if not KnowledgeChunk.objects.exists():
@@ -160,6 +166,11 @@ class Command(BaseCommand):
             if options['mode'] == 'meta':
                 report[llm.name] = self.evaluate_meta(questions, llm, embedder, options['min_similarity'])
                 continue
+            if options['mode'] == 'followup':
+                with open(options['dialogues'], encoding='utf-8') as f:
+                    dialogues = yaml.safe_load(f)['dialogues'][:options['limit'] or None]
+                report[llm.name] = self.evaluate_followup(dialogues, llm, embedder, options['min_similarity'])
+                continue
             rows = []
             for kind, item, text in cases:
                 if options['mode'] == 'chat':
@@ -176,6 +187,9 @@ class Command(BaseCommand):
 
         if options['mode'] == 'meta':
             self.print_meta(report, options)
+            return
+        if options['mode'] == 'followup':
+            self.print_followup(report, options)
             return
         label = '학생 챗봇' if options['mode'] == 'chat' else '답변 초안'
         self.stdout.write(f'\n## {label} 평가 (답할 수 있는 질문 {len(questions)}개, 범위 밖 질문 {len(out_of_scope)}개)')
@@ -219,6 +233,54 @@ class Command(BaseCommand):
             })
             self.stdout.write(f'  [{llm.name}] {len(rows)} {request} → {reply.status}')
         return {'rows': rows}
+
+    def evaluate_followup(self, dialogues, llm, embedder, min_similarity):
+        """앞 질문에 실제로 답한 뒤 이어지는 질문을 다시 쓰고, 다시 쓴 질문과 원래 메시지의 검색 적중을 비교한다."""
+        rows = []
+        for item in dialogues:
+            first = answer_question(item['previous'], llm=llm, embedder=embedder, min_similarity=min_similarity)
+            turns = [{'question': item['previous'], 'answer': first.text, 'status': first.status, 'kind': 'new'}]
+            started = time.perf_counter()
+            rewritten = rewrite_followup(item['followup'], turns, llm=llm)
+            rewrite_seconds = time.perf_counter() - started
+            expected = set(item['expected'])
+
+            def hit(query):
+                return bool(query) and any(h.chunk.key in expected for h in search(
+                    query, k=5, sources=PUBLIC_SOURCES, embedder=embedder).hits)
+            reply = answer_question(rewritten or item['followup'], llm=llm, embedder=embedder,
+                                    min_similarity=min_similarity)
+            rows.append({
+                'previous': item['previous'], 'followup': item['followup'], 'rewritten': rewritten,
+                'hit_original': hit(item['followup']), 'hit_rewritten': hit(rewritten or item['followup']),
+                'status': reply.status, 'text': reply.text,
+                'facts': reply.status == 'answered' and all(has_fact(reply.text, f) for f in item.get('facts', [])),
+                'rewrite_seconds': round(rewrite_seconds, 2),
+            })
+            self.stdout.write(f'  [{llm.name}] {len(rows)}/{len(dialogues)} {item["followup"]} → {rewritten!r} '
+                              f'{reply.status}')
+        return {'rows': rows}
+
+    def print_followup(self, report, options):
+        self.stdout.write('\n## 이어지는 질문 평가 (검색 적중은 상위 5개 안에 정답 청크)')
+        self.stdout.write('| 모델 | 대화 | 다시 쓰기 실패 | 검색 적중 (원래 메시지) | 검색 적중 (다시 쓴 질문) '
+                          '| 답 표시 | 사실 포함 | 다시 쓰기 시간 중앙값 |\n|---|---|---|---|---|---|---|---|')
+        for name, result in report.items():
+            rows = result['rows']
+            n = len(rows) or 1
+            seconds = statistics.median([r['rewrite_seconds'] for r in rows]) if rows else 0.0
+            self.stdout.write(
+                f'| {name} | {len(rows)} | {sum(not r["rewritten"] for r in rows)} '
+                f'| {sum(r["hit_original"] for r in rows) / n:.2f} | {sum(r["hit_rewritten"] for r in rows) / n:.2f} '
+                f'| {sum(r["status"] == "answered" for r in rows)}/{len(rows)} | {sum(r["facts"] for r in rows)}/{len(rows)} '
+                f'| {seconds:.1f}초 |')
+            for r in rows:
+                if not r['hit_rewritten'] or not r['facts']:
+                    self.stdout.write(f"  - {r['previous']} / {r['followup']} → {r['rewritten']!r} "
+                                      f"적중 {r['hit_rewritten']} {r['status']}: {r['text'][:100]}")
+        if options['output']:
+            with open(options['output'], 'w', encoding='utf-8') as f:
+                json.dump(report, f, ensure_ascii=False, indent=2)
 
     def print_meta(self, report, options):
         self.stdout.write('\n## 다시 말하기·요약 평가 (facts가 있는 질문, 첫 답을 보여 준 경우만)')

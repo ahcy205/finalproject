@@ -39,6 +39,7 @@ def record_chat(reply, channel):
                 question=reply.question,
                 status=reply.status,
                 kind=getattr(reply, 'kind', ''),
+                rewritten_question=getattr(reply, 'rewritten_question', ''),
                 verification=verdict_record(getattr(reply, 'verdict', None)),
                 answer=reply.text,
                 model_text=getattr(draft, 'text', '') or '',

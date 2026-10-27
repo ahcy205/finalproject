@@ -26,6 +26,7 @@ python manage.py evaluate_answer_drafts --mode chat     # 학생 챗봇 품질 �
 python manage.py export_chat_misses                     # 챗봇이 못 답한 질문·👎 → 평가 질문 후보 (docs/adr/0012)
 python manage.py evaluate_router                        # 챗봇 메시지 종류 판단 정확도 (knowledge/eval/router_messages.yaml)
 python manage.py evaluate_answer_drafts --mode meta     # 챗봇 다시 말하기·요약 품질
+python manage.py evaluate_answer_drafts --mode followup # 이어지는 질문 다시 쓰기 (knowledge/eval/followup_dialogues.yaml)
 python manage.py purge_chat_logs                        # 180일 지난 챗봇 대화 기록 삭제
 ```
 

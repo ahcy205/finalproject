@@ -816,6 +816,17 @@ class ChatLogTests(TestCase):
         self.assertNotIn('출입시간 알려줘', questions)
         self.assertTrue(all(item['expected'] == [] for item in items))
 
+    def test_followup_misses_are_exported_with_the_rewritten_question(self):
+        import yaml as yaml_module
+        refusal = '근거 자료에서 확인할 수 없습니다.'
+        reply = self.reply('그럼 주말에는?', llm=RecordingLLM(reply=refusal))
+        reply.rewritten_question = '주말에 세탁실 이용 시간은 언제인가요?'
+        self.record(reply)
+        out = io.StringIO()
+        call_command('export_chat_misses', stdout=out)
+        self.assertEqual([item['q'] for item in yaml_module.safe_load(out.getvalue())],
+                         ['주말에 세탁실 이용 시간은 언제인가요?'])
+
 
 class WarmUpTests(TestCase):
     """콜드 스타트 줄이기: 모델 유지 시간과 미리 깨우기 (docs/adr/0013)."""
@@ -1062,6 +1073,84 @@ class ConversationTests(TestCase):
             call_command('evaluate_answer_drafts', mode='meta', backend='fake', embedding_backend='fake',
                          min_similarity=0.0, limit=3, stdout=out)
         self.assertIn('## 다시 말하기·요약 평가', out.getvalue())
+
+    def rewriting_llm(self, rewrite):
+        """다시 쓰기 요청에는 정해 둔 질문을, 답 요청에는 FakeLLM처럼 답한다."""
+        from knowledge.conversation import REWRITE_SYSTEM
+
+        class RewritingLLM(RecordingLLM):
+            def generate(self, system, prompt):
+                if system == REWRITE_SYSTEM:
+                    self.calls.append((system, prompt))
+                    if isinstance(rewrite, Exception):
+                        raise rewrite
+                    return rewrite
+                return super().generate(system, prompt)
+        return RewritingLLM()
+
+    def test_followup_is_rewritten_into_a_standalone_question(self):
+        from knowledge.conversation import REWRITE_SYSTEM
+        first, conversation_id = self.say('대청소는 무슨 요일에 해?')
+        llm = self.rewriting_llm('[바꾼 질문] 호실 점검은 무슨 요일에 하나요?\n설명은 쓰지 않습니다.')
+        reply, _ = self.say('그럼 호실 점검은?', conversation_id, llm=llm)
+        self.assertEqual(reply.kind, 'followup')
+        self.assertEqual(reply.question, '그럼 호실 점검은?')
+        self.assertEqual(reply.rewritten_question, '호실 점검은 무슨 요일에 하나요?')
+        system, prompt = llm.calls[0]
+        self.assertEqual(system, REWRITE_SYSTEM)
+        self.assertIn('대청소는 무슨 요일에 해?', prompt)
+        self.assertIn('그럼 호실 점검은?', prompt)
+        self.assertIn('호실 점검은 무슨 요일에 하나요?', llm.calls[1][1])  # 답은 다시 쓴 질문으로 찾고 쓴다
+        self.assertEqual(reply.status, 'answered')
+
+    def test_followup_is_verified_against_the_rewritten_question(self):
+        from knowledge.verify import FakeVerifier
+        _, conversation_id = self.say('대청소는 무슨 요일에 해?')
+        verifier = FakeVerifier()
+        with mock.patch.object(verifier, 'verify', wraps=verifier.verify) as verify:
+            from knowledge.conversation import reply_to
+            reply_to('그럼 호실 점검은?', 1, conversation_id, router=self.router,
+                     llm=self.rewriting_llm('호실 점검은 언제 하나요?'), embedder=self.embedder,
+                     min_similarity=0.0, verifier=verifier)
+        self.assertEqual(verify.call_args.args[0], '호실 점검은 언제 하나요?')
+
+    def test_failed_rewrite_falls_back_to_the_original_message(self):
+        from knowledge.llm import LLMError
+        _, conversation_id = self.say('대청소는 무슨 요일에 해?')
+        for rewrite in (LLMError('down'), '', '근거 자료에서 확인할 수 없습니다.', '호실 점검은 수요일입니다.'):
+            reply, _ = self.say('그럼 호실 점검은?', conversation_id, llm=self.rewriting_llm(rewrite))
+            self.assertEqual(reply.kind, 'followup')
+            self.assertEqual(reply.rewritten_question, '')
+            self.assertNotEqual(reply.status, 'error')
+
+    def test_rewritten_question_is_masked_and_remembered(self):
+        from knowledge.conversation import load_turns
+        _, conversation_id = self.say('대청소는 무슨 요일에 해?')
+        reply, _ = self.say('그럼 호실 점검은?', conversation_id,
+                            llm=self.rewriting_llm('010-1234-5678 학생의 호실 점검은 언제인가요?'))
+        self.assertNotIn('010-1234-5678', reply.rewritten_question)
+        self.assertEqual(load_turns(1, conversation_id)[-1]['rewritten_question'], reply.rewritten_question)
+
+    def test_next_followup_sees_the_rewritten_question(self):
+        _, conversation_id = self.say('대청소는 무슨 요일에 해?')
+        self.say('그럼 호실 점검은?', conversation_id, llm=self.rewriting_llm('호실 점검은 언제 하나요?'))
+        llm = self.rewriting_llm('호실 점검 시간은 몇 시인가요?')
+        self.say('그럼 몇 시에?', conversation_id, llm=llm)
+        self.assertIn('호실 점검은 언제 하나요?', llm.calls[0][1])
+
+    def test_rewritten_question_is_logged(self):
+        from knowledge.chat_log import record_chat
+        _, conversation_id = self.say('대청소는 무슨 요일에 해?')
+        reply, _ = self.say('그럼 호실 점검은?', conversation_id, llm=self.rewriting_llm('호실 점검은 언제 하나요?'))
+        log, _ = record_chat(reply, 'web')
+        self.assertEqual((log.kind, log.rewritten_question), ('followup', '호실 점검은 언제 하나요?'))
+
+    def test_followup_mode_of_the_evaluation_command(self):
+        out = io.StringIO()
+        with mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0):
+            call_command('evaluate_answer_drafts', mode='followup', backend='fake', embedding_backend='fake',
+                         min_similarity=0.0, limit=3, stdout=out)
+        self.assertIn('## 이어지는 질문 평가', out.getvalue())
 
     def test_router_evaluation_command(self):
         out = io.StringIO()

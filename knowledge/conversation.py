@@ -8,7 +8,8 @@
 - 메시지 종류(router.py)에 따라 처리한다.
   - smalltalk: 정해진 답
   - meta: 앞 답과 그 근거 원문으로 다시 쓴다. 인용·첫 문장 검사를 똑같이 거친다
-  - followup: 아직 다시 쓰지 않고 새 질문처럼 답한다 (다음 PR)
+  - followup: 앞 대화를 보고 혼자서도 뜻이 통하는 질문으로 다시 쓴 뒤 새 질문처럼 답한다 (docs/adr/0016).
+    다시 쓰기에 실패하면 원래 메시지로 답한다
   - new: chat.answer_question()
 """
 import re
@@ -43,6 +44,29 @@ META_SYSTEM = '''당신은 대학 기숙사(생활관)의 안내 챗봇입니다
 2. [근거]에 적힌 내용만 사용합니다. 근거와 앞 답에 없는 사실, 날짜, 시간, 점수를 새로 만들지 않습니다.
 3. 근거를 사용한 문장 끝에는 [근거] 목록의 번호를 [1]처럼 붙입니다.
 4. 학생에게 보내는 존댓말로 씁니다. 학생의 이름, 학번, 연락처를 쓰지 않습니다.'''
+
+REWRITE_SYSTEM = '''대학 기숙사(생활관) 안내 챗봇과 학생의 대화가 주어집니다. [학생의 메시지]는 앞 대화에 이어지는 질문입니다.
+앞 대화를 보지 않아도 뜻이 통하는 질문 한 문장으로 바꿔 쓰세요.
+
+규칙:
+1. 바꾼 질문 한 줄만 출력합니다. 답이나 설명을 쓰지 않습니다.
+2. 앞 대화에 나온 주제(장소, 시설, 항목)로 빠진 말을 채웁니다. 학생이 묻지 않은 내용을 더하지 않습니다.
+3. 학생의 이름, 학번, 연락처를 쓰지 않습니다.
+
+예시:
+[앞 질문] 세탁실 이용 시간 알려줘
+[학생의 메시지] 주말에는?
+[바꾼 질문] 주말에 세탁실 이용 시간은 언제인가요?
+
+[앞 질문] 무단 외박하면 벌점 몇 점이야?
+[학생의 메시지] 그럼 음주는?
+[바꾼 질문] 생활관에서 음주하면 벌점은 몇 점인가요?
+
+[앞 질문] 터미널에서 학교 가는 셔틀 첫차 몇 시야?
+[학생의 메시지] 막차는?
+[바꾼 질문] 터미널에서 학교 가는 셔틀 막차는 몇 시인가요?'''
+REWRITE_ANSWER_CHARS = 200  # 앞 답은 주제를 알 만큼만 넣는다 (프롬프트를 짧게)
+REWRITE_LABEL = re.compile(r'^\s*(\[?바꾼 질문\]?\s*:?)\s*')
 
 
 def new_conversation_id():
@@ -106,6 +130,30 @@ def meta_reply(message, previous, llm=None, verifier=None):
     return checked_reply(previous['question'], draft, verifier)
 
 
+def rewrite_followup(message, turns, llm=None, known_names=()):
+    """이어지는 질문을 혼자서도 뜻이 통하는 질문으로 다시 쓴다 (docs/adr/0016). 실패하면 ''.
+
+    답 모델(exaone)을 그대로 쓴다. 판단 모델(Jev)은 글을 쓰지 못하고, 다른 모델을 올리면 GPU를 바꿔 끼워야 한다.
+    """
+    lines = []
+    for turn in turns:
+        if turn.get('kind') == 'smalltalk':
+            continue
+        lines += ['[앞 질문] ' + (turn.get('rewritten_question') or turn['question']),
+                  '[앞 답] ' + turn['answer'][:REWRITE_ANSWER_CHARS].replace('\n', ' ')]
+    lines += [f'[학생의 메시지] {message}', '[바꾼 질문]']
+    try:
+        text = (llm or get_llm()).generate(REWRITE_SYSTEM, '\n'.join(lines))
+    except LLMError:
+        return ''
+    first_line = next((line for line in text.splitlines() if line.strip()), '')
+    question = REWRITE_LABEL.sub('', first_line).strip().strip('"\'“”')
+    # 질문 대신 앞 답을 보고 답을 써 버리는 경우가 있다 ("…시간은 오전 7시까지입니다."). 물음표로 끝나야 질문으로 본다
+    if not question.endswith('?') or REFUSAL_PHRASE in question:
+        return ''
+    return mask_personal_info(question[:MAX_QUESTION_LENGTH], known_names)
+
+
 def reply_to(message, user_id, conversation_id=None, known_names=(), router=None, llm=None, embedder=None,
              min_similarity=None, verifier=None):
     """대화 안의 메시지 하나에 답한다. 반환: (ChatReply, conversation_id). reply.kind에 메시지 종류가 들어 있다."""
@@ -127,13 +175,18 @@ def reply_to(message, user_id, conversation_id=None, known_names=(), router=None
     elif kind == 'meta':
         reply = meta_reply(masked, previous, llm=llm, verifier=verifier)
     else:
-        reply = answer_question(masked, llm=llm, embedder=embedder, min_similarity=min_similarity, verifier=verifier)
+        rewritten = rewrite_followup(masked, turns, llm=llm, known_names=known_names) if kind == 'followup' else ''
+        # 검색·답·검증 모두 다시 쓴 질문으로 한다 (answer_question → checked_reply)
+        reply = answer_question(rewritten or masked, llm=llm, embedder=embedder, min_similarity=min_similarity,
+                                verifier=verifier)
+        reply.rewritten_question = rewritten
     reply.question = masked
     reply.kind = kind
 
     draft = reply.draft
     save_turn(user_id, conversation_id, {
         'question': masked, 'answer': reply.text, 'status': reply.status, 'kind': kind,
+        'rewritten_question': reply.rewritten_question,
         # meta 답은 앞 답의 근거를 그대로 쓰므로, 다시 "요약해줘"라고 해도 같은 근거로 이어진다
         'evidence_keys': [h.chunk.key for h in draft.evidence] if draft and draft.evidence else [],
     })
