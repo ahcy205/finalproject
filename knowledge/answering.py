@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from .llm import LLMError, get_llm
 from .privacy import mask_personal_info
 from .search import search
+from .time_check import mismatched_times
 
 # 근거가 부족하다고 볼 유사도 기준 (bge-m3 기준 측정값, docs/adr/0007).
 # 답할 수 있는 평가 질문 32개는 모두 0.479 이상이었다.
@@ -119,10 +120,19 @@ def draft_for_text(title, content, known_names=(), exclude_keys=(), llm=None, em
     return draft
 
 
+def time_warnings(draft):
+    """관리자 초안은 숨기지 않고, 근거와 맞지 않는 시각이 있으면 경고만 붙인다 (docs/adr/0019)."""
+    return [f'근거와 다른 시각이 있을 수 있습니다. {problem}'
+            for problem in mismatched_times(draft.text, draft.evidence)]
+
+
 def draft_answer(inquiry, llm=None, embedder=None, min_similarity=None):
     """문의(dorm.models.Inquiry)에 대한 초안. 같은 문의의 검색 자료는 근거에서 뺀다."""
     user = inquiry.user
     names = [user.username, getattr(getattr(user, 'userprofile', None), 'full_name', '')]
-    return draft_for_text(inquiry.title, inquiry.content, known_names=names,
-                          exclude_keys=(f'inquiry:{inquiry.pk}',), llm=llm, embedder=embedder,
-                          min_similarity=min_similarity)
+    draft = draft_for_text(inquiry.title, inquiry.content, known_names=names,
+                           exclude_keys=(f'inquiry:{inquiry.pk}',), llm=llm, embedder=embedder,
+                           min_similarity=min_similarity)
+    if draft.status == 'ok':
+        draft.warnings += time_warnings(draft)
+    return draft

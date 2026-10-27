@@ -1258,7 +1258,7 @@ class AnswerVerificationTests(TestCase):
     def test_rejected_answer_is_hidden_with_related_links(self):
         from knowledge.chat import UNVERIFIED_MESSAGE, answer_question
         from knowledge.verify import FakeVerifier
-        reply = answer_question('생활관 출입시간 알려주세요', llm=RecordingLLM(reply='도서관은 23:00까지 엽니다 [1]. [검증 실패]'),
+        reply = answer_question('생활관 출입시간 알려주세요', llm=RecordingLLM(reply='도서관은 밤늦게까지 엽니다 [1]. [검증 실패]'),
                                 embedder=self.embedder, min_similarity=0.0, verifier=FakeVerifier())
         self.assertEqual((reply.status, reply.text), ('unverified', UNVERIFIED_MESSAGE))
         self.assertEqual(reply.verdict.reason, '질문에 답하지 않음')
@@ -1283,7 +1283,7 @@ class AnswerVerificationTests(TestCase):
         verifier = Recording()
         kwargs = {'router': FakeRouter(), 'embedder': self.embedder, 'min_similarity': 0.0, 'verifier': verifier}
         _, conversation_id = reply_to('생활관 출입시간 알려주세요', 1, llm=RecordingLLM(), **kwargs)
-        summary, _ = reply_to('요약해줘', 1, conversation_id, llm=RecordingLLM(reply='23:00까지 [1]. [검증 실패]'), **kwargs)
+        summary, _ = reply_to('요약해줘', 1, conversation_id, llm=RecordingLLM(reply='출입시간 안내입니다 [1]. [검증 실패]'), **kwargs)
         self.assertEqual(summary.status, 'unverified')
         self.assertEqual(verifier.questions, ['생활관 출입시간 알려주세요', '생활관 출입시간 알려주세요'])
 
@@ -1291,7 +1291,7 @@ class AnswerVerificationTests(TestCase):
         from knowledge.chat import answer_question
         from knowledge.chat_log import record_chat
         from knowledge.verify import FakeVerifier
-        reply = answer_question('생활관 출입시간 알려주세요', llm=RecordingLLM(reply='23:00 [1]. [검증 실패]'),
+        reply = answer_question('생활관 출입시간 알려주세요', llm=RecordingLLM(reply='출입시간 안내입니다 [1]. [검증 실패]'),
                                 embedder=self.embedder, min_similarity=0.0, verifier=FakeVerifier())
         log, _ = record_chat(reply, 'web')
         self.assertEqual(log.verification['passed'], False)
@@ -1363,3 +1363,69 @@ class BusAnswerTests(TestCase):
         llm = RecordingLLM()
         answer_question('두정역에서 학교 오는 버스 있어?', llm=llm, embedder=self.embedder, min_similarity=0.0)
         self.assertEqual(len(llm.calls), 1)
+
+
+class TimeCheckTests(TestCase):
+    """답 문장의 시각이 근거의 같은 주제 줄에 있는지 확인한다 (docs/adr/0019)."""
+
+    RULES_3 = ('관생의 생활관내 출입시간은 06:00-23:00로 한다.\n'
+               '방(침실)의 천정등은 00:00-06:00까지 소등함을 원칙으로 하되, 실원 전원의 합의하에 점등할 수 있다.')
+
+    def hits(self, *contents):
+        from knowledge.search import SearchHit
+        return [SearchHit(chunk=KnowledgeChunk(key=f'k{i}', title=f'제{i}조', content=c), score=1.0)
+                for i, c in enumerate(contents, start=1)]
+
+    def problems(self, text, *contents):
+        from knowledge.time_check import mismatched_times
+        return mismatched_times(text, self.hits(*contents))
+
+    def test_time_from_another_topic_line_is_caught(self):
+        problems = self.problems('방의 불은 일반적으로 23:00시 이후에는 소등하는 것을 원칙으로 합니다 [1].', self.RULES_3)
+        self.assertEqual(len(problems), 1)
+        self.assertIn('23:00', problems[0])
+
+    def test_time_missing_from_evidence_is_caught(self):
+        problems = self.problems('석식 배식 시간은 오후 7시 30분부터입니다 [1].', '석식 (4,500원, 17:30·19:00): 돈육불고기')
+        self.assertEqual(len(problems), 1)
+        self.assertIn('19:30', problems[0])
+
+    def test_correct_answers_pass(self):
+        cases = [
+            ('기숙사 통금 시간은 23:00까지입니다 [1].', self.RULES_3),             # 통금 → 출입시간 (synonyms.yaml)
+            ('방 불은 자정부터 오전 6시까지 소등합니다 [1].', self.RULES_3),
+            ('대청소는 매주 수요일 저녁 10시부터 11시까지 진행됩니다 [1].',
+             '관생은 쾌적한 생활 환경 유지를 위하여 매주 수요일 22:00 ~ 23:00에 대청소를 실시한다.'),
+            ('석식은 오후 5시 30분부터 7시까지입니다 [1].', '석식 (4,500원, 17:30·19:00): 돈육불고기'),
+            ('인원 점검은 매일 밤 24시에 합니다 [1].', '- 관생 인원 점검 (매일 24:00)'),
+            ('안녕하세요. 시각이 없는 문장은 검사하지 않습니다.', self.RULES_3),
+        ]
+        for text, content in cases:
+            with self.subTest(text=text):
+                self.assertEqual(self.problems(text, content), [])
+
+    def test_chatbot_hides_the_answer_before_asking_the_verifier(self):
+        from knowledge.chat import checked_reply
+        from knowledge.answering import Draft
+        from knowledge.verify import FakeVerifier
+
+        class CountingVerifier(FakeVerifier):
+            calls = 0
+
+            def verify(self, *args):
+                CountingVerifier.calls += 1
+                return super().verify(*args)
+
+        draft = Draft(status='ok', text='방 불은 23:00 이후 소등합니다 [1].', evidence=self.hits(self.RULES_3), cited=[1])
+        reply = checked_reply('방 불은 몇 시에 꺼야 돼?', draft, CountingVerifier())
+        self.assertEqual(reply.status, 'unverified')
+        self.assertFalse(reply.verdict.passed)
+        self.assertIn('시각', reply.verdict.reason)
+        self.assertEqual(CountingVerifier.calls, 0)
+
+    def test_admin_draft_gets_a_warning_instead(self):
+        from knowledge.answering import Draft, time_warnings
+        draft = Draft(status='ok', text='방 불은 23:00 이후 소등합니다 [1].', evidence=self.hits(self.RULES_3), cited=[1])
+        warnings = time_warnings(draft)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('근거와 다른 시각', warnings[0])
