@@ -151,6 +151,8 @@ KNOWLEDGE_LLM = {
     'BACKEND': os.environ.get('KNOWLEDGE_LLM_BACKEND', 'ollama'),
     'MODEL': os.environ.get('KNOWLEDGE_LLM_MODEL', 'exaone3.5:7.8b'),
     'HOST': os.environ.get('OLLAMA_HOST', 'http://127.0.0.1:11434'),
+    # 마지막 요청 뒤 모델을 GPU에 남겨 둘 시간. '30m', '2h', '-1'(계속) 등 (docs/adr/0013)
+    'KEEP_ALIVE': os.environ.get('KNOWLEDGE_LLM_KEEP_ALIVE', '30m'),
 }
 
 # API 문서 (/api/docs/)

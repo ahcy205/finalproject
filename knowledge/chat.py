@@ -8,7 +8,9 @@
 - 근거가 약하거나, 모델이 "확인할 수 없다"고 하거나, 첫 문장에서 "자료에 없다"고 하면 문의를 남기도록 안내한다.
 - 한 번에 질문 하나만 받는다(앞 대화를 기억하지 않음).
 """
+import logging
 import re
+import threading
 import time
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -18,7 +20,11 @@ import yaml
 from django.core.cache import cache
 
 from .answering import REFUSAL_PHRASE, SYSTEM_PROMPT as DRAFT_SYSTEM_PROMPT, draft_for_text
+from .embeddings import get_embedder
+from .llm import get_llm
 from .privacy import mask_personal_info
+
+logger = logging.getLogger(__name__)
 from .models import KnowledgeChunk
 
 Source = KnowledgeChunk.Source
@@ -52,6 +58,47 @@ class ChatReply:
     sources: list = field(default_factory=list)   # [{'number', 'title', 'url'}] 답의 출처 또는 관련 자료
     draft: object = None         # 내부 결과 (평가·로그용, 학생에게 보이지 않음)
     question: str = ''           # 개인정보를 가린 질문 (대화 기록용)
+
+
+WARM_UP_INTERVAL = 300  # 이 시간(초) 안에 이미 깨웠으면 다시 하지 않는다
+_last_warm_up = None
+_warm_up_lock = threading.Lock()
+
+
+def warm_up_models(embedder=None, llm=None):
+    """임베딩 모델과 LLM을 미리 메모리에 올린다 (docs/adr/0013). 반환: 이번에 깨웠는지
+
+    서버를 켠 뒤 첫 질문은 임베딩 모델 로딩(약 7초), 오래 쉰 뒤에는 LLM 로딩(약 10초)이 더 걸린다.
+    챗봇 화면을 열 때 뒤에서 미리 올려, 학생이 질문을 입력하는 동안 준비를 끝낸다.
+    """
+    global _last_warm_up
+    with _warm_up_lock:
+        now = time.monotonic()
+        if _last_warm_up is not None and now - _last_warm_up < WARM_UP_INTERVAL:
+            return False
+        _last_warm_up = now
+    embedder = embedder or get_embedder()
+    llm = llm or get_llm()
+
+    def run(step, name):
+        try:
+            step()
+        except Exception as exc:  # 미리 깨우기는 실패해도 질문할 때 다시 시도되므로 기록만 남긴다
+            logger.warning('챗봇 %s을(를) 미리 올리지 못했습니다: %s', name, exc)
+
+    # 임베딩 모델(CPU)과 LLM(GPU, Ollama)은 따로 올라가므로 동시에 올린다. 차례로 하면 두 시간의 합만큼 걸린다
+    llm_thread = threading.Thread(target=run, args=(lambda: llm.warm_up(SYSTEM_PROMPT), 'LLM'), daemon=True)
+    llm_thread.start()
+    run(lambda: embedder.embed_query('워밍업'), '임베딩 모델')
+    llm_thread.join()
+    return True
+
+
+def start_warm_up():
+    """미리 깨우기를 뒤에서 실행한다 (화면 응답을 기다리게 하지 않음).
+    어떤 모델을 쓸지는 지금의 설정으로 정해서 넘긴다(객체만 만들고, 실제 로딩은 뒤에서 한다)."""
+    threading.Thread(target=warm_up_models, args=(get_embedder(), get_llm()), name='chatbot-warm-up',
+                     daemon=True).start()
 
 
 @lru_cache(maxsize=1)

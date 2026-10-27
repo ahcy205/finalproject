@@ -9,6 +9,7 @@
 import hashlib
 import math
 import re
+import threading
 
 from django.conf import settings
 
@@ -53,6 +54,7 @@ class SentenceTransformerEmbedder(Embedder):
     """
 
     _models = {}
+    _lock = threading.Lock()
 
     def __init__(self, model_name, query_prefix='', document_prefix=''):
         self.name = model_name
@@ -61,6 +63,10 @@ class SentenceTransformerEmbedder(Embedder):
 
     @property
     def model(self):
+        with self._lock:  # 미리 깨우기와 첫 질문이 동시에 와도 모델(약 2.2GB)을 한 번만 올린다
+            return self._load()
+
+    def _load(self):
         if self.name not in self._models:
             try:
                 from sentence_transformers import SentenceTransformer
