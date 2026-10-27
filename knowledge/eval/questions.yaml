@@ -81,9 +81,10 @@ questions:
 - q: 자치위원 하면 무슨 혜택 있어?
   expected: [info:article:25]
   facts: ['면제|장학금']
+# 자치위원회 인원 점검(매일 24:00, 안내 제26조)과 정기점검(매주 수요일 저녁, 규칙 제12조) 둘 다 맞는 답
 - q: 인원 점검 몇 시에 해?
-  expected: [info:article:26]
-  facts: ['24:00|자정|밤 12시']
+  expected: [info:article:26, rules:article:12]
+  facts: ['24:00|자정|밤 12시|수요일']
 - q: 방 열쇠는 누가 보관해?
   expected: [info:article:18]
   facts: ['관리실']
