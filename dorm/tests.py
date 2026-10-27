@@ -338,7 +338,7 @@ class ApiDocsTests(TestCase):
                     '/api/outing_apply/', '/api/sleepover/status/', '/api/sleepover/approve/{id}/',
                     '/api/sleepover/reject/{id}/', '/api/notices/', '/api/posts/', '/api/posts/{id}/',
                     '/api/posts/{id}/like/', '/api/posts/{post_id}/comments/', '/api/inquiries/',
-                    '/api/inquiries/{id}/'}
+                    '/api/inquiries/{id}/', '/api/chatbot/'}
         self.assertEqual(paths, expected)
 
     def test_login_is_documented_with_its_token_response(self):
@@ -414,3 +414,55 @@ class StableOrderingTests(TestCase):
             self.assertEqual([c['id'] for c in comments], ids, url)
         listed = APIClient().get(f'/api/posts/{post.pk}/comments/').json()['comments']
         self.assertEqual([c['id'] for c in listed], ids)
+
+
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+class ChatbotApiTests(TestCase):
+    """앱용 챗봇 API: 웹 챗봇과 같은 답을 JSON으로 준다 (ADR 0011)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from knowledge.chunking import build_chunks
+        from knowledge.embeddings import FakeEmbedder
+        from knowledge.indexing import embed_pending, sync_chunks
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(FakeEmbedder())
+        cls.student = User.objects.create_user('20250001', password='pw12345!')
+
+    def setUp(self):
+        from unittest import mock
+        from django.core.cache import cache
+        cache.clear()
+        patcher = mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.client = token_client(self.student)
+
+    def test_answer_with_sources(self):
+        response = self.client.post('/api/chatbot/', {'question': '생활관 출입시간 알려주세요'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['status'], 'answered')
+        self.assertIn('[1]', data['text'])
+        self.assertEqual(set(data['sources'][0]), {'number', 'title', 'url'})
+
+    def test_needs_a_token(self):
+        self.assertEqual(APIClient().post('/api/chatbot/', {'question': '출입시간'}, format='json').status_code, 401)
+
+    def test_bad_questions_are_rejected(self):
+        for question in ('', '가' * 501):
+            response = self.client.post('/api/chatbot/', {'question': question}, format='json')
+            self.assertEqual(response.status_code, 400)
+            self.assertFalse(response.json()['success'])
+
+    def test_rate_limit_is_shared_with_the_web_page(self):
+        from knowledge.chat import RATE_LIMIT, allow_request
+        for _ in range(RATE_LIMIT):
+            allow_request(self.student.pk)
+        response = self.client.post('/api/chatbot/', {'question': '출입시간'}, format='json')
+        self.assertEqual(response.status_code, 429)
+        self.assertFalse(response.json()['success'])
+
+    def test_only_post_is_allowed(self):
+        self.assertEqual(self.client.get('/api/chatbot/').status_code, 405)
