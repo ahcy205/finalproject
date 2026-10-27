@@ -31,7 +31,9 @@ from .serializers import (
     InquiryCreateSerializer,
     InquiryAnswerSerializer,
     InquiryAnswerCreateSerializer,
+    ChatQuestionSerializer,
 )
+from knowledge.chat import allow_request, answer_question
 from . import schema
 from .permissions import IsAuthorOrAdmin, IsInquiryUserOrAdmin
 from datetime import date
@@ -505,3 +507,19 @@ def like_post_api(request, pk):
         like_obj.delete()
         return Response({'is_liked': False, 'like_count': post.likes.count()})
     return Response({'is_liked': True, 'like_count': post.likes.count()})
+
+@schema.chatbot
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def chatbot_api(request):
+    """앱용 학생 챗봇. 웹 챗봇(web.views.chatbot_ask)과 같은 답을 준다."""
+    serializer = ChatQuestionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({'success': False, 'error': serializer.errors}, status=400)
+    user = request.user
+    if not allow_request(user.pk):
+        return Response({'success': False, 'error': '질문이 너무 많아요. 잠시 후 다시 시도해 주세요.'}, status=429)
+    names = [user.username, getattr(getattr(user, 'userprofile', None), 'full_name', '')]
+    reply = answer_question(serializer.validated_data['question'], known_names=names)
+    return Response({'success': True, 'status': reply.status, 'text': reply.text, 'sources': reply.sources})

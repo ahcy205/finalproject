@@ -245,3 +245,29 @@ inquiry_detail = stack(
                   responses={200: ok('InquiryAnswerResponse', answer=InquiryAnswerSerializer()),
                              400: BAD_INPUT, 401: NEED_LOGIN, 403: STAFF_ONLY, 404: NOT_FOUND}),
 )
+
+# ---------------- AI 챗봇 ----------------
+CHATBOT = 'AI 챗봇'
+
+chatbot = extend_schema(
+    tags=[CHATBOT], summary='챗봇에 질문', operation_id='chatbot_ask',
+    description=('생활관 규칙·안내·셔틀버스·식단·공지에서 근거를 찾아 답한다(docs/adr/0011). 앞 대화를 기억하지 않는다.\n\n'
+                 'status\n'
+                 '- answered: 답과 출처(sources)\n'
+                 '- no_answer: 자료에서 답을 찾지 못함. 문의를 남기도록 안내하는 문장\n'
+                 '- unverified: 답의 근거를 확인하지 못해 답을 숨김. sources는 관련 자료\n'
+                 '- error: 챗봇을 쓸 수 없음(로컬 LLM이 꺼짐 등)\n\n'
+                 '웹 챗봇과 합쳐 사용자당 1분에 10번까지 질문할 수 있다.'),
+    request=request('ChatbotRequest', question=serializers.CharField(max_length=500)),
+    responses={
+        200: ok('ChatbotResponse',
+                status=serializers.ChoiceField(choices=['answered', 'no_answer', 'unverified', 'error']),
+                text=serializers.CharField(help_text='학생에게 보여 줄 문장. 답에는 [1]처럼 출처 번호가 붙는다'),
+                sources=inline_serializer(name='ChatbotSource', many=True, fields={
+                    'number': serializers.IntegerField(help_text='답 속의 [번호]'),
+                    'title': serializers.CharField(),
+                    'url': serializers.CharField(help_text='원문 화면 주소 (없으면 빈 문자열)'),
+                })),
+        400: BAD_INPUT, 401: NEED_LOGIN, 429: error('질문이 너무 많음 (1분 10회 초과)'),
+    },
+)

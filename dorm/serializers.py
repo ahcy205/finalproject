@@ -125,3 +125,7 @@ class InquiryAnswerCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = InquiryAnswer
         fields = ['answer']
+
+class ChatQuestionSerializer(serializers.Serializer):
+    """학생 챗봇 질문 (knowledge.chat.MAX_QUESTION_LENGTH자까지)"""
+    question = serializers.CharField(max_length=500, trim_whitespace=True)
