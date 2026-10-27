@@ -86,6 +86,15 @@ class TableDataTests(TestCase):
                 self.assertEqual(len(trip['outbound']), len(route['outbound_stops']))
                 self.assertEqual(len(trip['inbound']), len(route['inbound_stops']))
 
+    def test_bus_times_never_go_backwards_along_a_trip(self):
+        # 아산역 학교 출발편이 "탕정역 09:45 → 천안 아산역 09:30"처럼 거꾸로 적혀 있었다
+        for route in sources.load('bus')['routes']:
+            for trip in route['trips']:
+                for direction in ('outbound', 'inbound'):
+                    times = trip[direction]
+                    if all(':' in t for t in times):
+                        self.assertEqual(times, sorted(times), (route['key'], direction, times))
+
     def test_menu_has_a_dish_for_every_day(self):
         doc = sources.load('menu')
         self.assertEqual([d['weekday'] for d in doc['days']], ['월', '화', '수', '목', '금'])
@@ -141,6 +150,18 @@ class ChunkingTests(TestCase):
         chunk = next(c for c in build_chunks(['bus']) if c.key == 'bus:terminal:outbound')
         self.assertIn('(1호차) 천안 터미널 08:25 → 두정역 08:35', chunk.content)
         self.assertIn('이 시간대는 운행하지 않음', chunk.content)
+
+    def test_bus_chunk_title_and_summary_state_direction(self):
+        # "천안 터미널 방면 학교로 오는 편"처럼 방향이 섞인 제목 때문에 모델이 방향을 반대로 답했다
+        chunks = {c.key: c for c in build_chunks(['bus'])}
+        to_school, from_school = chunks['bus:terminal:outbound'], chunks['bus:terminal:inbound']
+        self.assertEqual(to_school.title, '셔틀버스 천안 터미널 → 학교 (학교로 오는 편)')
+        self.assertEqual(from_school.title, '셔틀버스 학교 → 천안 터미널 (학교에서 나가는 편)')
+        self.assertNotIn('방면', to_school.title + from_school.title)
+        self.assertTrue(to_school.content.startswith('천안 터미널에서 학교로 오는 셔틀. 첫차 천안 터미널 08:25 출발, 막차 천안 터미널 '))
+        self.assertTrue(from_school.content.startswith('학교에서 천안 터미널로 가는 셔틀. 첫차 학교 09:20 출발, 막차 학교 '))
+        self.assertEqual(chunks['bus:asan:inbound'].title, '셔틀버스 학교 → 천안 아산역(KTX) (학교에서 나가는 편)')
+        self.assertTrue(chunks['bus:asan:inbound'].content.startswith('학교에서 천안 아산역(KTX)으로 가는 셔틀.'))
 
     def test_notice_and_answered_inquiry_chunks(self):
         Notice.objects.create(title='점호 안내', content='매일 24:00 점호, 문의 010-1111-2222')
@@ -1275,3 +1296,70 @@ class AnswerVerificationTests(TestCase):
         log, _ = record_chat(reply, 'web')
         self.assertEqual(log.verification['passed'], False)
         self.assertEqual(log.verification['reason'], '질문에 답하지 않음')
+
+
+class BusAnswerTests(TestCase):
+    """셔틀 질문은 모델 대신 시간표에서 직접 답한다 (docs/adr/0017)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        selected = ['rules', 'bus']
+        sync_chunks(build_chunks(selected), selected)
+        embed_pending(cls.embedder)
+
+    def lookup(self, question):
+        from knowledge.bus_answer import lookup
+        return lookup(question)
+
+    def test_direction_and_stop_are_read_from_the_question(self):
+        cases = {
+            '터미널에서 학교 가는 첫차 몇 시야?': ('terminal', 'outbound', '천안 터미널', 'first'),
+            '학교에서 천안아산역 가는 셔틀 시간 알려줘': ('asan', 'inbound', '천안 아산역(KTX)', 'all'),
+            '두정역에서 학교 오는 버스 있어?': ('terminal', 'outbound', '두정역', 'all'),
+            '두정역 가는 막차 몇 시야?': ('terminal', 'inbound', '두정역', 'last'),
+            'KTX역에서 오는 셔틀 몇 시에 있어?': ('asan', 'outbound', '천안 아산역(KTX)', 'all'),
+        }
+        for question, expected in cases.items():
+            plan = self.lookup(question)
+            self.assertIsNotNone(plan, question)
+            self.assertEqual((plan.route, plan.direction, plan.stop, plan.pick), expected, question)
+
+    def test_unclear_questions_are_left_to_the_model(self):
+        for question in ['셔틀버스 정류장 어디야?', '기숙사 통금 몇 시야?', '학교 앞 삼거리에서 버스 몇 시에 와?',
+                         '두정역에서 터미널 가는 버스 있어?', '두정역 버스']:
+            self.assertIsNone(self.lookup(question), question)
+
+    def test_answer_uses_times_at_the_asked_stop(self):
+        first = self.lookup('터미널에서 학교 가는 첫차 몇 시야?').text()
+        self.assertIn('천안 터미널에서 학교로 오는 셔틀 첫차는 천안 터미널 08:25 출발(학교 도착 09:10)이에요 [1].', first)
+        self.assertNotIn('09:20', first)
+        to_asan = self.lookup('학교에서 천안아산역 가는 셔틀 시간 알려줘').text()
+        self.assertTrue(to_asan.startswith('학교에서 천안 아산역(KTX)으로 가는 셔틀은 학교 09:00 출발(천안 아산역(KTX) 도착 09:30)'))
+        self.assertNotIn('08:30', to_asan)
+        self.assertIn('12:00 출발', to_asan)
+        self.assertNotIn('13:00', to_asan)  # 휴게 시간은 운행하지 않음
+        duejeong = self.lookup('두정역에서 학교 오는 버스 있어?').text()
+        self.assertIn('두정역 08:35 출발(학교 도착 09:10)', duejeong)
+
+    def test_chatbot_answers_bus_questions_without_the_model(self):
+        from knowledge.chat import answer_question
+        from knowledge.verify import FakeVerifier
+        llm = RecordingLLM()
+        verifier = mock.Mock(wraps=FakeVerifier())
+        reply = answer_question('두정역에서 학교 오는 버스 있어?', llm=llm, embedder=self.embedder,
+                                min_similarity=0.0, verifier=verifier)
+        self.assertEqual(reply.status, 'answered')
+        self.assertEqual(llm.calls, [])
+        verifier.verify.assert_not_called()
+        self.assertIn('08:35', reply.text)
+        self.assertEqual(reply.draft.cited, [1])
+        self.assertEqual(reply.draft.evidence[0].chunk.key, 'bus:terminal:outbound')
+        self.assertEqual(reply.sources[0]['url'], '/bus/')
+
+    def test_model_answers_when_bus_chunks_are_not_indexed(self):
+        from knowledge.chat import answer_question
+        KnowledgeChunk.objects.filter(source=KnowledgeChunk.Source.BUS).delete()
+        llm = RecordingLLM()
+        answer_question('두정역에서 학교 오는 버스 있어?', llm=llm, embedder=self.embedder, min_similarity=0.0)
+        self.assertEqual(len(llm.calls), 1)
