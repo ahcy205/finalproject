@@ -18,6 +18,7 @@ import yaml
 from django.core.cache import cache
 
 from .answering import REFUSAL_PHRASE, SYSTEM_PROMPT as DRAFT_SYSTEM_PROMPT, draft_for_text
+from .privacy import mask_personal_info
 from .models import KnowledgeChunk
 
 Source = KnowledgeChunk.Source
@@ -50,6 +51,7 @@ class ChatReply:
     text: str                    # 학생에게 보여 줄 문장
     sources: list = field(default_factory=list)   # [{'number', 'title', 'url'}] 답의 출처 또는 관련 자료
     draft: object = None         # 내부 결과 (평가·로그용, 학생에게 보이지 않음)
+    question: str = ''           # 개인정보를 가린 질문 (대화 기록용)
 
 
 @lru_cache(maxsize=1)
@@ -85,7 +87,14 @@ def source_links(draft, numbers):
 
 def answer_question(question, known_names=(), llm=None, embedder=None, min_similarity=None):
     """학생 질문에 답한다. question은 길이 검사를 마친 문자열이어야 한다(MAX_QUESTION_LENGTH)."""
-    draft = draft_for_text('', question[:MAX_QUESTION_LENGTH], known_names=known_names, llm=llm, embedder=embedder,
+    masked = mask_personal_info(question[:MAX_QUESTION_LENGTH], known_names)
+    reply = _answer(masked, llm, embedder, min_similarity)
+    reply.question = masked
+    return reply
+
+
+def _answer(question, llm, embedder, min_similarity):
+    draft = draft_for_text('', question, llm=llm, embedder=embedder,
                            min_similarity=min_similarity, sources=PUBLIC_SOURCES, system_prompt=SYSTEM_PROMPT)
     if draft.status == 'error':
         return ChatReply('error', ERROR_MESSAGE, draft=draft)

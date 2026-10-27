@@ -730,3 +730,88 @@ class StudentChatTests(TestCase):
         reply = self.ask('출입시간', RecordingLLM(reply='1. **출입시간**: 06:00-23:00입니다 [1].'))
         self.assertEqual(reply.status, 'answered')
         self.assertEqual(reply.text, '1. 출입시간: 06:00-23:00입니다 [1].')
+
+
+class ChatLogTests(TestCase):
+    """익명 대화 기록과 👍/👎 (docs/adr/0012). 누가 물었는지는 저장하지 않는다."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(cls.embedder)
+
+    def reply(self, question='생활관 출입시간 알려주세요', llm=None, names=()):
+        from knowledge.chat import answer_question
+        return answer_question(question, known_names=names, llm=llm or RecordingLLM(), embedder=self.embedder,
+                               min_similarity=0.0)
+
+    def record(self, reply, channel='web'):
+        from knowledge.chat_log import record_chat
+        return record_chat(reply, channel)
+
+    def test_log_keeps_the_masked_question_but_not_the_person(self):
+        from knowledge.models import ChatLog
+        log, token = self.record(self.reply('저는 홍길동(010-1234-5678)인데 출입시간 알려주세요', names=['홍길동']))
+        self.assertNotIn('홍길동', log.question)
+        self.assertNotIn('010-1234-5678', log.question)
+        self.assertIn('[이름]', log.question)
+        self.assertEqual(log.status, 'answered')
+        self.assertEqual(log.channel, 'web')
+        self.assertTrue(log.cited_keys)
+        self.assertEqual(len(log.evidence_keys), 5)
+        related = [f.name for f in ChatLog._meta.get_fields() if f.is_relation]
+        self.assertEqual(related, [])  # 사용자와 연결하지 않는다
+        self.assertNotEqual(log.feedback_token_hash, token)  # 키는 해시로만 저장
+
+    def test_only_the_key_holder_can_rate_once(self):
+        from knowledge.chat_log import give_feedback
+        log, token = self.record(self.reply())
+        self.assertEqual(give_feedback(log.pk, 'wrong-key', 'up'), 'invalid')
+        self.assertEqual(give_feedback(log.pk + 999, token, 'up'), 'invalid')
+        self.assertEqual(give_feedback(log.pk, token, 'down', 'wrong'), 'ok')
+        self.assertEqual(give_feedback(log.pk, token, 'up'), 'already')
+        log.refresh_from_db()
+        self.assertEqual((log.feedback, log.feedback_reason), ('down', 'wrong'))
+        self.assertIsNotNone(log.feedback_at)
+
+    def test_reason_is_kept_only_for_thumbs_down(self):
+        from knowledge.chat_log import give_feedback
+        log, token = self.record(self.reply())
+        self.assertEqual(give_feedback(log.pk, token, 'up', 'wrong'), 'ok')
+        log.refresh_from_db()
+        self.assertEqual(log.feedback_reason, '')
+        other, other_token = self.record(self.reply())
+        self.assertEqual(give_feedback(other.pk, other_token, 'down', 'nonsense'), 'invalid')
+
+    def test_old_logs_are_purged_after_the_retention_period(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from knowledge.models import ChatLog
+        old, _ = self.record(self.reply())
+        recent, _ = self.record(self.reply())
+        ChatLog.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=181))
+        ChatLog.objects.filter(pk=recent.pk).update(created_at=timezone.now() - timedelta(days=179))
+        out = io.StringIO()
+        call_command('purge_chat_logs', stdout=out)
+        self.assertEqual(list(ChatLog.objects.values_list('pk', flat=True)), [recent.pk])
+        self.assertIn('1개', out.getvalue())
+
+    def test_misses_are_exported_as_eval_question_candidates(self):
+        import yaml as yaml_module
+        from knowledge.chat_log import give_feedback
+        refusal = '근거 자료에서 확인할 수 없습니다.'
+        self.record(self.reply('도서관 몇 시까지 열어?', llm=RecordingLLM(reply=refusal)))
+        self.record(self.reply('도서관 몇 시까지 열어?', llm=RecordingLLM(reply=refusal)))
+        disliked, token = self.record(self.reply('세탁 몇 시까지 돼?'))
+        give_feedback(disliked.pk, token, 'down', 'wrong')
+        liked, token = self.record(self.reply('출입시간 알려줘'))
+        give_feedback(liked.pk, token, 'up')
+        out = io.StringIO()
+        call_command('export_chat_misses', stdout=out)
+        items = yaml_module.safe_load(out.getvalue())
+        questions = {item['q']: item for item in items}
+        self.assertEqual(questions['도서관 몇 시까지 열어?']['count'], 2)
+        self.assertEqual(questions['세탁 몇 시까지 돼?']['reasons'], ['👎 wrong'])
+        self.assertNotIn('출입시간 알려줘', questions)
+        self.assertTrue(all(item['expected'] == [] for item in items))

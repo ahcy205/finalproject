@@ -32,8 +32,11 @@ from .serializers import (
     InquiryAnswerSerializer,
     InquiryAnswerCreateSerializer,
     ChatQuestionSerializer,
+    ChatFeedbackSerializer,
 )
 from knowledge.chat import allow_request, answer_question
+from knowledge.chat_log import give_feedback, record_chat
+from knowledge.models import ChatLog
 from . import schema
 from .permissions import IsAuthorOrAdmin, IsInquiryUserOrAdmin
 from datetime import date
@@ -522,4 +525,24 @@ def chatbot_api(request):
         return Response({'success': False, 'error': '질문이 너무 많아요. 잠시 후 다시 시도해 주세요.'}, status=429)
     names = [user.username, getattr(getattr(user, 'userprofile', None), 'full_name', '')]
     reply = answer_question(serializer.validated_data['question'], known_names=names)
-    return Response({'success': True, 'status': reply.status, 'text': reply.text, 'sources': reply.sources})
+    log, token = record_chat(reply, ChatLog.Channel.API)
+    return Response({'success': True, 'status': reply.status, 'text': reply.text, 'sources': reply.sources,
+                     'log_id': log.pk if log else None, 'feedback_token': token})
+
+
+@schema.chatbot_feedback
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def chatbot_feedback_api(request):
+    """챗봇 답에 👍/👎. 답과 함께 받은 일회용 키가 있어야 한다 (docs/adr/0012)."""
+    serializer = ChatFeedbackSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({'success': False, 'error': serializer.errors}, status=400)
+    data = serializer.validated_data
+    result = give_feedback(data['log_id'], data['token'], data['rating'], data.get('reason', ''))
+    if result == 'ok':
+        return Response({'success': True})
+    if result == 'already':
+        return Response({'success': False, 'error': '이미 평가한 답입니다.'}, status=409)
+    return Response({'success': False, 'error': '평가할 답을 찾을 수 없습니다.'}, status=404)

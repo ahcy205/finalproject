@@ -13,6 +13,7 @@ urlpatterns = [
     path('inquiry/<int:pk>/draft/', views.inquiry_draft_view, name='inquiry_draft'),
     path('chatbot/', views.chatbot, name='chatbot'),
     path('chatbot/ask/', views.chatbot_ask, name='chatbot_ask'),
+    path('chatbot/feedback/', views.chatbot_feedback, name='chatbot_feedback'),
     path('signup/', views.signup_views, name='signup'),
     path('dorminfo/', views.dorm_info_view, name='dorminfo'),
     path('assign_room/<int:dorm_id>/', views.assign_room, name='assign_room'),

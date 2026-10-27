@@ -129,3 +129,11 @@ class InquiryAnswerCreateSerializer(serializers.ModelSerializer):
 class ChatQuestionSerializer(serializers.Serializer):
     """학생 챗봇 질문 (knowledge.chat.MAX_QUESTION_LENGTH자까지)"""
     question = serializers.CharField(max_length=500, trim_whitespace=True)
+
+
+class ChatFeedbackSerializer(serializers.Serializer):
+    """챗봇 답 평가 (👍/👎와 👎 이유)"""
+    log_id = serializers.IntegerField(min_value=1)
+    token = serializers.CharField(max_length=64)
+    rating = serializers.ChoiceField(choices=['up', 'down'])
+    reason = serializers.ChoiceField(choices=['wrong', 'irrelevant', 'insufficient'], required=False, allow_blank=True)

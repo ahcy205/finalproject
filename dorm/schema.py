@@ -257,7 +257,9 @@ chatbot = extend_schema(
                  '- no_answer: 자료에서 답을 찾지 못함. 문의를 남기도록 안내하는 문장\n'
                  '- unverified: 답의 근거를 확인하지 못해 답을 숨김. sources는 관련 자료\n'
                  '- error: 챗봇을 쓸 수 없음(로컬 LLM이 꺼짐 등)\n\n'
-                 '웹 챗봇과 합쳐 사용자당 1분에 10번까지 질문할 수 있다.'),
+                 '웹 챗봇과 합쳐 사용자당 1분에 10번까지 질문할 수 있다.\n\n'
+                 '질문과 답은 사용자와 연결하지 않고 개인정보를 가려 180일 동안 익명으로 저장한다(docs/adr/0012). '
+                 'log_id와 feedback_token으로 /api/chatbot/feedback/에 👍/👎를 보낼 수 있다.'),
     request=request('ChatbotRequest', question=serializers.CharField(max_length=500)),
     responses={
         200: ok('ChatbotResponse',
@@ -267,7 +269,22 @@ chatbot = extend_schema(
                     'number': serializers.IntegerField(help_text='답 속의 [번호]'),
                     'title': serializers.CharField(),
                     'url': serializers.CharField(help_text='원문 화면 주소 (없으면 빈 문자열)'),
-                })),
+                }),
+                log_id=serializers.IntegerField(allow_null=True, help_text='대화 기록 번호 (기록 실패 시 null)'),
+                feedback_token=serializers.CharField(allow_null=True, help_text='👍/👎용 일회용 키')),
         400: BAD_INPUT, 401: NEED_LOGIN, 429: error('질문이 너무 많음 (1분 10회 초과)'),
     },
+)
+
+chatbot_feedback = extend_schema(
+    tags=[CHATBOT], summary='챗봇 답 평가 (👍/👎)', operation_id='chatbot_feedback',
+    description='답과 함께 받은 log_id와 feedback_token으로 한 번만 평가할 수 있다. reason은 👎일 때만 저장한다.',
+    request=request('ChatbotFeedbackRequest',
+                    log_id=serializers.IntegerField(),
+                    token=serializers.CharField(help_text='feedback_token'),
+                    rating=serializers.ChoiceField(choices=['up', 'down']),
+                    reason=serializers.ChoiceField(choices=['wrong', 'irrelevant', 'insufficient'], required=False,
+                                                   help_text='wrong: 틀림, irrelevant: 질문과 관계없음, insufficient: 부족함')),
+    responses={200: ok('ChatbotFeedbackResponse'), 400: BAD_INPUT, 401: NEED_LOGIN,
+               404: error('기록이 없거나 키가 틀림'), 409: error('이미 평가함')},
 )

@@ -81,6 +81,15 @@ class ChatQuestionForm(forms.Form):
     })
 
 
+class ChatFeedbackForm(forms.Form):
+    """챗봇 답 평가 (👍/👎와 👎 이유)"""
+    log_id = forms.IntegerField(min_value=1)
+    token = forms.CharField(max_length=64)
+    rating = forms.ChoiceField(choices=[('up', '👍'), ('down', '👎')])
+    reason = forms.ChoiceField(choices=[('', ''), ('wrong', '틀림'), ('irrelevant', '질문과 관계없음'),
+                                        ('insufficient', '부족함')], required=False)
+
+
 class InquiryAnswerForm(forms.ModelForm):
     class Meta:
         model = InquiryAnswer

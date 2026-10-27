@@ -733,3 +733,46 @@ class ChatbotPageTests(TestCase):
         response = self.ask('출입시간 알려주세요')
         self.assertEqual(response.status_code, 429)
         self.assertIn('잠시 후', response.json()['error'])
+
+
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+class ChatbotFeedbackPageTests(TestCase):
+    """챗봇 답마다 익명 기록과 👍/👎 (docs/adr/0012)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(FakeEmbedder())
+        cls.student = User.objects.create_user('20250001', password='pw12345!')
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        patcher = mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.client.force_login(self.student)
+
+    def feedback(self, **data):
+        return self.client.post(reverse('web:chatbot_feedback'), data)
+
+    def test_answer_comes_with_a_feedback_key_and_is_logged(self):
+        from knowledge.models import ChatLog
+        data = self.client.post(reverse('web:chatbot_ask'), {'question': '생활관 출입시간 알려주세요'}).json()
+        self.assertEqual(ChatLog.objects.get(pk=data['log_id']).channel, 'web')
+        key = data['feedback_token']
+        self.assertEqual(self.feedback(log_id=data['log_id'], token=key, rating='up').status_code, 200)
+        self.assertEqual(self.feedback(log_id=data['log_id'], token=key, rating='down').status_code, 409)
+        self.assertEqual(self.feedback(log_id=data['log_id'], token='x', rating='up').status_code, 404)
+        self.assertEqual(self.feedback(log_id='abc', token='x', rating='meh').status_code, 400)
+
+    def test_logging_failure_does_not_break_the_answer(self):
+        with mock.patch('knowledge.chat_log.ChatLog.objects.create', side_effect=RuntimeError('db down')):
+            response = self.client.post(reverse('web:chatbot_ask'), {'question': '생활관 출입시간 알려주세요'})
+        data = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['status'], 'answered')
+        self.assertIsNone(data['log_id'])
+
+    def test_page_explains_what_is_stored(self):
+        self.assertContains(self.client.get(reverse('web:chatbot')), '익명으로 저장')

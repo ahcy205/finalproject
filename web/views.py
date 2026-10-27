@@ -12,11 +12,13 @@ from django.views.decorators.http import require_POST
 from knowledge import sources as knowledge_sources
 from knowledge.answering import Draft, draft_answer
 from knowledge.chat import MAX_QUESTION_LENGTH, allow_request, answer_question, load_suggestions
+from knowledge.chat_log import RETENTION_DAYS, give_feedback, record_chat
+from knowledge.models import ChatLog
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
 from django.shortcuts import get_object_or_404
 
 from web.forms import CustomSignupForm, CommentForm, PostForm, InquiryForm, InquiryAnswerForm, OutingApplyForm, \
-    NoticeForm, ChatQuestionForm
+    NoticeForm, ChatQuestionForm, ChatFeedbackForm
 
 
 def index(request):
@@ -479,7 +481,9 @@ def rules(request):
 @login_required
 def chatbot(request):
     """학생 챗봇 화면. 질문은 chatbot_ask로 보내고 답은 화면에서만 보여 준다 (docs/adr/0011)."""
-    return render(request, 'web/chatbot.html', {'suggestions': load_suggestions(), 'max_length': MAX_QUESTION_LENGTH})
+    return render(request, 'web/chatbot.html', {'suggestions': load_suggestions(), 'max_length': MAX_QUESTION_LENGTH,
+                                                'retention_days': RETENTION_DAYS,
+                                                'reasons': ChatLog.Reason.choices})
 
 
 @login_required
@@ -493,7 +497,24 @@ def chatbot_ask(request):
     user = request.user
     names = [user.username, getattr(getattr(user, 'userprofile', None), 'full_name', '')]
     reply = answer_question(form.cleaned_data['question'], known_names=names)
-    return JsonResponse({'status': reply.status, 'text': reply.text, 'sources': reply.sources})
+    log, token = record_chat(reply, ChatLog.Channel.WEB)
+    return JsonResponse({'status': reply.status, 'text': reply.text, 'sources': reply.sources,
+                         'log_id': log.pk if log else None, 'feedback_token': token})
+
+
+FEEDBACK_STATUS = {'ok': 200, 'invalid': 404, 'already': 409}
+
+
+@login_required
+@require_POST
+def chatbot_feedback(request):
+    """챗봇 답에 👍/👎. 답과 함께 받은 일회용 키가 있어야 한다 (docs/adr/0012)."""
+    form = ChatFeedbackForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'error': '평가 형식이 올바르지 않아요.'}, status=400)
+    data = form.cleaned_data
+    result = give_feedback(data['log_id'], data['token'], data['rating'], data['reason'])
+    return JsonResponse({'result': result}, status=FEEDBACK_STATUS[result])
 
 
 def signup_views(request):
