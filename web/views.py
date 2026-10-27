@@ -11,7 +11,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from knowledge import sources as knowledge_sources
 from knowledge.answering import Draft, draft_answer
-from knowledge.chat import MAX_QUESTION_LENGTH, allow_request, answer_question, load_suggestions, start_warm_up
+from knowledge.chat import MAX_QUESTION_LENGTH, allow_request, load_suggestions, start_warm_up
+from knowledge.conversation import reply_to
 from knowledge.chat_log import RETENTION_DAYS, give_feedback, record_chat
 from knowledge.models import ChatLog
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
@@ -497,10 +498,12 @@ def chatbot_ask(request):
         return JsonResponse({'error': '질문이 너무 많아요. 잠시 후 다시 시도해 주세요.'}, status=429)
     user = request.user
     names = [user.username, getattr(getattr(user, 'userprofile', None), 'full_name', '')]
-    reply = answer_question(form.cleaned_data['question'], known_names=names)
+    reply, conversation_id = reply_to(form.cleaned_data['question'], user.pk,
+                                      form.cleaned_data['conversation_id'], known_names=names)
     log, token = record_chat(reply, ChatLog.Channel.WEB)
     return JsonResponse({'status': reply.status, 'text': reply.text, 'sources': reply.sources,
-                         'log_id': log.pk if log else None, 'feedback_token': token})
+                         'log_id': log.pk if log else None, 'feedback_token': token,
+                         'conversation_id': conversation_id, 'kind': reply.kind})
 
 
 FEEDBACK_STATUS = {'ok': 200, 'invalid': 404, 'already': 409}

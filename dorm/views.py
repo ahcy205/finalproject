@@ -34,7 +34,8 @@ from .serializers import (
     ChatQuestionSerializer,
     ChatFeedbackSerializer,
 )
-from knowledge.chat import allow_request, answer_question
+from knowledge.chat import allow_request
+from knowledge.conversation import reply_to
 from knowledge.chat_log import give_feedback, record_chat
 from knowledge.models import ChatLog
 from . import schema
@@ -524,10 +525,12 @@ def chatbot_api(request):
     if not allow_request(user.pk):
         return Response({'success': False, 'error': '질문이 너무 많아요. 잠시 후 다시 시도해 주세요.'}, status=429)
     names = [user.username, getattr(getattr(user, 'userprofile', None), 'full_name', '')]
-    reply = answer_question(serializer.validated_data['question'], known_names=names)
+    data = serializer.validated_data
+    reply, conversation_id = reply_to(data['question'], user.pk, data.get('conversation_id'), known_names=names)
     log, token = record_chat(reply, ChatLog.Channel.API)
     return Response({'success': True, 'status': reply.status, 'text': reply.text, 'sources': reply.sources,
-                     'log_id': log.pk if log else None, 'feedback_token': token})
+                     'log_id': log.pk if log else None, 'feedback_token': token,
+                     'conversation_id': conversation_id, 'kind': reply.kind})
 
 
 @schema.chatbot_feedback

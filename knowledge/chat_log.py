@@ -32,6 +32,7 @@ def record_chat(reply, channel):
                 channel=channel,
                 question=reply.question,
                 status=reply.status,
+                kind=getattr(reply, 'kind', ''),
                 answer=reply.text,
                 model_text=getattr(draft, 'text', '') or '',
                 cited_keys=[draft.evidence[n - 1].chunk.key for n in draft.cited] if draft else [],

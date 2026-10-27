@@ -1,0 +1,78 @@
+# 챗봇 메시지 종류 판단 평가 (docs/adr/0014)
+#
+# 앞 대화: 학생 "기숙사 통금 몇 시야?" → 챗봇 "생활관 출입시간은 06:00-23:00입니다 [1]."
+# kind: smalltalk(인사·감사) / meta(앞 답 다시·요약·쉽게·자세히) / followup(앞 대화에 기대는 질문) / new(새 질문)
+# set: tuned = 규칙을 만들며 본 문장, held_out = 규칙을 보지 않고 새로 쓴 문장 (규칙의 과적합 확인용)
+# 실제 대화에서 잘못 판단한 메시지(익명 기록의 kind와 👎)를 찾으면 여기에 추가한다.
+#
+# 측정: python manage.py evaluate_router --backend jev|llm
+
+previous:
+  question: 기숙사 통금 몇 시야?
+  answer: 생활관 출입시간은 06:00-23:00입니다 [1].
+
+messages:
+- {m: "안녕", kind: smalltalk, set: tuned}
+- {m: "고마워", kind: smalltalk, set: tuned}
+- {m: "감사합니다!", kind: smalltalk, set: tuned}
+- {m: "ㄳㄳ", kind: smalltalk, set: tuned}
+- {m: "수고하세요", kind: smalltalk, set: tuned}
+- {m: "오 좋네", kind: smalltalk, set: tuned}
+- {m: "다시 말해줘", kind: meta, set: tuned}
+- {m: "요약해줘", kind: meta, set: tuned}
+- {m: "더 쉽게 설명해줘", kind: meta, set: tuned}
+- {m: "짧게 말해줘", kind: meta, set: tuned}
+- {m: "한 번만 더 알려줄래?", kind: meta, set: tuned}
+- {m: "무슨 말인지 모르겠어", kind: meta, set: tuned}
+- {m: "정리해서 알려줘", kind: meta, set: tuned}
+- {m: "방금 거 다시", kind: meta, set: tuned}
+- {m: "좀 더 자세히", kind: meta, set: tuned}
+- {m: "이해가 안 돼", kind: meta, set: tuned}
+- {m: "그럼 늦으면 벌점은?", kind: followup, set: tuned}
+- {m: "그건 주말에도 똑같아?", kind: followup, set: tuned}
+- {m: "어기면 어떻게 돼?", kind: followup, set: tuned}
+- {m: "외박은?", kind: followup, set: tuned}
+- {m: "그거 누가 정해?", kind: followup, set: tuned}
+- {m: "예외는 없어?", kind: followup, set: tuned}
+- {m: "부득이한 경우가 뭔데?", kind: followup, set: tuned}
+- {m: "여자 기숙사도?", kind: followup, set: tuned}
+- {m: "그러면 몇 시에 일어나야 돼?", kind: followup, set: tuned}
+- {m: "신청은 어디서 해?", kind: followup, set: tuned}
+- {m: "소등은 몇 시야?", kind: new, set: tuned}
+- {m: "식단 알려줘", kind: new, set: tuned}
+- {m: "셔틀 첫차 몇 시야?", kind: new, set: tuned}
+- {m: "전기장판 써도 돼?", kind: new, set: tuned}
+- {m: "룸메이트랑 방 바꾸고 싶어", kind: new, set: tuned}
+- {m: "퇴관할 때 뭐 내야 해?", kind: new, set: tuned}
+- {m: "기숙사 신청은 누가 먼저 뽑혀?", kind: new, set: tuned}
+- {m: "수요일 점심 메뉴 뭐야?", kind: new, set: tuned}
+- {m: "고양이 키워도 돼?", kind: new, set: tuned}
+- {m: "학식 얼마야?", kind: new, set: tuned}
+- {m: "대청소 언제 해?", kind: new, set: tuned}
+- {m: "남자 기숙사 이름이 뭐야?", kind: new, set: tuned}
+- {m: "방 열쇠 잃어버렸어", kind: new, set: tuned}
+- {m: "땡큐", kind: smalltalk, set: held_out}
+- {m: "알겠어 고마워~", kind: smalltalk, set: held_out}
+- {m: "ㅇㅋ 이해함", kind: smalltalk, set: held_out}
+- {m: "좋은 하루 보내", kind: smalltalk, set: held_out}
+- {m: "뭐라고?", kind: meta, set: held_out}
+- {m: "아까 그 답 다시 보여줘", kind: meta, set: held_out}
+- {m: "세 줄로 줄여줘", kind: meta, set: held_out}
+- {m: "초등학생도 알게 설명해봐", kind: meta, set: held_out}
+- {m: "핵심만", kind: meta, set: held_out}
+- {m: "다른 말로 해줄래", kind: meta, set: held_out}
+- {m: "11시 넘으면 문 잠겨?", kind: followup, set: held_out}
+- {m: "주말엔 달라?", kind: followup, set: held_out}
+- {m: "늦게 들어가면 혼나?", kind: followup, set: held_out}
+- {m: "명인관도 같은 시간이야?", kind: followup, set: held_out}
+- {m: "시험 기간엔 연장 안 해줘?", kind: followup, set: held_out}
+- {m: "누구한테 허락받아야 돼?", kind: followup, set: held_out}
+- {m: "그 시간 지나서 오면?", kind: followup, set: held_out}
+- {m: "세탁실 몇 시까지 써?", kind: new, set: held_out}
+- {m: "기숙사비 환불돼?", kind: new, set: held_out}
+- {m: "셔틀 막차 언제야", kind: new, set: held_out}
+- {m: "택배는 어디로 와?", kind: new, set: held_out}
+- {m: "금요일 저녁 메뉴", kind: new, set: held_out}
+- {m: "친구 데려와서 재워도 돼?", kind: new, set: held_out}
+- {m: "벌점 어떻게 깎아?", kind: new, set: held_out}
+- {m: "퇴실할 때 청소 검사해?", kind: new, set: held_out}

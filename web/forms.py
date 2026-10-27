@@ -79,6 +79,8 @@ class ChatQuestionForm(forms.Form):
         'required': '질문을 입력해 주세요.',
         'max_length': '질문은 500자까지 입력할 수 있어요.',
     })
+    # 이어지는 대화 번호. 없거나 형식이 틀리면 새 대화로 본다 (앞 대화 내용은 서버에만 있음)
+    conversation_id = forms.CharField(max_length=64, required=False)
 
 
 class ChatFeedbackForm(forms.Form):

@@ -595,7 +595,8 @@ class DatabaseSettingsTests(TestCase):
                          ('django.db.backends.postgresql', 'db.example', '6543', 'dorm_x'))
 
 
-@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'},
+                   KNOWLEDGE_ROUTER={'BACKEND': 'fake'})
 class AnswerDraftPanelTests(TestCase):
     """관리자 문의 화면의 AI 답변 초안: 만들기만 하고 저장·발송은 관리자가 한다."""
 
@@ -665,7 +666,8 @@ class AnswerDraftPanelTests(TestCase):
         self.assertContains(response, '임베딩 모델 라이브러리가 설치되지 않았습니다.')
 
 
-@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'},
+                   KNOWLEDGE_ROUTER={'BACKEND': 'fake'})
 class ChatbotPageTests(TestCase):
     """학생 챗봇 화면 (ADR 0011)."""
 
@@ -715,7 +717,7 @@ class ChatbotPageTests(TestCase):
         self.assertTrue(data['sources'][0]['url'].startswith('/rules/'))
 
     def test_empty_or_too_long_questions_are_rejected(self):
-        with mock.patch('web.views.answer_question') as answer_question:
+        with mock.patch('web.views.reply_to') as answer_question:
             for question in ('', '   ', '가' * 501):
                 response = self.ask(question)
                 self.assertEqual(response.status_code, 400)
@@ -735,7 +737,8 @@ class ChatbotPageTests(TestCase):
         self.assertIn('잠시 후', response.json()['error'])
 
 
-@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'},
+                   KNOWLEDGE_ROUTER={'BACKEND': 'fake'})
 class ChatbotFeedbackPageTests(TestCase):
     """챗봇 답마다 익명 기록과 👍/👎 (docs/adr/0012)."""
 
@@ -784,3 +787,34 @@ class ChatbotWarmUpPageTests(TestCase):
         with mock.patch('web.views.start_warm_up') as start_warm_up:
             self.assertEqual(self.client.get(reverse('web:chatbot')).status_code, 200)
         start_warm_up.assert_called_once()
+
+
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'},
+                   KNOWLEDGE_ROUTER={'BACKEND': 'fake'})
+class ChatbotConversationPageTests(TestCase):
+    """웹 챗봇의 이어지는 대화 (docs/adr/0014)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(FakeEmbedder())
+        cls.student = User.objects.create_user('20250001', password='pw12345!')
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        patcher = mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.client.force_login(self.student)
+
+    def test_follow_up_message_continues_the_conversation(self):
+        first = self.client.post(reverse('web:chatbot_ask'), {'question': '생활관 출입시간 알려주세요'}).json()
+        self.assertEqual(first['kind'], 'new')
+        second = self.client.post(reverse('web:chatbot_ask'),
+                                  {'question': '요약해줘', 'conversation_id': first['conversation_id']}).json()
+        self.assertEqual(second['kind'], 'meta')
+        self.assertEqual(second['conversation_id'], first['conversation_id'])
+
+    def test_page_has_a_new_conversation_button(self):
+        self.assertContains(self.client.get(reverse('web:chatbot')), 'id="new-chat"')

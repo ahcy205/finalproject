@@ -69,6 +69,9 @@
 
   <div class="chat-wrap">
     <h2 class="chat-title">AI 챗봇</h2>
+    <div class="text-end mb-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="new-chat">새 대화</button>
+    </div>
     <p class="chat-sub">생활관 규칙·안내·셔틀버스·식단·공지를 찾아 답해 드려요.</p>
 
     <div class="chat-box" id="chat-box" aria-live="polite">
@@ -157,6 +160,17 @@
     }
 
     var feedbackUrl = form.dataset.feedbackUrl;
+    // 이어지는 대화 번호 (앞 대화 내용은 서버에만 있음). "새 대화"를 누르면 비운다
+    var conversationId = null;
+    var firstScreen = box.innerHTML;
+    document.getElementById('new-chat').addEventListener('click', function () {
+      conversationId = null;
+      box.innerHTML = firstScreen;
+      document.querySelectorAll('.suggestion').forEach(function (button) {
+        button.addEventListener('click', function () { ask(button.dataset.question); });
+      });
+      input.focus();
+    });
     var reasons = JSON.parse(document.getElementById('feedback-reasons').textContent);
 
     function sendFeedback(wrap, logId, token, rating, reason) {
@@ -215,6 +229,7 @@
 
       var body = new URLSearchParams();
       body.append('question', question);
+      if (conversationId) body.append('conversation_id', conversationId);
       fetch(form.action, {
         method: 'POST',
         headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
@@ -229,6 +244,7 @@
           return;
         }
         var data = result.data;
+        conversationId = data.conversation_id || conversationId;
         var kind = data.status === 'answered' ? '' : (data.status === 'error' ? 'error' : 'notice');
         var bubble = addMessage('bot', data.text, kind);
         addSources(bubble, data.sources, data.status);

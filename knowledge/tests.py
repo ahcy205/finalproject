@@ -896,3 +896,177 @@ class WarmUpTests(TestCase):
                 mock.patch('knowledge.chat.get_llm', return_value=Model()), \
                 self.assertLogs('knowledge.chat', level='WARNING'):
             self.assertTrue(chat.warm_up_models())
+
+
+class RouterTests(TestCase):
+    """메시지 종류 판단기 (docs/adr/0014)."""
+
+    def test_jev_request_and_answer(self):
+        from knowledge.router import CRITERIA, JevRouter
+        captured = {}
+
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def fake_urlopen(request, timeout):
+            captured['url'] = request.full_url
+            captured['auth'] = request.get_header('Authorization')
+            captured['body'] = json.loads(request.data.decode('utf-8'))
+            reply = {'model': 'jev-1.14.0', 'answers': {'kind': {'type': 'choice', 'choice': 'meta', 'confidence': 0.9}}}
+            return Response(json.dumps(reply).encode('utf-8'))
+
+        previous = {'question': '통금 몇 시야?', 'answer': '06:00-23:00입니다 [1].'}
+        with mock.patch('urllib.request.urlopen', fake_urlopen):
+            kind = JevRouter('test-key').classify('요약해줘', previous)
+        self.assertEqual(kind, 'meta')
+        self.assertEqual(captured['url'], 'https://api.typesafe.ai/v1/systemone')
+        self.assertEqual(captured['auth'], 'Bearer test-key')
+        question = captured['body']['questions']['kind']
+        self.assertEqual((question['type'], question['criteria']), ('choice', CRITERIA))
+        self.assertIn('통금 몇 시야?', captured['body']['state'])
+        self.assertTrue(captured['body']['state'].endswith('학생: 요약해줘'))
+
+    def test_jev_failure_falls_back_to_the_local_router(self):
+        from knowledge.router import FakeRouter, JevRouter
+
+        def refuse(request, timeout):
+            raise urllib.error.URLError('down')
+
+        with mock.patch('urllib.request.urlopen', refuse), self.assertLogs('knowledge.router', level='WARNING'):
+            self.assertEqual(JevRouter('k', fallback=FakeRouter()).classify('고마워'), 'smalltalk')
+            self.assertEqual(JevRouter('k').classify('고마워'), 'new')
+
+    def test_llm_router_reads_one_word(self):
+        from knowledge.router import LLMRouter
+        self.assertEqual(LLMRouter(RecordingLLM(reply=' Followup')).classify('그럼 벌점은?'), 'followup')
+        self.assertEqual(LLMRouter(RecordingLLM(reply='모르겠어요')).classify('?'), 'new')
+
+    def test_router_choice_from_settings(self):
+        from django.test import override_settings
+        from knowledge.router import JevRouter, LLMRouter, get_router
+        with override_settings(KNOWLEDGE_ROUTER={'BACKEND': 'jev', 'API_KEY': ''},
+                               KNOWLEDGE_LLM={'BACKEND': 'fake'}):
+            self.assertIsInstance(get_router(), LLMRouter)  # 키가 없으면 로컬
+        with override_settings(KNOWLEDGE_ROUTER={'BACKEND': 'jev', 'API_KEY': 'k'},
+                               KNOWLEDGE_LLM={'BACKEND': 'fake'}):
+            router = get_router()
+            self.assertIsInstance(router, JevRouter)
+            self.assertIsInstance(router.fallback, LLMRouter)
+
+
+class ConversationTests(TestCase):
+    """이어지는 대화: 서버에만 기억하고, 종류별로 처리한다 (docs/adr/0014)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(cls.embedder)
+
+    def setUp(self):
+        from django.core.cache import cache
+        from knowledge.router import FakeRouter
+        cache.clear()
+        self.router = FakeRouter()
+
+    def say(self, message, conversation_id=None, user_id=1, llm=None):
+        from knowledge.conversation import reply_to
+        return reply_to(message, user_id, conversation_id, router=self.router, llm=llm or RecordingLLM(),
+                        embedder=self.embedder, min_similarity=0.0)
+
+    def test_new_question_starts_a_conversation(self):
+        reply, conversation_id = self.say('생활관 출입시간 알려주세요')
+        self.assertEqual((reply.status, reply.kind), ('answered', 'new'))
+        self.assertRegex(conversation_id, r'^[A-Za-z0-9_-]{16,64}$')
+
+    def test_smalltalk_needs_no_search_or_model(self):
+        from knowledge.conversation import GREETING_REPLY, THANKS_REPLY
+        llm = RecordingLLM()
+        with mock.patch('knowledge.conversation.answer_question') as answer_question:
+            hello, _ = self.say('안녕', llm=llm)
+            thanks, _ = self.say('고마워', llm=llm)
+        answer_question.assert_not_called()
+        self.assertEqual(llm.calls, [])
+        self.assertEqual((hello.text, hello.kind, hello.status), (GREETING_REPLY, 'smalltalk', 'answered'))
+        self.assertEqual(thanks.text, THANKS_REPLY)
+
+    def test_summary_uses_the_previous_answer_and_its_evidence(self):
+        first, conversation_id = self.say('생활관 출입시간 알려주세요')
+        llm = RecordingLLM(reply='출입시간은 06:00-23:00입니다 [1].')
+        summary, same_id = self.say('요약해줘', conversation_id, llm=llm)
+        self.assertEqual(same_id, conversation_id)
+        self.assertEqual((summary.status, summary.kind), ('answered', 'meta'))
+        system, prompt = llm.calls[0]
+        self.assertIn('[앞 답]\n' + first.text, prompt)
+        self.assertIn(f'[1] {first.draft.evidence[0].chunk.title}', prompt)
+        self.assertIn('[학생의 요청]\n요약해줘', prompt)
+        self.assertEqual([h.chunk.key for h in summary.draft.evidence], [h.chunk.key for h in first.draft.evidence])
+        self.assertEqual(summary.sources[0]['title'], first.draft.evidence[0].chunk.title)
+
+    def test_summary_with_a_made_up_citation_is_hidden(self):
+        _, conversation_id = self.say('생활관 출입시간 알려주세요')
+        summary, _ = self.say('요약해줘', conversation_id, llm=RecordingLLM(reply='24시간 출입 가능합니다 [9].'))
+        self.assertEqual(summary.status, 'unverified')
+        self.assertNotIn('24시간', summary.text)
+
+    def test_nothing_to_repeat_after_a_missing_answer(self):
+        from knowledge.conversation import NOTHING_TO_REPEAT
+        refusal = RecordingLLM(reply='근거 자료에서 확인할 수 없습니다.')
+        first, conversation_id = self.say('도서관 몇 시까지 해?', llm=refusal)
+        self.assertEqual(first.status, 'no_answer')
+        llm = RecordingLLM()
+        again, _ = self.say('다시 말해줘', conversation_id, llm=llm)
+        self.assertEqual((again.status, again.text), ('no_answer', NOTHING_TO_REPEAT))
+        self.assertEqual(llm.calls, [])
+
+    def test_meta_without_a_conversation_is_a_new_question(self):
+        reply, _ = self.say('다시 출입시간 알려주세요')
+        self.assertEqual(reply.kind, 'new')
+
+    def test_memory_is_per_user_and_keeps_three_turns(self):
+        from knowledge.conversation import MAX_TURNS, load_turns
+        _, conversation_id = self.say('생활관 출입시간 알려주세요', user_id=1)
+        other, _ = self.say('요약해줘', conversation_id, user_id=2)  # 남의 대화 번호로는 이어지지 않는다
+        self.assertEqual(other.kind, 'new')
+        for question in ('세탁 시간', '대청소 요일', '점검 시간'):
+            self.say(question, conversation_id, user_id=1)
+        turns = load_turns(1, conversation_id)
+        self.assertEqual(len(turns), MAX_TURNS)
+        self.assertEqual(turns[-1]['question'], '점검 시간')
+
+    def test_memory_expires_after_thirty_minutes(self):
+        from knowledge.conversation import MEMORY_SECONDS
+        self.assertEqual(MEMORY_SECONDS, 30 * 60)
+        with mock.patch('knowledge.conversation.cache') as fake_cache:
+            fake_cache.get.return_value = []
+            self.say('안녕')
+        self.assertEqual(fake_cache.set.call_args.kwargs['timeout'], MEMORY_SECONDS)
+
+    def test_bad_conversation_ids_start_over(self):
+        _, conversation_id = self.say('안녕', conversation_id='../../etc')
+        self.assertNotEqual(conversation_id, '../../etc')
+
+    def test_kind_is_logged(self):
+        from knowledge.chat_log import record_chat
+        reply, _ = self.say('고마워')
+        log, _ = record_chat(reply, 'web')
+        self.assertEqual(log.kind, 'smalltalk')
+
+    def test_meta_mode_of_the_evaluation_command(self):
+        out = io.StringIO()
+        with mock.patch('knowledge.answering.MIN_SIMILARITY', 0.0):
+            call_command('evaluate_answer_drafts', mode='meta', backend='fake', embedding_backend='fake',
+                         min_similarity=0.0, limit=3, stdout=out)
+        self.assertIn('## 다시 말하기·요약 평가', out.getvalue())
+
+    def test_router_evaluation_command(self):
+        out = io.StringIO()
+        call_command('evaluate_router', backend='fake', stdout=out)
+        text = out.getvalue()
+        self.assertIn('## 메시지 종류 판단: fake', text)
+        self.assertIn('| tuned |', text)
+        self.assertIn('| held_out |', text)

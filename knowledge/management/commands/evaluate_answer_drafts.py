@@ -22,6 +22,7 @@ from django.core.management.base import BaseCommand
 
 from knowledge.answering import REFUSAL_PHRASE, draft_for_text
 from knowledge.chat import answer_question
+from knowledge.conversation import meta_reply
 from knowledge.embeddings import get_embedder
 from knowledge.llm import LLMError, get_llm
 from knowledge.management.commands.evaluate_knowledge_search import QUESTIONS
@@ -30,6 +31,19 @@ from knowledge.models import KnowledgeChunk
 import yaml
 
 REFUSAL = REFUSAL_PHRASE
+META_REQUESTS = ['요약해줘', '다시 말해줘', '더 쉽게 설명해줘']
+CITATION_MARK = re.compile(r'\[\d+\]')
+TIME = re.compile(r'\b(\d{1,2}):(\d{2})\b')
+
+
+def known_numbers(text):
+    """원문에 있는 숫자. 22:00은 "오후 10시", "22시"로, 08:30은 "8시 30분"으로 바꿔 써도 같은 숫자로 본다."""
+    numbers = set(NUMBER.findall(text))
+    for hour, minute in TIME.findall(text):
+        h = int(hour)
+        numbers |= {str(h), str(h % 12 or 12), hour, minute, str(int(minute))}
+    return numbers
+NUMBER = re.compile(r'\d+(?:[:,.]\d+)*')  # 시각·금액·점수 등
 FOREIGN = re.compile(r'[぀-ヿ一-鿿]')  # 일본 가나, 한자
 
 
@@ -119,8 +133,9 @@ class Command(BaseCommand):
         parser.add_argument('--questions', default=str(QUESTIONS), help='평가 질문 파일')
         parser.add_argument('--limit', type=int, help='질문 수 제한 (빠른 확인용)')
         parser.add_argument('--output', help='초안 원문과 채점 결과를 저장할 JSON 파일')
-        parser.add_argument('--mode', choices=['draft', 'chat'], default='draft',
-                            help="draft: 관리자 답변 초안, chat: 학생 챗봇 (학생에게 보이는 답만 채점)")
+        parser.add_argument('--mode', choices=['draft', 'chat', 'meta'], default='draft',
+                            help="draft: 관리자 답변 초안, chat: 학생 챗봇 (학생에게 보이는 답만 채점), "
+                                 "meta: 챗봇 답을 '요약해줘/다시 말해줘/더 쉽게'로 다시 쓰게 해 사실 유지·새 숫자를 잼")
 
     def handle(self, *args, **options):
         if not KnowledgeChunk.objects.exists():
@@ -140,6 +155,9 @@ class Command(BaseCommand):
             except LLMError as exc:
                 self.stderr.write(f'{llm.name}: {exc}')
                 continue
+            if options['mode'] == 'meta':
+                report[llm.name] = self.evaluate_meta(questions, llm, embedder, options['min_similarity'])
+                continue
             rows = []
             for kind, item, text in cases:
                 if options['mode'] == 'chat':
@@ -154,6 +172,9 @@ class Command(BaseCommand):
                                   f'{rows[-1]["seconds"]:.1f}초')
             report[llm.name] = {'summary': summarize(rows), 'rows': rows}
 
+        if options['mode'] == 'meta':
+            self.print_meta(report, options)
+            return
         label = '학생 챗봇' if options['mode'] == 'chat' else '답변 초안'
         self.stdout.write(f'\n## {label} 평가 (답할 수 있는 질문 {len(questions)}개, 범위 밖 질문 {len(out_of_scope)}개)')
         self.stdout.write('| 모델 | 사실 정확도 | 정답 근거 인용 | 인용 형식 문제 | 잘못 거절 | 범위 밖 거절 | 외국어 섞임 '
@@ -169,3 +190,50 @@ class Command(BaseCommand):
             with open(options['output'], 'w', encoding='utf-8') as f:
                 json.dump(report, f, ensure_ascii=False, indent=2)
             self.stdout.write(f'\n초안 원문: {options["output"]}')
+
+    def evaluate_meta(self, questions, llm, embedder, min_similarity):
+        """facts가 있는 질문에 먼저 답하고, 그 답을 요청 세 가지로 번갈아 다시 쓰게 한다 (docs/adr/0014)."""
+        rows = []
+        for index, item in enumerate(q for q in questions if q.get('facts')):
+            first = answer_question(item['q'], llm=llm, embedder=embedder, min_similarity=min_similarity)
+            if first.status != 'answered':
+                rows.append({'q': item['q'], 'skipped': True})
+                continue
+            request = META_REQUESTS[index % len(META_REQUESTS)]
+            previous = {'question': item['q'], 'answer': first.text, 'status': first.status,
+                        'evidence_keys': [h.chunk.key for h in first.draft.evidence]}
+            reply = meta_reply(request, previous, llm=llm)
+            source = first.text + '\n'.join(h.chunk.content for h in first.draft.evidence)
+            # 인용 번호 [2]는 숫자로 세지 않는다
+            new_numbers = sorted(set(NUMBER.findall(CITATION_MARK.sub('', reply.text)))
+                                 - known_numbers(source)) if reply.status == 'answered' else []
+            rows.append({
+                'q': item['q'], 'request': request, 'skipped': False, 'status': reply.status,
+                'first': first.text, 'text': reply.text,
+                'facts_kept': reply.status == 'answered' and all(has_fact(reply.text, f) for f in item['facts']),
+                'first_had_facts': all(has_fact(first.text, f) for f in item['facts']),
+                'new_numbers': new_numbers,
+                'seconds': round(reply.draft.seconds if reply.draft and reply.draft.seconds else 0.0, 2),
+            })
+            self.stdout.write(f'  [{llm.name}] {len(rows)} {request} → {reply.status}')
+        return {'rows': rows}
+
+    def print_meta(self, report, options):
+        self.stdout.write('\n## 다시 말하기·요약 평가 (facts가 있는 질문, 첫 답을 보여 준 경우만)')
+        self.stdout.write('| 모델 | 대상 | 다시 쓴 답 표시 | 사실 유지 (첫 답에 사실이 있던 것 중) | 새 숫자가 나온 답 |\n'
+                          '|---|---|---|---|---|')
+        for name, result in report.items():
+            rows = [r for r in result['rows'] if not r['skipped']]
+            shown = sum(1 for r in rows if r['status'] == 'answered')
+            had = [r for r in rows if r['first_had_facts']]
+            kept = sum(1 for r in had if r['facts_kept'])
+            numbers = sum(1 for r in rows if r['new_numbers'])
+            self.stdout.write(f'| {name} | {len(rows)} | {shown}/{len(rows)} | {kept}/{len(had)} | {numbers} |')
+            for r in rows:
+                if r['new_numbers'] or (r['first_had_facts'] and not r['facts_kept']):
+                    self.stdout.write(f"  - {r['q']} / {r['request']} → {r['status']} 새 숫자 {r['new_numbers']}: "
+                                      f"{r['text'][:120]}")
+        if options['output']:
+            with open(options['output'], 'w', encoding='utf-8') as f:
+                json.dump(report, f, ensure_ascii=False, indent=2)
+            self.stdout.write(f'\n원문: {options["output"]}')

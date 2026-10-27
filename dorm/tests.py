@@ -417,7 +417,8 @@ class StableOrderingTests(TestCase):
         self.assertEqual([c['id'] for c in listed], ids)
 
 
-@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'},
+                   KNOWLEDGE_ROUTER={'BACKEND': 'fake'})
 class ChatbotApiTests(TestCase):
     """앱용 챗봇 API: 웹 챗봇과 같은 답을 JSON으로 준다 (ADR 0011)."""
 
@@ -469,7 +470,8 @@ class ChatbotApiTests(TestCase):
         self.assertEqual(self.client.get('/api/chatbot/').status_code, 405)
 
 
-@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'})
+@override_settings(KNOWLEDGE_LLM={'BACKEND': 'fake'}, KNOWLEDGE_EMBEDDING={'BACKEND': 'fake'},
+                   KNOWLEDGE_ROUTER={'BACKEND': 'fake'})
 class ChatbotFeedbackApiTests(TestCase):
     @classmethod
     def setUpTestData(cls):
