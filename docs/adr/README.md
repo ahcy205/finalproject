@@ -21,6 +21,7 @@
 | [0015](0015-chatbot-answer-verification.md) | 챗봇 답은 보여 주기 전에 판단 모델(Jev)로 검증한다 | 채택 |
 | [0016](0016-chatbot-followup-rewrite.md) | 이어지는 질문은 완전한 질문으로 다시 써서 답한다 | 채택 |
 | [0017](0017-bus-answers-from-timetable.md) | 셔틀 질문은 시간표에서 직접 계산해 답한다 | 채택 |
+| [0018](0018-evidence-line-mark-rejected.md) | 근거에서 질문과 가까운 줄을 표시하는 방법은 쓰지 않는다 | 기각 |
 
 ## 새 ADR 쓰는 법
 
