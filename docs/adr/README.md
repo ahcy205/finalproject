@@ -22,6 +22,7 @@
 | [0016](0016-chatbot-followup-rewrite.md) | 이어지는 질문은 완전한 질문으로 다시 써서 답한다 | 채택 |
 | [0017](0017-bus-answers-from-timetable.md) | 셔틀 질문은 시간표에서 직접 계산해 답한다 | 채택 |
 | [0018](0018-evidence-line-mark-rejected.md) | 근거에서 질문과 가까운 줄을 표시하는 방법은 쓰지 않는다 | 기각 |
+| [0019](0019-time-topic-check.md) | 답의 시각이 근거의 같은 주제 줄에 있는지 규칙으로 확인한다 | 채택 |
 
 ## 새 ADR 쓰는 법
 

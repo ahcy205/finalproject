@@ -24,7 +24,8 @@ from .answering import REFUSAL_PHRASE, SYSTEM_PROMPT as DRAFT_SYSTEM_PROMPT, dra
 from .embeddings import get_embedder
 from .llm import get_llm
 from .privacy import mask_personal_info
-from .verify import get_verifier
+from .time_check import mismatched_times
+from .verify import Verdict, get_verifier
 
 logger = logging.getLogger(__name__)
 from .models import KnowledgeChunk
@@ -146,8 +147,15 @@ def answer_question(question, known_names=(), llm=None, embedder=None, min_simil
 
 
 def checked_reply(question, draft, verifier=None):
-    """검사를 모두 통과한 답을 판단 모델로 한 번 더 검증한다 (docs/adr/0015). 떨어지면 답을 숨긴다."""
-    verdict = (verifier or get_verifier()).verify(question, draft.evidence, draft.text)
+    """검사를 모두 통과한 답을 판단 모델로 한 번 더 검증한다 (docs/adr/0015). 떨어지면 답을 숨긴다.
+
+    그 전에 답의 시각이 근거의 같은 주제 줄에 있는지 규칙으로 본다 (docs/adr/0019). 걸리면 판단 모델은 부르지 않는다.
+    """
+    problems = mismatched_times(draft.text, draft.evidence)
+    if problems:
+        verdict = Verdict(False, reason='근거와 다른 시각: ' + ' / '.join(problems))
+    else:
+        verdict = (verifier or get_verifier()).verify(question, draft.evidence, draft.text)
     if not verdict.passed:
         related = list(range(1, min(RELATED_LINKS, len(draft.evidence)) + 1))
         return ChatReply('unverified', UNVERIFIED_MESSAGE, source_links(draft, related), draft=draft, verdict=verdict)
