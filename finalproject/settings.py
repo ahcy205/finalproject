@@ -164,6 +164,14 @@ KNOWLEDGE_ROUTER = {
     'MODEL': os.environ.get('KNOWLEDGE_ROUTER_MODEL', 'jev-1.14.0'),
 }
 
+# 챗봇 답 검증 (knowledge/verify.py, docs/adr/0015). 답을 보여 주기 전에 Jev로 '질문에 답하는가',
+# '근거와 어긋나는가'를 확인한다. 'none'이면 검증하지 않는다. 키가 없으면 'none'.
+KNOWLEDGE_VERIFIER = {
+    'BACKEND': os.environ.get('KNOWLEDGE_VERIFIER_BACKEND', 'jev' if os.environ.get('TYPESAFE_API_KEY') else 'none'),
+    'API_KEY': os.environ.get('TYPESAFE_API_KEY', ''),
+    'MODEL': os.environ.get('KNOWLEDGE_ROUTER_MODEL', 'jev-1.14.0'),
+}
+
 # API 문서 (/api/docs/)
 SPECTACULAR_SETTINGS = {
     'TITLE': '돔고돔락 API',

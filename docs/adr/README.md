@@ -18,6 +18,7 @@
 | [0012](0012-chat-log-anonymous.md) | 챗봇 대화 기록은 익명으로 180일 보관하고, 못 답한 질문으로 자료를 보강한다 | 채택 |
 | [0013](0013-chatbot-cold-start.md) | 챗봇 콜드 스타트는 모델 유지 시간과 미리 깨우기로 줄인다 | 채택 |
 | [0014](0014-chatbot-conversation-and-router.md) | 챗봇은 대화를 서버에만 기억하고, 메시지 종류는 Jev로 판단한다 | 채택 |
+| [0015](0015-chatbot-answer-verification.md) | 챗봇 답은 보여 주기 전에 판단 모델(Jev)로 검증한다 | 채택 |
 
 ## 새 ADR 쓰는 법
 

@@ -22,6 +22,7 @@ from django.core.management.base import BaseCommand
 
 from knowledge.answering import REFUSAL_PHRASE, draft_for_text
 from knowledge.chat import answer_question
+from knowledge.chat_log import verdict_record
 from knowledge.conversation import meta_reply
 from knowledge.embeddings import get_embedder
 from knowledge.llm import LLMError, get_llm
@@ -89,6 +90,7 @@ def grade_chat(kind, item, reply):
     """챗봇 답 채점. 학생이 실제로 보는 것만 센다: 숨긴 답(unverified)은 답하지 않은 것으로 본다."""
     row = grade(kind, item, reply.draft)
     row['chat_status'] = reply.status
+    row['verification'] = verdict_record(reply.verdict)  # 판단 모델 검증 (docs/adr/0015)
     row['refused'] = reply.status != 'answered'  # 답 속의 거절 문구가 아니라, 답을 보여 줬는지로 센다
     if reply.status != 'answered':
         row['format_problem'] = False

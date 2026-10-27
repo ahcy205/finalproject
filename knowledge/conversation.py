@@ -17,8 +17,9 @@ import secrets
 from django.core.cache import cache
 
 from .answering import REFUSAL_PHRASE, Draft, check_citations
-from .chat import (ERROR_MESSAGE, MAX_QUESTION_LENGTH, MARKDOWN_BOLD, NO_ANSWER_MESSAGE, RELATED_LINKS,
-                   UNVERIFIED_MESSAGE, ChatReply, answer_question, opens_with_not_found, source_links)
+from .chat import (ERROR_MESSAGE, MAX_QUESTION_LENGTH, NO_ANSWER_MESSAGE, RELATED_LINKS,
+                   UNVERIFIED_MESSAGE, ChatReply, answer_question, checked_reply, opens_with_not_found,
+                   source_links)
 from .llm import LLMError, get_llm
 from .models import KnowledgeChunk
 from .privacy import mask_personal_info
@@ -76,7 +77,7 @@ def smalltalk_reply(message):
     return ChatReply('answered', text, [], draft=Draft(status='ok', text=text))
 
 
-def meta_reply(message, previous, llm=None):
+def meta_reply(message, previous, llm=None, verifier=None):
     """앞 답을 학생의 요청대로 다시 쓴다. 앞 답이 없거나 답을 찾지 못한 답이면 다시 쓸 것이 없다고 한다."""
     if not previous or previous['status'] != 'answered' or not previous['evidence_keys']:
         return ChatReply('no_answer', NOTHING_TO_REPEAT, [], draft=Draft(status='insufficient_evidence'))
@@ -101,11 +102,12 @@ def meta_reply(message, previous, llm=None):
     if draft.warnings or not draft.cited:
         return ChatReply('unverified', UNVERIFIED_MESSAGE, source_links(draft, list(range(1, min(RELATED_LINKS, len(hits)) + 1))),
                          draft=draft)
-    return ChatReply('answered', MARKDOWN_BOLD.sub(r'\1', draft.text), source_links(draft, draft.cited), draft=draft)
+    # 다시 쓴 답도 앞 질문에 대한 답이므로, 앞 질문으로 검증한다 (docs/adr/0015)
+    return checked_reply(previous['question'], draft, verifier)
 
 
 def reply_to(message, user_id, conversation_id=None, known_names=(), router=None, llm=None, embedder=None,
-             min_similarity=None):
+             min_similarity=None, verifier=None):
     """대화 안의 메시지 하나에 답한다. 반환: (ChatReply, conversation_id). reply.kind에 메시지 종류가 들어 있다."""
     if not conversation_id or not CONVERSATION_ID.match(conversation_id):
         conversation_id = new_conversation_id()
@@ -123,9 +125,9 @@ def reply_to(message, user_id, conversation_id=None, known_names=(), router=None
     if kind == 'smalltalk':
         reply = smalltalk_reply(masked)
     elif kind == 'meta':
-        reply = meta_reply(masked, previous, llm=llm)
+        reply = meta_reply(masked, previous, llm=llm, verifier=verifier)
     else:
-        reply = answer_question(masked, llm=llm, embedder=embedder, min_similarity=min_similarity)
+        reply = answer_question(masked, llm=llm, embedder=embedder, min_similarity=min_similarity, verifier=verifier)
     reply.question = masked
     reply.kind = kind
 
