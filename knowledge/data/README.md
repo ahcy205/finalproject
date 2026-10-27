@@ -54,6 +54,8 @@ meals:
 
 `bus.yaml`과 `menu.yaml`의 `notes`는 화면에 표시되지 않고, 검색 자료를 만들 때 함께 쓰는 설명입니다.
 
+`bus.yaml`의 `stop_aliases`는 챗봇이 질문에서 정류장을 찾을 때 쓰는 다른 이름입니다(`정류장 이름: [다른 이름, ...]`, 띄어쓰기 무시). 정류장을 추가하거나 이름을 바꾸면 함께 고칩니다 ([ADR 0017](../../docs/adr/0017-bus-answers-from-timetable.md)).
+
 ## 고칠 때
 
 - 문구를 고치면 화면에는 바로 반영됩니다. RAG 검색 자료는 `python manage.py build_knowledge_index`를 실행할 때 반영됩니다(바뀐 조항만 다시 임베딩). 공지와 답변된 문의는 저장할 때 내용이 자동으로 반영되고, 임베딩만 색인 명령이 채웁니다.

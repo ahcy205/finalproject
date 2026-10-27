@@ -20,6 +20,7 @@
 | [0014](0014-chatbot-conversation-and-router.md) | 챗봇은 대화를 서버에만 기억하고, 메시지 종류는 Jev로 판단한다 | 채택 |
 | [0015](0015-chatbot-answer-verification.md) | 챗봇 답은 보여 주기 전에 판단 모델(Jev)로 검증한다 | 채택 |
 | [0016](0016-chatbot-followup-rewrite.md) | 이어지는 질문은 완전한 질문으로 다시 써서 답한다 | 채택 |
+| [0017](0017-bus-answers-from-timetable.md) | 셔틀 질문은 시간표에서 직접 계산해 답한다 | 채택 |
 
 ## 새 ADR 쓰는 법
 

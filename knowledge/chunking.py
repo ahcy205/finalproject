@@ -66,6 +66,15 @@ def regulation_chunks(page):
     return chunks
 
 
+def with_ro(name):
+    """'학교로', '두정역으로'처럼 받침에 맞는 조사를 붙인다. 괄호 안(KTX)은 보지 않는다."""
+    last = re.sub(r'\(.*?\)$', '', name).strip()[-1]
+    if '가' <= last <= '힣':
+        final = (ord(last) - ord('가')) % 28
+        return name + ('로' if final in (0, 8) else '으로')  # 받침 없음 또는 ㄹ
+    return name + '로'
+
+
 def bus_chunks():
     """셔틀버스: 노선 × 방향(학교로 오는 편 / 학교에서 나가는 편) 하나 = 청크 하나.
 
@@ -88,7 +97,7 @@ def bus_chunks():
                 else:
                     lines.append(f'{trip["bus"]} 이 시간대는 운행하지 않음')
             verb = '오는' if direction == 'outbound' else '가는'
-            summary = f'{start}에서 {end}로 {verb} 셔틀.'
+            summary = f'{start}에서 {with_ro(end)} {verb} 셔틀.'
             if departures:
                 summary += f' 첫차 {start} {departures[0]} 출발, 막차 {start} {departures[-1]} 출발.'
             chunks.append(Chunk(

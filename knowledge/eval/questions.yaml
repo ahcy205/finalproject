@@ -97,6 +97,25 @@ questions:
 - q: 두정역에서 학교 오는 버스 있어?
   expected: [bus:terminal:outbound]
   facts: ['08:35|8시 35분']
+# 셔틀버스: 시간표 답(docs/adr/0017)을 만든 뒤 추가한 질문. 위 3개에만 맞춘 결과가 아닌지 본다
+- q: 천안터미널 가는 셔틀 마지막 차 몇 시야?
+  expected: [bus:terminal:inbound]
+  facts: ['20:20|오후 8시 20분|저녁 8시 20분']
+- q: 롯데마트에서 학교 가는 버스 시간 알려줘
+  expected: [bus:terminal:outbound]
+  facts: ['08:40|8시 40분']
+- q: 아산역 가는 첫차 언제야?
+  expected: [bus:asan:inbound]
+  facts: ['09:00|오전 9시']
+- q: 탕정역에서 학교 오는 막차 몇 시야?
+  expected: [bus:asan:outbound]
+  facts: ['19:40|오후 7시 40분|저녁 7시 40분']
+- q: 학교에서 백석동 가는 셔틀 있어?
+  expected: [bus:terminal:inbound]
+  facts: ['09:20|9시 20분']
+- q: KTX 타러 가야 하는데 학교에서 몇 시에 버스 있어?
+  expected: [bus:asan:inbound]
+  facts: ['09:00|오전 9시']
 # 식단
 - q: 수요일 점심 메뉴 뭐야?
   expected: ['menu:06월 18일']

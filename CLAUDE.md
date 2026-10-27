@@ -7,7 +7,7 @@
 - 돔고돔락: 기숙사 통합 관리 시스템. Django 5.2 + Django REST Framework
 - `web` 앱: HTML 화면(Django Template). 자체 모델 없음
 - `dorm` 앱: 서비스 모델과 Android 앱용 REST API(`/api/`), API 문서 설명(`dorm/schema.py`)
-- `knowledge` 앱: RAG용 원본 자료(`knowledge/data/*.yaml`, 규칙·안내 화면도 이 파일을 씀)와 검색 기능, 문의 답변 초안(`answering.py`, 로컬 LLM은 `llm.py`, 테스트는 `FakeLLM`), 학생 챗봇(`chat.py`, 이어지는 대화 `conversation.py`, 메시지 종류 판단 `router.py`, 답 검증 `verify.py`)
+- `knowledge` 앱: RAG용 원본 자료(`knowledge/data/*.yaml`, 규칙·안내 화면도 이 파일을 씀)와 검색 기능, 문의 답변 초안(`answering.py`, 로컬 LLM은 `llm.py`, 테스트는 `FakeLLM`), 학생 챗봇(`chat.py`, 이어지는 대화 `conversation.py`, 메시지 종류 판단 `router.py`, 답 검증 `verify.py`, 셔틀 시간표 답 `bus_answer.py`)
 - DB: PostgreSQL 17 + pgvector, `docker compose up -d db`로 실행 → [ADR 0005](docs/adr/0005-postgresql-pgvector.md). DB가 꺼져 있으면 SQLite로 대신 실행하지 않고 `dorm.E001` 점검 오류로 안내한다
 - **로컬 실행 전용, 배포하지 않음** → [ADR 0002](docs/adr/0002-local-only.md)
 

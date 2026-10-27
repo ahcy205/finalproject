@@ -19,6 +19,7 @@ from pathlib import Path
 import yaml
 from django.core.cache import cache
 
+from .bus_answer import bus_draft
 from .answering import REFUSAL_PHRASE, SYSTEM_PROMPT as DRAFT_SYSTEM_PROMPT, draft_for_text
 from .embeddings import get_embedder
 from .llm import get_llm
@@ -155,6 +156,9 @@ def checked_reply(question, draft, verifier=None):
 
 
 def _answer(question, llm, embedder, min_similarity, verifier=None):
+    bus = bus_draft(question)  # 셔틀 질문은 시간표에서 직접 답한다. 모델 문장이 없으니 검증도 하지 않는다 (docs/adr/0017)
+    if bus is not None:
+        return ChatReply('answered', bus.text, source_links(bus, bus.cited), draft=bus)
     draft = draft_for_text('', question, llm=llm, embedder=embedder,
                            min_similarity=min_similarity, sources=PUBLIC_SOURCES, system_prompt=SYSTEM_PROMPT)
     if draft.status == 'error':
