@@ -155,6 +155,15 @@ KNOWLEDGE_LLM = {
     'KEEP_ALIVE': os.environ.get('KNOWLEDGE_LLM_KEEP_ALIVE', '30m'),
 }
 
+# 챗봇 메시지 종류 판단기 (knowledge/router.py, docs/adr/0014)
+# BACKEND: 'jev'(TypeSafe Jev, 외부 API, 실패하면 'llm'), 'llm'(로컬 답변 모델), 'fake'(테스트)
+# 키(TYPESAFE_API_KEY)가 없으면 'llm'을 쓴다. 키는 환경변수로만 읽고 저장소에 넣지 않는다.
+KNOWLEDGE_ROUTER = {
+    'BACKEND': os.environ.get('KNOWLEDGE_ROUTER_BACKEND', 'jev' if os.environ.get('TYPESAFE_API_KEY') else 'llm'),
+    'API_KEY': os.environ.get('TYPESAFE_API_KEY', ''),
+    'MODEL': os.environ.get('KNOWLEDGE_ROUTER_MODEL', 'jev-1.14.0'),
+}
+
 # API 문서 (/api/docs/)
 SPECTACULAR_SETTINGS = {
     'TITLE': '돔고돔락 API',

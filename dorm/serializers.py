@@ -129,6 +129,7 @@ class InquiryAnswerCreateSerializer(serializers.ModelSerializer):
 class ChatQuestionSerializer(serializers.Serializer):
     """학생 챗봇 질문 (knowledge.chat.MAX_QUESTION_LENGTH자까지)"""
     question = serializers.CharField(max_length=500, trim_whitespace=True)
+    conversation_id = serializers.CharField(max_length=64, required=False, allow_blank=True)
 
 
 class ChatFeedbackSerializer(serializers.Serializer):

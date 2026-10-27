@@ -80,6 +80,7 @@ class ChatLog(models.Model):
     channel = models.CharField(max_length=10, choices=Channel.choices)
     question = models.TextField(help_text='개인정보를 가린 질문')
     status = models.CharField(max_length=20, help_text='answered / no_answer / unverified / error')
+    kind = models.CharField(max_length=20, blank=True, help_text='메시지 종류: smalltalk / meta / followup / new')
     answer = models.TextField(help_text='학생에게 보여 준 문장')
     model_text = models.TextField(blank=True, help_text='모델이 쓴 원래 답 (숨긴 답도 포함, 개인정보 가림)')
     cited_keys = models.JSONField(default=list, blank=True)

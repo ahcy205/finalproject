@@ -58,6 +58,7 @@ class ChatReply:
     sources: list = field(default_factory=list)   # [{'number', 'title', 'url'}] 답의 출처 또는 관련 자료
     draft: object = None         # 내부 결과 (평가·로그용, 학생에게 보이지 않음)
     question: str = ''           # 개인정보를 가린 질문 (대화 기록용)
+    kind: str = 'new'            # 메시지 종류: smalltalk / meta / followup / new (router.py)
 
 
 WARM_UP_INTERVAL = 300  # 이 시간(초) 안에 이미 깨웠으면 다시 하지 않는다

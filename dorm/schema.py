@@ -259,8 +259,13 @@ chatbot = extend_schema(
                  '- error: 챗봇을 쓸 수 없음(로컬 LLM이 꺼짐 등)\n\n'
                  '웹 챗봇과 합쳐 사용자당 1분에 10번까지 질문할 수 있다.\n\n'
                  '질문과 답은 사용자와 연결하지 않고 개인정보를 가려 180일 동안 익명으로 저장한다(docs/adr/0012). '
-                 'log_id와 feedback_token으로 /api/chatbot/feedback/에 👍/👎를 보낼 수 있다.'),
-    request=request('ChatbotRequest', question=serializers.CharField(max_length=500)),
+                 'log_id와 feedback_token으로 /api/chatbot/feedback/에 👍/👎를 보낼 수 있다.\n\n'
+                 '응답의 conversation_id를 다음 질문에 함께 보내면 "다시 말해줘", "요약해줘" 같은 이어지는 대화를 '
+                 '처리한다(docs/adr/0014). 앞 대화 내용은 서버에만 30분 동안 보관한다.'),
+    request=request('ChatbotRequest', question=serializers.CharField(max_length=500),
+                    conversation_id=serializers.CharField(
+                        required=False, help_text='이어지는 대화 번호. 앞 응답의 conversation_id를 그대로 보낸다. '
+                                                  '없으면 새 대화')),
     responses={
         200: ok('ChatbotResponse',
                 status=serializers.ChoiceField(choices=['answered', 'no_answer', 'unverified', 'error']),
@@ -271,7 +276,12 @@ chatbot = extend_schema(
                     'url': serializers.CharField(help_text='원문 화면 주소 (없으면 빈 문자열)'),
                 }),
                 log_id=serializers.IntegerField(allow_null=True, help_text='대화 기록 번호 (기록 실패 시 null)'),
-                feedback_token=serializers.CharField(allow_null=True, help_text='👍/👎용 일회용 키')),
+                feedback_token=serializers.CharField(allow_null=True, help_text='👍/👎용 일회용 키'),
+                conversation_id=serializers.CharField(help_text='다음 메시지에 보낼 대화 번호 (30분 동안 최근 3턴 기억)'),
+                kind=serializers.ChoiceField(
+                    choices=['smalltalk', 'meta', 'followup', 'new'],
+                    help_text='메시지 종류. smalltalk: 인사·감사, meta: 앞 답 다시 말하기·요약, '
+                              'followup: 이어지는 질문, new: 새 질문')),
         400: BAD_INPUT, 401: NEED_LOGIN, 429: error('질문이 너무 많음 (1분 10회 초과)'),
     },
 )

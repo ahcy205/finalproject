@@ -7,7 +7,7 @@
 - 돔고돔락: 기숙사 통합 관리 시스템. Django 5.2 + Django REST Framework
 - `web` 앱: HTML 화면(Django Template). 자체 모델 없음
 - `dorm` 앱: 서비스 모델과 Android 앱용 REST API(`/api/`), API 문서 설명(`dorm/schema.py`)
-- `knowledge` 앱: RAG용 원본 자료(`knowledge/data/*.yaml`, 규칙·안내 화면도 이 파일을 씀)와 검색 기능, 문의 답변 초안(`answering.py`, 로컬 LLM은 `llm.py`, 테스트는 `FakeLLM`), 학생 챗봇(`chat.py`)
+- `knowledge` 앱: RAG용 원본 자료(`knowledge/data/*.yaml`, 규칙·안내 화면도 이 파일을 씀)와 검색 기능, 문의 답변 초안(`answering.py`, 로컬 LLM은 `llm.py`, 테스트는 `FakeLLM`), 학생 챗봇(`chat.py`, 이어지는 대화 `conversation.py`, 메시지 종류 판단 `router.py`)
 - DB: PostgreSQL 17 + pgvector, `docker compose up -d db`로 실행 → [ADR 0005](docs/adr/0005-postgresql-pgvector.md). DB가 꺼져 있으면 SQLite로 대신 실행하지 않고 `dorm.E001` 점검 오류로 안내한다
 - **로컬 실행 전용, 배포하지 않음** → [ADR 0002](docs/adr/0002-local-only.md)
 
@@ -24,6 +24,8 @@ python manage.py evaluate_knowledge_search              # 검색 품질 측정 (
 python manage.py evaluate_answer_drafts                 # 답변 초안 품질 측정 (Ollama 필요, 모델 비교는 --model 여러 번)
 python manage.py evaluate_answer_drafts --mode chat     # 학생 챗봇 품질 측정 (학생에게 보이는 답만 채점)
 python manage.py export_chat_misses                     # 챗봇이 못 답한 질문·👎 → 평가 질문 후보 (docs/adr/0012)
+python manage.py evaluate_router                        # 챗봇 메시지 종류 판단 정확도 (knowledge/eval/router_messages.yaml)
+python manage.py evaluate_answer_drafts --mode meta     # 챗봇 다시 말하기·요약 품질
 python manage.py purge_chat_logs                        # 180일 지난 챗봇 대화 기록 삭제
 ```
 
