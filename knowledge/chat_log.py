@@ -22,6 +22,12 @@ def hash_token(token):
     return hashlib.sha256(token.encode('utf-8')).hexdigest()
 
 
+def verdict_record(verdict):
+    if verdict is None:
+        return {}
+    return {'checked': verdict.checked, 'passed': verdict.passed, 'scores': verdict.scores, 'reason': verdict.reason}
+
+
 def record_chat(reply, channel):
     """답 하나를 기록한다. 반환: (ChatLog, 일회용 평가 키) 또는 기록 실패 시 (None, None)"""
     token = secrets.token_urlsafe(16)
@@ -33,6 +39,7 @@ def record_chat(reply, channel):
                 question=reply.question,
                 status=reply.status,
                 kind=getattr(reply, 'kind', ''),
+                verification=verdict_record(getattr(reply, 'verdict', None)),
                 answer=reply.text,
                 model_text=getattr(draft, 'text', '') or '',
                 cited_keys=[draft.evidence[n - 1].chunk.key for n in draft.cited] if draft else [],

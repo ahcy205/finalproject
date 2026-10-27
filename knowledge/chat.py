@@ -23,6 +23,7 @@ from .answering import REFUSAL_PHRASE, SYSTEM_PROMPT as DRAFT_SYSTEM_PROMPT, dra
 from .embeddings import get_embedder
 from .llm import get_llm
 from .privacy import mask_personal_info
+from .verify import get_verifier
 
 logger = logging.getLogger(__name__)
 from .models import KnowledgeChunk
@@ -59,6 +60,7 @@ class ChatReply:
     draft: object = None         # 내부 결과 (평가·로그용, 학생에게 보이지 않음)
     question: str = ''           # 개인정보를 가린 질문 (대화 기록용)
     kind: str = 'new'            # 메시지 종류: smalltalk / meta / followup / new (router.py)
+    verdict: object = None       # 판단 모델의 답 검증 결과 (verify.Verdict, 검증하지 않았으면 None)
 
 
 WARM_UP_INTERVAL = 300  # 이 시간(초) 안에 이미 깨웠으면 다시 하지 않는다
@@ -133,15 +135,25 @@ def source_links(draft, numbers):
             for n in numbers]
 
 
-def answer_question(question, known_names=(), llm=None, embedder=None, min_similarity=None):
+def answer_question(question, known_names=(), llm=None, embedder=None, min_similarity=None, verifier=None):
     """학생 질문에 답한다. question은 길이 검사를 마친 문자열이어야 한다(MAX_QUESTION_LENGTH)."""
     masked = mask_personal_info(question[:MAX_QUESTION_LENGTH], known_names)
-    reply = _answer(masked, llm, embedder, min_similarity)
+    reply = _answer(masked, llm, embedder, min_similarity, verifier)
     reply.question = masked
     return reply
 
 
-def _answer(question, llm, embedder, min_similarity):
+def checked_reply(question, draft, verifier=None):
+    """검사를 모두 통과한 답을 판단 모델로 한 번 더 검증한다 (docs/adr/0015). 떨어지면 답을 숨긴다."""
+    verdict = (verifier or get_verifier()).verify(question, draft.evidence, draft.text)
+    if not verdict.passed:
+        related = list(range(1, min(RELATED_LINKS, len(draft.evidence)) + 1))
+        return ChatReply('unverified', UNVERIFIED_MESSAGE, source_links(draft, related), draft=draft, verdict=verdict)
+    return ChatReply('answered', MARKDOWN_BOLD.sub(r'\1', draft.text), source_links(draft, draft.cited), draft=draft,
+                     verdict=verdict)
+
+
+def _answer(question, llm, embedder, min_similarity, verifier=None):
     draft = draft_for_text('', question, llm=llm, embedder=embedder,
                            min_similarity=min_similarity, sources=PUBLIC_SOURCES, system_prompt=SYSTEM_PROMPT)
     if draft.status == 'error':
@@ -152,4 +164,4 @@ def _answer(question, llm, embedder, min_similarity):
     if draft.warnings or not draft.cited:
         related = list(range(1, min(RELATED_LINKS, len(draft.evidence)) + 1))
         return ChatReply('unverified', UNVERIFIED_MESSAGE, source_links(draft, related), draft=draft)
-    return ChatReply('answered', MARKDOWN_BOLD.sub(r'\1', draft.text), source_links(draft, draft.cited), draft=draft)
+    return checked_reply(question, draft, verifier)

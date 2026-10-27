@@ -1070,3 +1070,119 @@ class ConversationTests(TestCase):
         self.assertIn('## 메시지 종류 판단: fake', text)
         self.assertIn('| tuned |', text)
         self.assertIn('| held_out |', text)
+
+
+class AnswerVerificationTests(TestCase):
+    """답을 보여 주기 전 판단 모델 검증 (docs/adr/0015)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.embedder = FakeEmbedder()
+        sync_chunks(build_chunks(['rules']), ['rules'])
+        embed_pending(cls.embedder)
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def jev_call(self, scores, raise_error=None):
+        captured = {}
+
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def fake_urlopen(request, timeout):
+            if raise_error:
+                raise raise_error
+            captured['body'] = json.loads(request.data.decode('utf-8'))
+            answers = {name: {'type': 'noul', 'noul': value} for name, value in scores.items()}
+            return Response(json.dumps({'answers': answers}).encode('utf-8'))
+
+        return captured, mock.patch('urllib.request.urlopen', fake_urlopen)
+
+    def hits(self):
+        return search('생활관 출입시간', embedder=self.embedder).hits[:2]
+
+    def test_jev_is_asked_both_questions_with_question_evidence_and_answer(self):
+        from knowledge.verify import QUESTIONS, JevVerifier
+        captured, patch = self.jev_call({'answers': 0.9, 'contradicts': 0.1})
+        hits = self.hits()
+        with patch:
+            verdict = JevVerifier('k').verify('통금 몇 시야?', hits, '23:00까지입니다 [1].')
+        self.assertTrue(verdict.passed)
+        self.assertTrue(verdict.checked)
+        self.assertEqual(captured['body']['questions'], QUESTIONS)
+        state = captured['body']['state']
+        self.assertTrue(state.startswith('[질문]\n통금 몇 시야?'))
+        self.assertIn(f'[1] {hits[0].chunk.title}', state)
+        self.assertTrue(state.endswith('[답]\n23:00까지입니다 [1].'))
+
+    def test_thresholds(self):
+        from knowledge.verify import decide
+        self.assertTrue(decide({'answers': 0.5, 'contradicts': 0.79}).passed)
+        self.assertEqual(decide({'answers': 0.49, 'contradicts': 0.0}).reason, '질문에 답하지 않음')
+        self.assertEqual(decide({'answers': 1.0, 'contradicts': 0.8}).reason, '근거와 어긋남')
+
+    def test_jev_failure_shows_the_answer_unverified_by_jev(self):
+        from knowledge.verify import JevVerifier
+        _, patch = self.jev_call({}, raise_error=urllib.error.URLError('down'))
+        with patch, self.assertLogs('knowledge.verify', level='WARNING'):
+            verdict = JevVerifier('k').verify('q', self.hits(), 'a')
+        self.assertTrue(verdict.passed)
+        self.assertFalse(verdict.checked)
+
+    def test_verifier_choice_from_settings(self):
+        from django.test import override_settings
+        from knowledge.verify import JevVerifier, NoVerifier, get_verifier
+        with override_settings(KNOWLEDGE_VERIFIER={'BACKEND': 'jev', 'API_KEY': ''}):
+            self.assertIsInstance(get_verifier(), NoVerifier)
+        with override_settings(KNOWLEDGE_VERIFIER={'BACKEND': 'jev', 'API_KEY': 'k'}):
+            self.assertIsInstance(get_verifier(), JevVerifier)
+        with override_settings(KNOWLEDGE_VERIFIER={}):
+            self.assertIsInstance(get_verifier(), NoVerifier)
+
+    def test_rejected_answer_is_hidden_with_related_links(self):
+        from knowledge.chat import UNVERIFIED_MESSAGE, answer_question
+        from knowledge.verify import FakeVerifier
+        reply = answer_question('생활관 출입시간 알려주세요', llm=RecordingLLM(reply='도서관은 23:00까지 엽니다 [1]. [검증 실패]'),
+                                embedder=self.embedder, min_similarity=0.0, verifier=FakeVerifier())
+        self.assertEqual((reply.status, reply.text), ('unverified', UNVERIFIED_MESSAGE))
+        self.assertEqual(reply.verdict.reason, '질문에 답하지 않음')
+        self.assertTrue(reply.sources)
+        passed = answer_question('생활관 출입시간 알려주세요', llm=RecordingLLM(), embedder=self.embedder,
+                                 min_similarity=0.0, verifier=FakeVerifier())
+        self.assertEqual(passed.status, 'answered')
+
+    def test_rewritten_answers_are_verified_against_the_original_question(self):
+        from knowledge.conversation import reply_to
+        from knowledge.router import FakeRouter
+
+        class Recording:
+            def __init__(self):
+                self.questions = []
+
+            def verify(self, question, hits, answer):
+                from knowledge.verify import Verdict
+                self.questions.append(question)
+                return Verdict('[검증 실패]' not in answer)
+
+        verifier = Recording()
+        kwargs = {'router': FakeRouter(), 'embedder': self.embedder, 'min_similarity': 0.0, 'verifier': verifier}
+        _, conversation_id = reply_to('생활관 출입시간 알려주세요', 1, llm=RecordingLLM(), **kwargs)
+        summary, _ = reply_to('요약해줘', 1, conversation_id, llm=RecordingLLM(reply='23:00까지 [1]. [검증 실패]'), **kwargs)
+        self.assertEqual(summary.status, 'unverified')
+        self.assertEqual(verifier.questions, ['생활관 출입시간 알려주세요', '생활관 출입시간 알려주세요'])
+
+    def test_verification_is_logged(self):
+        from knowledge.chat import answer_question
+        from knowledge.chat_log import record_chat
+        from knowledge.verify import FakeVerifier
+        reply = answer_question('생활관 출입시간 알려주세요', llm=RecordingLLM(reply='23:00 [1]. [검증 실패]'),
+                                embedder=self.embedder, min_similarity=0.0, verifier=FakeVerifier())
+        log, _ = record_chat(reply, 'web')
+        self.assertEqual(log.verification['passed'], False)
+        self.assertEqual(log.verification['reason'], '질문에 답하지 않음')
