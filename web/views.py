@@ -11,7 +11,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from knowledge import sources as knowledge_sources
 from knowledge.answering import Draft, draft_answer
-from knowledge.chat import MAX_QUESTION_LENGTH, allow_request, answer_question, load_suggestions
+from knowledge.chat import MAX_QUESTION_LENGTH, allow_request, answer_question, load_suggestions, start_warm_up
 from knowledge.chat_log import RETENTION_DAYS, give_feedback, record_chat
 from knowledge.models import ChatLog
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
@@ -481,6 +481,7 @@ def rules(request):
 @login_required
 def chatbot(request):
     """학생 챗봇 화면. 질문은 chatbot_ask로 보내고 답은 화면에서만 보여 준다 (docs/adr/0011)."""
+    start_warm_up()  # 질문을 입력하는 동안 모델을 미리 올린다 (docs/adr/0013)
     return render(request, 'web/chatbot.html', {'suggestions': load_suggestions(), 'max_length': MAX_QUESTION_LENGTH,
                                                 'retention_days': RETENTION_DAYS,
                                                 'reasons': ChatLog.Reason.choices})

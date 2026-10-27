@@ -776,3 +776,11 @@ class ChatbotFeedbackPageTests(TestCase):
 
     def test_page_explains_what_is_stored(self):
         self.assertContains(self.client.get(reverse('web:chatbot')), '익명으로 저장')
+
+
+class ChatbotWarmUpPageTests(TestCase):
+    def test_opening_the_page_starts_warming_up_the_models(self):
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        with mock.patch('web.views.start_warm_up') as start_warm_up:
+            self.assertEqual(self.client.get(reverse('web:chatbot')).status_code, 200)
+        start_warm_up.assert_called_once()

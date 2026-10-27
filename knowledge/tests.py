@@ -815,3 +815,84 @@ class ChatLogTests(TestCase):
         self.assertEqual(questions['세탁 몇 시까지 돼?']['reasons'], ['👎 wrong'])
         self.assertNotIn('출입시간 알려줘', questions)
         self.assertTrue(all(item['expected'] == [] for item in items))
+
+
+class WarmUpTests(TestCase):
+    """콜드 스타트 줄이기: 모델 유지 시간과 미리 깨우기 (docs/adr/0013)."""
+
+    def capture(self, reply=None):
+        captured = []
+
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def fake_urlopen(request, timeout):
+            captured.append((request.full_url, json.loads(request.data.decode('utf-8'))))
+            return Response(json.dumps(reply or {'message': {'content': '답 [1]'}}).encode('utf-8'))
+
+        return captured, mock.patch('urllib.request.urlopen', fake_urlopen)
+
+    def test_every_request_keeps_the_model_loaded(self):
+        captured, patch = self.capture()
+        with patch:
+            OllamaLLM('m', 'http://127.0.0.1:11434', keep_alive='30m').generate('s', 'p')
+        self.assertEqual(captured[0][1]['keep_alive'], '30m')
+
+    def test_keep_alive_comes_from_settings(self):
+        from django.test import override_settings
+        with override_settings(KNOWLEDGE_LLM={'BACKEND': 'ollama', 'MODEL': 'm', 'KEEP_ALIVE': '-1'}):
+            self.assertEqual(get_llm().keep_alive, '-1')
+        with override_settings(KNOWLEDGE_LLM={'BACKEND': 'ollama', 'MODEL': 'm'}):
+            self.assertEqual(get_llm().keep_alive, '30m')
+
+    def test_warm_up_reads_the_system_prompt_with_the_same_options(self):
+        from knowledge.llm import OPTIONS
+        captured, patch = self.capture()
+        llm = OllamaLLM('exaone3.5:7.8b', 'http://127.0.0.1:11434', keep_alive='30m')
+        with patch:
+            llm.warm_up('규칙')
+            llm.generate('규칙', '문의')
+        (warm_url, warm), (_, real) = captured
+        self.assertEqual(warm_url, 'http://127.0.0.1:11434/api/chat')
+        self.assertEqual(warm['messages'][0], {'role': 'system', 'content': '규칙'})
+        self.assertEqual(warm['options']['num_predict'], 1)
+        # num_ctx 등이 다르면 Ollama가 질문 때 모델을 다시 올린다
+        self.assertEqual({k: v for k, v in warm['options'].items() if k != 'num_predict'}, real['options'])
+        self.assertEqual(real['options'], OPTIONS)
+        self.assertEqual(warm['keep_alive'], '30m')
+
+    def test_warm_up_runs_once_while_models_are_warm(self):
+        from knowledge import chat
+        calls = []
+
+        class Embedder:
+            def embed_query(self, text):
+                calls.append('embed')
+
+        class Model:
+            def warm_up(self, system=''):
+                calls.append('llm' if system else 'llm without prompt')
+
+        chat._last_warm_up = None
+        with mock.patch('knowledge.chat.get_embedder', return_value=Embedder()), \
+                mock.patch('knowledge.chat.get_llm', return_value=Model()):
+            self.assertTrue(chat.warm_up_models())
+            self.assertFalse(chat.warm_up_models())  # 방금 깨웠으면 다시 하지 않는다
+        self.assertEqual(sorted(calls), ['embed', 'llm'])
+
+    def test_warm_up_failure_is_only_logged(self):
+        from knowledge import chat
+
+        class Model:
+            def warm_up(self, system=''):
+                raise LLMError('Ollama에 연결할 수 없습니다')
+
+        chat._last_warm_up = None
+        with mock.patch('knowledge.chat.get_embedder', return_value=FakeEmbedder()), \
+                mock.patch('knowledge.chat.get_llm', return_value=Model()), \
+                self.assertLogs('knowledge.chat', level='WARNING'):
+            self.assertTrue(chat.warm_up_models())
