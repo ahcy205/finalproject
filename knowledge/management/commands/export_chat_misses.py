@@ -33,7 +33,9 @@ class Command(BaseCommand):
                   .order_by('created_at', 'id'))
         grouped = OrderedDict()
         for log in misses:
-            item = grouped.setdefault(log.question, {'q': log.question, 'expected': [], 'count': 0, 'reasons': []})
+            # 이어지는 질문은 혼자서는 뜻이 통하지 않으므로 다시 쓴 질문을 후보로 낸다 (docs/adr/0016)
+            question = log.rewritten_question or log.question
+            item = grouped.setdefault(question, {'q': question, 'expected': [], 'count': 0, 'reasons': []})
             item['count'] += 1
             reason = f'👎 {log.feedback_reason}'.strip() if log.feedback == ChatLog.Feedback.DOWN else log.status
             if reason not in item['reasons']:

@@ -1,0 +1,70 @@
+# 이어지는 질문 평가 (docs/adr/0016)
+#
+# - previous: 앞 질문. 평가할 때 챗봇이 실제로 답하게 해 앞 대화를 만든다.
+# - followup: 앞 대화를 봐야 뜻이 통하는 질문 (학생 말투, 생략·지시어 포함)
+# - expected: 다시 쓴 질문으로 찾아야 할 청크 key (하나만 찾아도 정답)
+# - facts: 최종 답에 들어 있어야 할 사실. "a|b"는 둘 중 하나만 있어도 맞음
+#
+# 측정: python manage.py evaluate_answer_drafts --mode followup
+
+dialogues:
+- previous: 기숙사 통금 몇 시까지야?
+  followup: 소등은?
+  expected: [rules:article:3]
+  facts: ['00:00|자정|24:00|밤 12시|0시']
+- previous: 대청소는 무슨 요일에 해?
+  followup: 그럼 호실 점검은?
+  expected: [rules:article:12]
+  facts: ['수요일']
+- previous: 늦게 들어오면 벌점 몇 점이야?
+  followup: 방에서 담배 피우면?
+  expected: [rules:penalty_table]
+  facts: ['퇴관']
+- previous: 터미널에서 학교 가는 첫차 몇 시야?
+  followup: 두정역에서는?
+  expected: [bus:terminal:outbound]
+  facts: ['08:35|8시 35분']
+- previous: 수요일 점심 메뉴 뭐야?
+  followup: 그거 한 끼 얼마야?
+  expected: ['menu:06월 16일', 'menu:06월 17일', 'menu:06월 18일', 'menu:06월 19일', 'menu:06월 20일']
+  facts: ['4,500원|4500원|4,500']
+- previous: 남자 기숙사 이름이 뭐야?
+  followup: 신입생도 거기 들어갈 수 있어?
+  expected: [info:article:8]
+  facts: ['1순위|우선']
+- previous: 룸메이트랑 안 맞아서 방 바꾸고 싶어
+  followup: 아예 중간에 나가면 기숙사비는?
+  expected: [info:article:21]
+  facts: ['환불']
+- previous: 전기장판 써도 돼?
+  followup: 고양이는?
+  expected: [rules:article:10]
+  facts: ['동물']
+- previous: 벌점 많이 받으면 다음 학기에 못 들어가?
+  followup: 몇 점부터?
+  expected: [info:article:13]
+  facts: ['20점']
+- previous: 기숙사 책상 부서뜨리면 물어줘야 해?
+  followup: 방에 물 새면 어디에 알려?
+  expected: [rules:article:9]
+  facts: ['관계 부서|관계부서']
+- previous: 퇴실할 때 뭐 내야 돼?
+  followup: 그럼 방 열쇠는 누가 보관해?
+  expected: [info:article:18]
+  facts: ['관리실']
+- previous: 인원 점검 몇 시에 해?
+  followup: 그럼 출입은 몇 시까지 돼?
+  expected: [rules:article:3]
+  facts: ['23:00|23시|오후 11시|밤 11시']
+- previous: 밤 늦게 세탁기 돌려도 돼?
+  followup: 몇 시까지 써도 돼?
+  expected: [rules:article:6]
+  facts: ['23:00|23시|오후 11시|밤 11시']
+- previous: 기숙사 신청하면 누가 먼저 뽑혀?
+  followup: 붙고 나서 입사 안 하면?
+  expected: [info:article:9]
+  facts: ['취소']
+- previous: 학교에서 천안아산역 가는 셔틀 시간 알려줘
+  followup: 첫차는?
+  expected: [bus:asan:inbound]
+  facts: ['09:00|오전 9시|9시']

@@ -81,6 +81,8 @@ class ChatLog(models.Model):
     question = models.TextField(help_text='개인정보를 가린 질문')
     status = models.CharField(max_length=20, help_text='answered / no_answer / unverified / error')
     kind = models.CharField(max_length=20, blank=True, help_text='메시지 종류: smalltalk / meta / followup / new')
+    rewritten_question = models.TextField(blank=True,
+                                          help_text='이어지는 질문을 다시 쓴 질문, 검색·답에 쓴 것 (docs/adr/0016)')
     verification = models.JSONField(default=dict, blank=True,
                                     help_text='판단 모델의 답 검증 {checked, passed, scores, reason} (docs/adr/0015)')
     answer = models.TextField(help_text='학생에게 보여 준 문장')
