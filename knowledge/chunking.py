@@ -67,23 +67,34 @@ def regulation_chunks(page):
 
 
 def bus_chunks():
-    """셔틀버스: 노선 × 방향(학교로 오는 편 / 학교에서 나가는 편) 하나 = 청크 하나."""
+    """셔틀버스: 노선 × 방향(학교로 오는 편 / 학교에서 나가는 편) 하나 = 청크 하나.
+
+    제목과 첫 줄에 출발 → 도착을 적는다. "천안 터미널 방면 학교로 오는 편"처럼 쓰면
+    모델이 방향을 반대로 읽었다(docs/adr/0017).
+    """
     doc = sources.load('bus')
     chunks = []
     for route in doc['routes']:
-        for direction, label, stops in (('outbound', '학교로 오는 편', route['outbound_stops']),
-                                        ('inbound', '학교에서 나가는 편', route['inbound_stops'])):
-            lines = []
+        place = route['outbound_stops'][0]
+        for direction, label, stops, start, end in (
+                ('outbound', '학교로 오는 편', route['outbound_stops'], place, '학교'),
+                ('inbound', '학교에서 나가는 편', route['inbound_stops'], '학교', place)):
+            lines, departures = [], []
             for trip in route['trips']:
                 times = trip[direction]
                 if all(TIME.match(t) for t in times):
                     lines.append(f'{trip["bus"]} ' + ' → '.join(f'{stop} {time}' for stop, time in zip(stops, times)))
+                    departures.append(times[0])
                 else:
                     lines.append(f'{trip["bus"]} 이 시간대는 운행하지 않음')
+            verb = '오는' if direction == 'outbound' else '가는'
+            summary = f'{start}에서 {end}로 {verb} 셔틀.'
+            if departures:
+                summary += f' 첫차 {start} {departures[0]} 출발, 막차 {start} {departures[-1]} 출발.'
             chunks.append(Chunk(
                 source=Source.BUS, key=f'bus:{route["key"]}:{direction}',
-                title=f'{doc["title"]} {route["title"]} {label}',
-                content='\n'.join(lines + doc.get('notes', [])), url=doc['url'],
+                title=f'셔틀버스 {start} → {end} ({label})',
+                content='\n'.join([summary] + lines + doc.get('notes', [])), url=doc['url'],
                 metadata={'route': route['key'], 'direction': direction, 'stops': stops},
             ))
     return chunks

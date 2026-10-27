@@ -142,6 +142,17 @@ class ChunkingTests(TestCase):
         self.assertIn('(1호차) 천안 터미널 08:25 → 두정역 08:35', chunk.content)
         self.assertIn('이 시간대는 운행하지 않음', chunk.content)
 
+    def test_bus_chunk_title_and_summary_state_direction(self):
+        # "천안 터미널 방면 학교로 오는 편"처럼 방향이 섞인 제목 때문에 모델이 방향을 반대로 답했다
+        chunks = {c.key: c for c in build_chunks(['bus'])}
+        to_school, from_school = chunks['bus:terminal:outbound'], chunks['bus:terminal:inbound']
+        self.assertEqual(to_school.title, '셔틀버스 천안 터미널 → 학교 (학교로 오는 편)')
+        self.assertEqual(from_school.title, '셔틀버스 학교 → 천안 터미널 (학교에서 나가는 편)')
+        self.assertNotIn('방면', to_school.title + from_school.title)
+        self.assertTrue(to_school.content.startswith('천안 터미널에서 학교로 오는 셔틀. 첫차 천안 터미널 08:25 출발, 막차 천안 터미널 '))
+        self.assertTrue(from_school.content.startswith('학교에서 천안 터미널로 가는 셔틀. 첫차 학교 09:20 출발, 막차 학교 '))
+        self.assertEqual(chunks['bus:asan:inbound'].title, '셔틀버스 학교 → 천안 아산역(KTX) (학교에서 나가는 편)')
+
     def test_notice_and_answered_inquiry_chunks(self):
         Notice.objects.create(title='점호 안내', content='매일 24:00 점호, 문의 010-1111-2222')
         student = User.objects.create_user('20250001', password='pw12345!')
