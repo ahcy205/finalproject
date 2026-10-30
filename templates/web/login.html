@@ -129,11 +129,5 @@
     <button type="submit" class="btn-join">로그인</button>
   </form>
 </div>
-{% if messages %}
-  <script>
-    {% for message in messages %}
-      alert("{{ message }}");
-    {% endfor %}
-  </script>
-{% endif %}
+
 {% endblock %}

@@ -381,15 +381,38 @@ class SharedNavTests(TestCase):
         holders = []
         for name in os.listdir(template_dir):
             with open(os.path.join(template_dir, name), encoding='utf-8') as f:
-                if '<nav class="fh5co-nav"' in f.read():
+                if 'class="dg-nav"' in f.read():
                     holders.append(name)
         self.assertEqual(holders, ['_nav.html'])
 
-    def test_pages_render_one_nav_with_active_menu(self):
+    def test_pages_render_one_nav_with_current_section(self):
+        """지금 화면이 속한 묶음 하나만 강조하고, 지금 화면 링크에 aria-current를 단다 (docs/adr/0020)."""
         guide = self.client.get(reverse('web:guide'))
-        self.assertContains(guide, '<nav class="fh5co-nav"', count=1)
-        self.assertContains(guide, 'class="has-dropdown active"', count=1)
-        self.assertNotContains(self.client.get(reverse('web:bus')), 'has-dropdown active')
+        self.assertContains(guide, 'class="dg-nav"', count=1)
+        self.assertContains(guide, 'dg-nav__group is-current', count=1)
+        bus = self.client.get(reverse('web:bus')).content.decode()
+        self.assertEqual(bus.count('is-current'), 1)
+        self.assertIn('href="/bus/" aria-current="page"', bus)
+        self.assertNotContains(self.client.get(reverse('web:login')), 'is-current')
+
+    def test_pages_that_had_no_menu_now_have_it(self):
+        self.assertContains(self.client.get(reverse('web:login')), 'class="dg-nav"', count=1)
+        self.assertContains(self.client.get(reverse('web:signup')), 'class="dg-nav"', count=1)
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.client.force_login(staff)
+        for name in ('web:mypage', 'web:dorminfo', 'web:outside_manage', 'web:reward_penalty'):
+            with self.subTest(name=name):
+                self.assertContains(self.client.get(reverse(name)), 'class="dg-nav"', count=1)
+
+    def test_messages_show_as_page_notice_not_browser_alert(self):
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'web')
+        for name in os.listdir(template_dir):
+            with open(os.path.join(template_dir, name), encoding='utf-8') as f:
+                text = f.read()
+            self.assertNotIn("alert('{{ message }}')", text, name)
+            self.assertNotIn('alert("{{ message }}")', text, name)
+        response = self.client.post(reverse('web:login'), {'username': 'nobody', 'password': 'wrong'}, follow=True)
+        self.assertContains(response, 'class="dg-toast dg-toast--')
 
     def test_staff_sees_admin_menu_on_every_page(self):
         staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)

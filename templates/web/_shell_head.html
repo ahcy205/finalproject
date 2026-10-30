@@ -1,0 +1,5 @@
+{% load static %}
+{% comment %}공통 틀(상단 메뉴·알림)의 글꼴·CSS·JS. 모든 화면의 <head>에 한 번 들어간다 (docs/adr/0020).{% endcomment %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="{% static 'css/dorm-shell.css' %}">
+<script src="{% static 'js/dorm-shell.js' %}" defer></script>

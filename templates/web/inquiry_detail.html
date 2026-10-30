@@ -93,8 +93,10 @@
       white-space: pre-line;
     }
   </style>
+{% include 'web/_shell_head.html' %}
 </head>
 <body>
+{% include 'web/_nav.html' %}
   <div class="container">
     <h2>{{ inquiry.title }}</h2>
     <div class="meta-info"><strong>작성자:</strong> {{ inquiry.user.username }}</div>
