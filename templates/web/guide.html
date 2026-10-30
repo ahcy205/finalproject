@@ -1,141 +1,33 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-	<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>돔고돔락</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
-
-
-	{% include 'web/_theme_css.html' %}
-
-	</head>
-	<body>
-		
-	<div class="fh5co-loader"></div>
-	
-	<div id="page">
-	{% include 'web/_nav.html' with active='guide' %}
-	
-	<aside id="fh5co-hero">
-		<div class="flexslider">
-			<ul class="slides">
-		   	<li style="background-image: url({% static 'images/img_bg_2.jpg' %});">
-		   		<div class="overlay-gradient"></div>
-		   		<div class="container">
-		   			<div class="row">
-			   			<div class="col-md-8 col-md-offset-2 text-center slider-text">
-			   				<div class="slider-text-inner">
-			   					<h1 class="heading-section">생활관 안내</h1>
-			   				</div>
-			   			</div>
-			   		</div>
-		   		</div>
-		   	</li>
-		  	</ul>
-	  	</div>
-	</aside>
-
-	<div id="fh5co-course-categories">
-		<div class="container">
-			<div class="row">
-				<div class="col-md-3 col-sm-7 text-center animate-box">
-					<div class="services">
-					  					  <a href="{% url 'web:check_in' %}">
-						 <span class="icon">
-							<i class="icon-home-outline"></i>
-						 </span>
-						 <div class="desc">
-							<h3>
-							   기숙사 신청
-							</h3>
-						 </div>
-					  </a>
-					  
-				   </div>
-				</div>
-				<div class="col-md-3 col-sm-7 text-center animate-box">
-					<div class="services">
-					  					  <a href="{% url 'web:outside' %}">
-						 <span class="icon">
-							<i class="icon-calender-outline"></i>
-						 </span>
-						 <div class="desc">
-							<h3>
-							   외박 신청
-							</h3>
-						 </div>
-					  </a>
-					  
-				   </div>
-				</div>
-				<div class="col-md-3 col-sm-7 text-center animate-box">
-					<div class="services">
-						<a href="{% url 'web:info' %}">
-							<span class="icon">
-								<i class="icon-info-large"></i>
-							</span>
-							<div class="desc">
-								<h3>생활관 안내</h3>
-							</div>
-						</a>
-					</div>
-				</div>
-				<div class="col-md-3 col-sm-7 text-center animate-box">
-					<div class="services">
-						<a href="{% url 'web:rules' %}">
-							<span class="icon">
-								<i class="icon-file"></i>
-							</span>
-							<div class="desc">
-								<h3>생활관 규칙</h3>
-							</div>
-						</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<footer id="fh5co-footer" role="contentinfo" style="background-image: url({% static 'images/img_bg_4.jpg' %});">
-		<div class="overlay"></div>
-		<div class="container">
-			<div class="row copyright">
-				<div class="col-md-12 text-center">
-					<p>
-						<small class="block">&copy; DORM苦DORM樂</small>
-						<small class="block">Designed by team - 도미를 찾아서</small>
-					</p>
-				</div>
-			</div>
-		</div>
-	</footer>
-	</div>
-	<div class="gototop js-top">
-		<a href="#" class="js-gotop"><i class="icon-arrow-up"></i></a>
-	</div>
-	
-	<!-- jQuery -->
-	{% include 'web/_theme_js.html' %}
-	<script>
-    var d = new Date(new Date().getTime() + 1000 * 120 * 120 * 2000);
-
-    // default example
-    simplyCountdown('.simply-countdown-one', {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate()
-    });
-
-    //jQuery example
-    $('#simply-countdown-losange').simplyCountdown({
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate(),
-        enableUtc: false
-    });
-	</script>
-	</body>
-</html>
-
+{% extends 'web/layout.html' %}
+{% comment %}"생활관 안내" 묶음의 첫 화면. 메뉴 서랍과 같은 항목을 한 줄 설명과 함께 보여 준다 (docs/adr/0020).{% endcomment %}
+{% block title %}생활관 안내{% endblock %}
+{% block content %}
+<div class="dg-wrap dg-narrow">
+  <header class="dg-pagehead"><h1>생활관 안내</h1></header>
+  <div class="dg-grid dg-grid--even">
+    <section class="dg-section" aria-labelledby="life-title">
+      <div class="dg-section__head"><h2 id="life-title">생활</h2></div>
+      <ul class="dg-linkrows">
+        {% if user.is_staff %}
+        <li><a href="{% url 'web:dorminfo' %}"><span class="dg-linkrows__title">입실 신청 관리</span><span class="dg-linkrows__desc">신청을 확인하고 방을 배정해요</span></a></li>
+        <li><a href="{% url 'web:outside_manage' %}"><span class="dg-linkrows__title">외박 신청 관리</span><span class="dg-linkrows__desc">외박 신청을 승인하거나 반려해요</span></a></li>
+        {% else %}
+        <li><a href="{% url 'web:check_in' %}"><span class="dg-linkrows__title">입실 신청</span><span class="dg-linkrows__desc">생활관 입실을 신청해요</span></a></li>
+        <li><a href="{% url 'web:outside' %}"><span class="dg-linkrows__title">외박 신청</span><span class="dg-linkrows__desc">외박하는 날짜를 미리 알려 주세요</span></a></li>
+        {% endif %}
+        <li><a href="{% url 'web:menu' %}"><span class="dg-linkrows__title">식단표</span><span class="dg-linkrows__desc">이번 주 중식·석식</span></a></li>
+        <li><a href="{% url 'web:bus' %}"><span class="dg-linkrows__title">셔틀버스</span><span class="dg-linkrows__desc">천안 터미널·천안 아산역 노선 시간표</span></a></li>
+        <li><a href="{% url 'web:acc' %}"><span class="dg-linkrows__title">주변 편의시설</span><span class="dg-linkrows__desc">학교 근처 식당·편의점·카페 지도</span></a></li>
+      </ul>
+    </section>
+    <section class="dg-section" aria-labelledby="guide-title">
+      <div class="dg-section__head"><h2 id="guide-title">안내</h2></div>
+      <ul class="dg-linkrows">
+        <li><a href="{% url 'web:info' %}"><span class="dg-linkrows__title">생활관 안내</span><span class="dg-linkrows__desc">입·퇴관, 생활관비, 시설 이용 운영 규정</span></a></li>
+        <li><a href="{% url 'web:rules' %}"><span class="dg-linkrows__title">생활관 규칙</span><span class="dg-linkrows__desc">출입·소등 시간, 금지 사항, 벌점 기준</span></a></li>
+        <li><a href="{% url 'web:chatbot' %}"><span class="dg-linkrows__title">AI 챗봇</span><span class="dg-linkrows__desc">규칙·셔틀·식단을 바로 물어봐요</span></a></li>
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}
