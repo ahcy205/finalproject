@@ -228,3 +228,58 @@ textarea.dg-input { min-height: 112px; resize: vertical; }
 
 @media (max-width: 959.98px) { .dg-formgrid { grid-template-columns: 1fr; gap: 40px; } }
 .dg-done .dg-actions { margin-top: 24px; }
+
+/* ---------- 탭 (링크) ---------- */
+.dg-tabs { display: flex; gap: 4px; margin: -4px 0 32px; border-bottom: 1px solid var(--dg-line); overflow-x: auto; }
+.dg-tabs a {
+  padding: 10px 14px; margin-bottom: -1px; border-bottom: 3px solid transparent;
+  color: var(--dg-ink-2); font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.dg-tabs a:hover { color: var(--dg-ink); }
+.dg-tabs a[aria-current="page"] { color: var(--dg-pine); border-bottom-color: var(--dg-pine); }
+
+/* ---------- 항목: 값 ---------- */
+.dg-facts > div { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--dg-line); }
+.dg-facts > div:last-child { border-bottom: 0; }
+.dg-facts dt { color: var(--dg-ink-2); font-size: 15px; }
+.dg-points { display: flex; gap: 24px; }
+.dg-points > div { display: flex; align-items: center; gap: 10px; }
+.dg-points__label { color: var(--dg-ink-2); font-size: 15px; }
+.dg-after { margin-top: 16px; }
+
+/* ---------- 문의 목록 ---------- */
+.dg-inquiries > li { border-bottom: 1px solid var(--dg-line); }
+.dg-inquiries a {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 16px; padding: 14px 4px;
+  color: var(--dg-ink); text-decoration: none;
+}
+.dg-inquiries a:hover { background: var(--dg-pine-50); color: var(--dg-ink); }
+.dg-inquiries__title { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dg-inquiries__meta { grid-column: 1; font-size: 13px; color: var(--dg-ink-2); }
+.dg-inquiries .dg-status { grid-column: 2; grid-row: 1 / span 2; }
+
+/* ---------- 오류·숨김 ---------- */
+.dg-field__error { font-size: 13px; font-weight: 600; color: var(--dg-danger); }
+.dg-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- 검색 줄 ---------- */
+.dg-searchbar { display: grid; grid-template-columns: 160px minmax(0, 1fr) auto; gap: 8px; margin-bottom: 24px; max-width: 720px; }
+select.dg-input { appearance: none; padding-right: 36px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--dg-ink-2) 50%), linear-gradient(135deg, var(--dg-ink-2) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+
+/* ---------- 표 ---------- */
+.dg-tablewrap { overflow-x: auto; background: var(--dg-surface); border: 1px solid var(--dg-line); border-radius: var(--dg-radius); }
+.dg-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.dg-table th { text-align: left; font-size: 13px; font-weight: 700; color: var(--dg-ink-2); background: var(--dg-bg);
+  padding: 10px 14px; border-bottom: 1px solid var(--dg-line); white-space: nowrap; }
+.dg-table td { padding: 12px 14px; border-bottom: 1px solid var(--dg-line); vertical-align: middle; }
+.dg-table tbody tr:last-child td { border-bottom: 0; }
+.dg-table tbody tr:hover td { background: #FAFBFA; }
+.dg-table__num { text-align: right !important; font-variant-numeric: tabular-nums; }
+.dg-table__empty { text-align: center; color: var(--dg-ink-2); padding: 32px 14px !important; }
+
+@media (max-width: 599.98px) {
+  .dg-searchbar { grid-template-columns: 1fr; }
+  .dg-facts > div { grid-template-columns: 88px 1fr; }
+}

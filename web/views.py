@@ -40,9 +40,11 @@ def mypage_view(request):
     is_admin = user.is_staff or user.is_superuser
 
     dorm = Dorm.objects.filter(user=user).first()
-    inquiries = Inquiry.objects.filter(user=user).order_by('-created_at', 'id')
+    inquiries = Inquiry.objects.filter(user=user)
     if is_admin:
-        inquiries = Inquiry.objects.all().order_by('-created_at', 'id')
+        inquiries = Inquiry.objects.all()
+    # 답변 상태(inquiryanswer)와 작성자를 함께 읽어 목록이 길어져도 쿼리 수가 같다
+    inquiries = inquiries.select_related('user', 'inquiryanswer').order_by('-created_at', 'id')
 
     if request.method == 'POST' and 'submit_inquiry' in request.POST and not is_admin:
         form = InquiryForm(request.POST)
@@ -97,7 +99,20 @@ def mypage_view(request):
                 # 화면에 있는 검색 항목 외의 필드(예: user__password)는 검색하지 않는다
                 students = UserProfile.objects.none()
 
+    # 탭은 ?tab= 링크로 고른다. 학생 검색 결과와 문의 입력 오류는 해당 탭으로 연다
+    tab = request.GET.get('tab', '')
+    if is_admin and request.GET.get('field'):
+        tab = 'search'
+    elif form.errors:
+        tab = 'inquiry'
+    if tab not in ('inquiry', 'search') or (tab == 'search' and not is_admin):
+        tab = 'info'
+
     context = {
+        'tab': tab,
+        'search_fields': [('full_name', '이름'), ('student_number', '학번'), ('department', '학과'),
+                          ('phone_number', '전화 번호'), ('building_name', '건물명'), ('r_number', '호수'),
+                          ('gender', '성별')],
         'user': user,
         'is_admin': is_admin,
         'dorm': dorm,
