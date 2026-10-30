@@ -1,109 +1,73 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-   <head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>돔고돔락</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
-
-
-   {% include 'web/_theme_css.html' %}
-
-   </head>
-   <body>
-
-   <div class="fh5co-loader" ></div>
-
-   <div id="page">
-   {% include 'web/_nav.html' with active='home' %}
-
-    <div class="container" style="margin-top: 80px; min-height: 80vh;">
-      <div class="row">
-        <div class="col-md-8 col-md-offset-2" style="background-color: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 6px;">
-          <h4 class="text-center mb-4">기숙사 신청하기</h4>
-          <form method="POST" class="post-form" id="applyForm">
-            {% csrf_token %}
-               <table class="table table-bordered">
-                <tr>
-                  <th style="width: 20%">*이름</th>
-                  <td>
-                    <input type="text" name="name" maxlength="20" class="form-control" required>
-                  </td>
-                </tr>
-                <tr>
-                  <th>*학번</th>
-                  <td>
-                    <input type="text" name="student_number" maxlength="10" class="form-control" required>
-                  </td>
-                </tr>
-                <tr>
-                  <th>*성별</th>
-                  <td>
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="radio" name="gender" id="gender_male" value="male" required>
-                      <label class="form-check-label" for="gender_male">남성</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="radio" name="gender" id="gender_female" value="female" required>
-                      <label class="form-check-label" for="gender_female">여성</label>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <th>요청사항</th>
-                  <td>
-                    <textarea name="content" maxlength="100" class="form-control" rows="4"></textarea>
-                  </td>
-                </tr>
-              </table>
-            <div class="text-end mt-3">
-              <button type="submit" class="btn btn-primary">신청하기</button>
-            </div>
-          </form>
-            <div class="text-end mt-3">
-              <a href="{% url 'web:dorminfo' %}" class="btn btn-danger">신청현황</a>
-            </div>
-        </div>
+{% extends 'web/layout.html' %}
+{% comment %}
+입실 신청 (docs/adr/0020). 처음에는 계정의 이름·학번을 채워 두고, 오류로 돌아오면 입력한 값을 그대로 보여 준다(_check_in_page).
+이미 신청했으면 양식 대신 신청 상태를 보여 준다. 서버 검사(필수 항목, 중복 신청, 학번 길이·중복)는 그대로다.
+{% endcomment %}
+{% block title %}입실 신청{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead"><h1>입실 신청</h1></header>
+  <div class="dg-formgrid">
+    {% if applied %}
+    <section class="dg-panel" aria-labelledby="applied-title">
+      <h2 class="dg-panel__title" id="applied-title">이미 입실 신청을 했어요</h2>
+      {% if applied.position %}
+      <p>배정된 방 <span class="dg-plate dg-plate--line dg-plate--sm">{{ applied.building_name }} {{ applied.r_number }}호</span> <span class="dg-muted">{{ applied.position }}번 침대</span></p>
+      {% else %}
+      <p class="dg-muted">관리실에서 방을 배정하면 여기와 신청 현황에서 볼 수 있어요.</p>
+      {% endif %}
+      <a class="dg-btn dg-btn--quiet" href="{% url 'web:dorminfo' %}">신청 현황 보기</a>
+    </section>
+    {% else %}
+    <form class="dg-form" method="post">
+      {% csrf_token %}
+      <div class="dg-field">
+        <label class="dg-field__label" for="name">이름</label>
+        <input class="dg-input" type="text" id="name" name="name" maxlength="20" required autocomplete="name" value="{{ values.name }}">
       </div>
-    </div>
+      <div class="dg-field">
+        <label class="dg-field__label" for="student_number">학번</label>
+        <input class="dg-input dg-num" type="text" id="student_number" name="student_number" maxlength="10" required
+               inputmode="numeric" value="{{ values.student_number }}" aria-describedby="sn_help">
+        <span class="dg-field__help" id="sn_help">10자 이하. 한 학번으로 한 번만 신청할 수 있어요.</span>
+      </div>
+      <fieldset class="dg-field">
+        <legend class="dg-field__label">성별</legend>
+        <div class="dg-choice">
+          <label><input type="radio" name="gender" value="male" required{% if values.gender == 'male' %} checked{% endif %}><span>남성</span></label>
+          <label><input type="radio" name="gender" value="female" required{% if values.gender == 'female' %} checked{% endif %}><span>여성</span></label>
+        </div>
+      </fieldset>
+      <div class="dg-field">
+        <label class="dg-field__label" for="content">요청 사항<span class="dg-field__opt">선택</span></label>
+        <textarea class="dg-input" id="content" name="content" maxlength="100" rows="4" data-count="content_count"
+                  placeholder="예: 저층 희망, 룸메이트 희망">{{ values.content }}</textarea>
+        <div class="dg-field__foot"><span class="dg-field__count" id="content_count" aria-live="polite">{{ values.content|length }}/100자</span></div>
+      </div>
+      <div class="dg-form__submit">
+        <button class="dg-btn" type="submit">입실 신청</button>
+      </div>
+    </form>
+    {% endif %}
 
-
-
+    <aside class="dg-section" aria-labelledby="steps-title">
+      <div class="dg-section__head"><h2 id="steps-title">신청 뒤에는</h2></div>
+      <ol class="dg-steps">
+        <li><span>신청서를 보내면 관리실에 접수돼요.</span></li>
+        <li><span>관리실이 확인하고 방과 침대를 배정해요.</span></li>
+        <li><span>배정 결과는 <a href="{% url 'web:dorminfo' %}">신청 현황</a>에서 볼 수 있어요.</span></li>
+      </ol>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
 <script>
-  function updateCharCount(input, spanId, max) {
-    document.getElementById(spanId).innerText = input.value.length;
-  }
+  // 요청 사항 글자 수 (서버도 100자로 제한한다)
+  document.querySelectorAll('[data-count]').forEach(function (field) {
+    var out = document.getElementById(field.dataset.count);
+    var max = field.getAttribute('maxlength');
+    field.addEventListener('input', function () { out.textContent = field.value.length + '/' + max + '자'; });
+  });
 </script>
-
-   <!-- jQuery -->
-   {% include 'web/_theme_js.html' %}
-   <script>
-    var d = new Date(new Date().getTime() + 1000 * 120 * 120 * 2000);
-
-    // default example
-    simplyCountdown('.simply-countdown-one', {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate()
-    });
-
-    //jQuery example
-    $('#simply-countdown-losange').simplyCountdown({
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate(),
-        enableUtc: false
-    });
-   </script>
-   <script>
-     document.getElementById("applyForm").addEventListener("submit", function(event) {
-      event.preventDefault();
-       alert("신청이 완료되었습니다.");
-       this.submit();
-     });
-   </script>
-    </div>
-   </body>
-</html>
+{% endblock %}

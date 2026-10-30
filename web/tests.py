@@ -914,3 +914,62 @@ class HomeBoardTests(TestCase):
         self.assertContains(response, reverse('web:outing_info'))
         self.client.force_login(User.objects.create_user('admin', password='pw12345!', is_staff=True))
         self.assertContains(self.client.get(reverse('web:home')), '처리할 외박 신청')
+
+
+class ApplyFlowPageTests(TestCase):
+    """입실·외박 신청 화면: 아는 정보는 미리 채우고, 오류 뒤에도 입력을 지우지 않는다 (docs/adr/0020)."""
+
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+        self.client.force_login(self.student)
+
+    def test_outing_form_uses_the_logged_in_identity(self):
+        response = self.client.get(reverse('web:outside'))
+        self.assertContains(response, '홍길동')
+        self.assertContains(response, 'name="name" value="홍길동"')
+        self.assertContains(response, 'name="student_number" value="20250001"')
+        self.assertContains(response, f'min="{timezone.localdate().isoformat()}"')
+        self.assertContains(response, 'css/dorm.css')
+        self.assertNotContains(response, 'css/style.css')
+
+    def test_outing_form_lists_recent_requests(self):
+        OutingApply.objects.create(user=self.student, name='홍길동', student_number='20250001',
+                                   out_date=date(2026, 11, 7), status='approved')
+        response = self.client.get(reverse('web:outside'))
+        self.assertContains(response, '승인됨')
+        self.assertContains(response, reverse('web:outing_info'))
+
+    def test_check_in_form_is_prefilled_and_keeps_input_after_an_error(self):
+        response = self.client.get(reverse('web:check_in'))
+        self.assertContains(response, 'value="홍길동"')
+        self.assertContains(response, 'value="20250001"')
+        response = self.client.post(reverse('web:check_in'),
+                                    {'name': '홍길동', 'student_number': '20250001', 'content': '조용한 방 희망'})
+        self.assertContains(response, '필수 항목을 모두 입력해주세요.')
+        self.assertContains(response, '조용한 방 희망')
+        self.assertFalse(Dorm.objects.exists())
+
+    def test_check_in_shows_status_instead_of_form_after_applying(self):
+        Dorm.objects.create(user=self.student, name='홍길동', student_number='20250001', gender='male')
+        response = self.client.get(reverse('web:check_in'))
+        self.assertContains(response, '이미 입실 신청을 했어요')
+        self.assertNotContains(response, 'name="gender"')
+
+    def test_successful_check_in_goes_home_with_a_notice(self):
+        response = self.client.post(reverse('web:check_in'),
+                                    {'name': '홍길동', 'student_number': '20250001', 'gender': 'male'}, follow=True)
+        self.assertContains(response, '기숙사 신청이 완료되었습니다.')
+        self.assertContains(response, 'dg-toast--success')
+
+    def test_no_success_alert_before_the_server_answers(self):
+        for name in ('check_in', 'outside', 'apply_success'):
+            with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'web', f'{name}.html'),
+                      encoding='utf-8') as f:
+                self.assertNotIn('alert(', f.read(), name)
+
+    def test_success_page_links_to_my_requests(self):
+        response = self.client.get(reverse('web:apply_success'))
+        self.assertContains(response, reverse('web:outing_info'))
+        self.assertContains(response, 'css/dorm.css')

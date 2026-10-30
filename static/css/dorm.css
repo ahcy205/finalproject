@@ -173,3 +173,58 @@ body.dg-page {
 .dg-linkrows--large .dg-linkrows__title { font-size: 19px; }
 @media (max-width: 959.98px) { .dg-grid--even { grid-template-columns: 1fr; } }
 .dg-grid > .dg-section + .dg-section { margin-top: 0; }
+
+/* ---------- 입력 양식 ---------- */
+.dg-formgrid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: start; }
+.dg-form > * + * { margin-top: 24px; }
+.dg-field { display: grid; gap: 8px; border: 0; padding: 0; margin-left: 0; margin-right: 0; min-width: 0; }
+.dg-field__label { font-size: 15px; font-weight: 700; padding: 0; }
+.dg-field__opt { font-weight: 400; color: var(--dg-ink-3); margin-left: 4px; }
+.dg-field__help { font-size: 13px; color: var(--dg-ink-2); }
+.dg-field__foot { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--dg-ink-2); }
+.dg-field__count { margin-left: auto; font-variant-numeric: tabular-nums; }
+.dg-input {
+  width: 100%; min-height: 48px; padding: 11px 14px; background: var(--dg-surface); color: var(--dg-ink);
+  border: 1px solid var(--dg-line-strong); border-radius: var(--dg-radius); font-size: 16px; line-height: 1.5;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+textarea.dg-input { min-height: 112px; resize: vertical; }
+.dg-input:hover { border-color: var(--dg-ink-3); }
+.dg-page .dg-input:focus, .dg-page .dg-input:focus-visible {
+  outline: none; border-color: var(--dg-pine); box-shadow: 0 0 0 3px rgba(31, 94, 75, .18); border-radius: var(--dg-radius);
+}
+.dg-input[aria-invalid="true"] { border-color: var(--dg-danger); }
+.dg-choice { display: flex; gap: 8px; }
+.dg-choice label { flex: 1; position: relative; }
+.dg-choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.dg-choice span {
+  display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 16px;
+  border: 1px solid var(--dg-line-strong); border-radius: var(--dg-radius); background: var(--dg-surface);
+  font-weight: 600; cursor: pointer;
+}
+.dg-choice input:checked + span { border-color: var(--dg-pine); background: var(--dg-pine-50); color: var(--dg-pine); box-shadow: inset 0 0 0 1px var(--dg-pine); }
+.dg-choice input:focus-visible + span { box-shadow: var(--dg-focus); }
+.dg-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 14px 16px;
+  background: var(--dg-surface); border: 1px solid var(--dg-line); border-radius: var(--dg-radius); }
+.dg-identity__name { font-weight: 700; }
+.dg-identity__note { width: 100%; font-size: 13px; color: var(--dg-ink-2); }
+.dg-form__submit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 8px; }
+.dg-form__submit .dg-btn { min-width: 160px; }
+
+/* 순서가 있는 안내 (신청 → 확인 → 배정) */
+.dg-steps { counter-reset: step; }
+.dg-steps > li { counter-increment: step; display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 10px 0; }
+.dg-steps > li::before {
+  content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  border-radius: var(--dg-radius-plate); background: var(--dg-pine); color: #fff; font-weight: 700; font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.dg-note { padding: 14px 16px; border-left: 3px solid var(--dg-brass); background: var(--dg-brass-50); font-size: 15px; }
+
+/* 완료 화면 */
+.dg-done { max-width: 560px; }
+.dg-done__mark { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px;
+  border-radius: 50%; background: var(--dg-pine); color: #fff; margin-bottom: 16px; }
+
+@media (max-width: 959.98px) { .dg-formgrid { grid-template-columns: 1fr; gap: 40px; } }
+.dg-done .dg-actions { margin-top: 24px; }
