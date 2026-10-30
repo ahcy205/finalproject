@@ -1,16 +1,18 @@
-{% extends 'base.html' %}
-
+{% extends 'web/layout.html' %}
+{% comment %}외박 신청 완료 (docs/adr/0020). 예전처럼 브라우저 경고 창을 띄우지 않고, 다음에 할 일로 안내한다.{% endcomment %}
+{% block title %}외박 신청 완료{% endblock %}
 {% block content %}
-<div class="container" style="margin-top: 100px;">
-  <div class="alert alert-success text-center">
-    <h4>외출/외박 신청이 성공적으로 완료되었습니다.</h4>
-    <a href="{% url 'web:home' %}" class="btn btn-primary mt-3">홈으로 돌아가기</a>
-  </div>
+<div class="dg-wrap">
+  <section class="dg-done" aria-labelledby="done-title">
+    <span class="dg-done__mark" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <header class="dg-pagehead"><h1 id="done-title">외박 신청을 보냈어요</h1></header>
+    <p class="dg-muted">관리실이 확인하면 승인 결과가 내 신청 목록과 홈 화면에 보여요.</p>
+    <div class="dg-actions">
+      <a class="dg-btn" href="{% url 'web:outing_info' %}">내 신청 보기</a>
+      <a class="dg-btn dg-btn--quiet" href="{% url 'web:home' %}">홈으로</a>
+    </div>
+  </section>
 </div>
-
-{% if show_alert %}
-<script>
-  alert("신청이 완료되었습니다.");
-</script>
-{% endif %}
 {% endblock %}

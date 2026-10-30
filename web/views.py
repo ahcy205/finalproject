@@ -252,19 +252,19 @@ def check_in(request):
 
         if not all([name, student_number, gender]):
             messages.error(request, '필수 항목을 모두 입력해주세요.')
-            return render(request, 'web/check_in.html')
+            return _check_in_page(request)
 
         if Dorm.objects.filter(user=request.user).exists():
             messages.error(request, '이미 신청한 기록이 있습니다.')
-            return render(request, 'web/check_in.html')
+            return _check_in_page(request)
 
         if len(student_number) > 10:
             messages.error(request, '학번은 10자 이하로 입력해주세요.')
-            return render(request, 'web/check_in.html')
+            return _check_in_page(request)
 
         if Dorm.objects.filter(student_number=student_number).exists():
             messages.error(request, '이미 등록된 학번입니다. 학번을 확인해주세요.')
-            return render(request, 'web/check_in.html')
+            return _check_in_page(request)
 
         Dorm.objects.create(
             user=request.user,
@@ -276,7 +276,21 @@ def check_in(request):
         messages.success(request, '기숙사 신청이 완료되었습니다.')
         return redirect('web:home')
 
-    return render(request, 'web/check_in.html')
+    return _check_in_page(request)
+
+
+def _check_in_page(request):
+    """입실 신청 화면. 처음에는 계정의 이름·학번을 채우고, 오류로 돌아오면 입력한 값을 그대로 보여 준다."""
+    if request.method == 'POST':
+        values = {key: request.POST.get(key, '') for key in ('name', 'student_number', 'gender', 'content')}
+    else:
+        profile = getattr(request.user, 'userprofile', None)
+        values = {'name': getattr(profile, 'full_name', ''), 'student_number': request.user.username,
+                  'gender': '', 'content': ''}
+    return render(request, 'web/check_in.html', {
+        'values': values,
+        'applied': Dorm.objects.filter(user=request.user).first(),
+    })
 
 
 @login_required
@@ -287,7 +301,13 @@ def outside(request):
     if request.method == 'POST':
         return _save_outing(request)
 
-    return render(request, 'web/outside.html', {'form': OutingApplyForm()})
+    profile = getattr(request.user, 'userprofile', None)
+    return render(request, 'web/outside.html', {
+        'form': OutingApplyForm(),
+        'full_name': getattr(profile, 'full_name', ''),
+        'today': timezone.localdate(),
+        'recent': OutingApply.objects.filter(user=request.user).order_by('-applied_at', '-id')[:3],
+    })
 
 
 def _save_outing(request):
