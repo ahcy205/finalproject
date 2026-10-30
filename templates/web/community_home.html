@@ -1,169 +1,55 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-<head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>자유게시판</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+자유게시판 목록 (docs/adr/0020). 넓은 화면은 표, 휴대폰은 제목 한 줄 + 정보 한 줄로 보여 준다.
+- 번호: 최신 글이 가장 큰 번호(views._number_rows). 쪽이 바뀌어도 이어진다.
+- 글쓴이: 다른 학생에게는 "익명", 내 글은 "나". 작성자마다 번호를 매기지 않는다(번호로 같은 사람을 알아볼 수 있으므로).
+- 삭제는 글 화면 → 삭제 확인 화면에서 한다.
+{% endcomment %}
+{% block title %}자유 게시판{% endblock %}
+{% block content %}
+{% now "Y-m-d" as today %}
+<div class="dg-wrap">
+  <header class="dg-pagehead">
+    <h1>자유 게시판</h1>
+    <a class="dg-btn" href="{% url 'web:community_create' %}">글 쓰기</a>
+  </header>
 
+  <form class="dg-searchbar dg-searchbar--simple" method="get" role="search">
+    <label class="dg-sr" for="kw">제목 검색</label>
+    <input class="dg-input" type="search" name="kw" id="kw" value="{{ kw }}" placeholder="제목으로 찾기">
+    <button class="dg-btn dg-btn--quiet" type="submit">검색</button>
+  </form>
+  <p class="dg-listinfo">
+    {% if kw %}<span>‘{{ kw }}’ 검색 결과 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span> <a href="{% url 'web:community_home' %}">검색 지우기</a>
+    {% else %}<span>글 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span>{% endif %}
+  </p>
 
-   {% include 'web/_theme_css.html' with bootstrap5=True fontawesome=True %}
-
-    <style>
-        .page-link-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 20px;
-            font-size: 16px;
-        }
-
-        .page-link-wrapper a,
-        .page-link-wrapper span {
-            color: black;
-            text-decoration: none;
-            padding: 4px 8px;
-        }
-
-        .page-link-wrapper .current-page {
-            border: 1.5px solid black;
-            border-radius: 3px;
-            font-weight: bold;
-        }
-
-        .page-link-wrapper .arrow {
-            border: 1px solid #ccc;
-            padding: 2px 8px;
-            border-radius: 3px;
-        }
-
-        .page-link-wrapper .arrow.disabled {
-            pointer-events: none;
-            opacity: 0.3;
-        }
-    </style>
-
-</head>
-<body>
-
-<div class="fh5co-loader"></div>
-
-<div id="page">
-{% include 'web/_nav.html' %}
-
-<div class="container mt-5">
-   <h2 class="text-center mb-4">자유게시판</h2>
-
-    <!-- 검색창 -->
-        <form method="get" class="text-center mb-4">
-            <div class="input-group w-50 mx-auto">
-                <input type="text" name="kw" value="{{ request.GET.kw }}" class="form-control" placeholder="검색어를 입력해 주세요.">
-                <span class="input-group-btn">
-                    <button type="submit" class="btn btn-cta"><span>검색</span></button>
-                </span>
-            </div>
-        </form>
-
-   <table class="table table-bordered text-center">
-     <thead class="table-light">
-       <tr>
-         <th class="text-center" style="width: 8%;">번호</th>
-         <th class="text-center" style="width: 40%;">제목</th>
-         <th class="text-center" style="width: 10%;">작성자</th>
-         <th class="text-center" style="width: 15%;">작성일</th>
-         <th class="text-center" style="width: 10%;">좋아요 수</th>
-         <th class="text-center" style="width: 10%;">댓글 수</th>
-         {% if user.is_authenticated %}
-         <th class="text-center" style="width: 7%;">관리</th>
-         {% endif %}
-       </tr>
-     </thead>
-     <tbody>
-       {% if posts %}
-         {% for post in posts %}
-           <tr>
-             <td>{{ forloop.counter }}</td>
-             <td><a href="{% url 'web:community_detail' post.id %}">{{ post.title }}</a></td>
-             <td><i class="fas fa-user-circle"></i> 익명{{ forloop.revcounter }}</td>
-             <td>{{ post.created_at|date:"Y-m-d H:i" }}</td>
-             <td><span class="badge bg-warning text-dark"><i class="fas fa-heart"></i> {{ post.like_count }}</span></td>
-             <td><span class="badge bg-info text-dark"><i class="fas fa-comments"></i> {{ post.comment_count }}</span></td>
-             {% if user.is_authenticated %}
-             <td>
-               {% if user == post.author or user.is_staff %}
-               <form method="POST" action="{% url 'web:community_delete' post.id %}" onsubmit="return confirm('정말 삭제하시겠습니까?');">
-                 {% csrf_token %}
-                 <button type="submit" class="btn btn-sm btn-danger">삭제</button>
-               </form>
-               {% else %}
-               <span class="text-muted">-</span>
-               {% endif %}
-             </td>
-             {% endif %}
-           </tr>
-         {% endfor %}
-       {% else %}
-         <tr>
-           <td colspan="{% if user.is_authenticated %}7{% else %}6{% endif %}">등록된 게시글이 없습니다.</td>
-         </tr>
-       {% endif %}
-     </tbody>
-   </table>
-
-   <!-- 글쓰기 버튼 -->
-   <div class="text-end mt-3">
-       {% if user.is_authenticated %}
-        <a href="{% url 'web:community_create'%}" class="btn btn-primary ms-2">글쓰기</a>
-      {% else %}
-        <a href="{% url 'web:login' %}" class="btn btn-primary ms-2">글쓰기</a>
-      {% endif %}
-   </div>
-
-    <div class="page-link-wrapper">
-
-        {% if page_obj.has_previous %}
-            <a class="arrow" href="?page={{ page_obj.previous_page_number }}{% if kw %}&kw={{ kw }}{% endif %}">&lsaquo;</a>
-        {% else %}
-            <span class="arrow disabled">&lsaquo;</span>
-        {% endif %}
-
-        {% for num in page_obj.paginator.page_range %}
-            {% if num == page_obj.number %}
-                <span class="current-page">{{ num }}</span>
-            {% else %}
-                <a href="?page={{ num }}{% if kw %}&kw={{ kw }}{% endif %}">{{ num }}</a>
-            {% endif %}
+  <div class="dg-tablewrap">
+    <table class="dg-table dg-boardlist">
+      <caption class="dg-sr">자유 게시판 글 목록{% if page_obj.paginator.num_pages > 1 %}, {{ page_obj.paginator.num_pages }}쪽 중 {{ page_obj.number }}쪽{% endif %}</caption>
+      <thead><tr>
+        <th scope="col">번호</th><th scope="col">제목</th><th scope="col">글쓴이</th><th scope="col">작성일</th>
+        <th scope="col" class="dg-boardlist__count">좋아요</th><th scope="col" class="dg-boardlist__count">댓글</th>
+      </tr></thead>
+      <tbody>
+        {% for post in posts %}
+        {% with day=post.created_at|date:"Y-m-d" %}
+        <tr>
+          <td class="dg-boardlist__no">{{ post.row_no }}</td>
+          <td class="dg-boardlist__title"><a href="{% url 'web:community_detail' post.id %}">{{ post.title }}</a>{% if day == today %}<span class="dg-new">새 글</span>{% endif %}</td>
+          <td class="dg-boardlist__meta">{% if post.author_id == user.id %}<span class="dg-boardlist__me">나</span>{% else %}<span>익명</span>{% endif %}</td>
+          <td class="dg-boardlist__meta">{% if day == today %}{{ post.created_at|date:"H:i" }}{% else %}{{ post.created_at|date:"Y.m.d" }}{% endif %}</td>
+          <td class="dg-boardlist__meta dg-boardlist__count" data-label="좋아요">{{ post.like_count }}</td>
+          <td class="dg-boardlist__meta dg-boardlist__count" data-label="댓글">{{ post.comment_count }}</td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr><td colspan="6" class="dg-table__empty">{% if kw %}‘{{ kw }}’ 제목의 글이 없어요. 다른 낱말로 찾아보세요.{% else %}아직 글이 없어요. 첫 글을 올려 보세요.{% endif %}</td></tr>
         {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-        {% if page_obj.has_next %}
-            <a class="arrow" href="?page={{ page_obj.next_page_number }}{% if kw %}&kw={{ kw }}{% endif %}">&rsaquo;</a>
-        {% else %}
-            <span class="arrow disabled">&rsaquo;</span>
-        {% endif %}
-
-    </div>
+  {% include 'web/_pager.html' %}
 </div>
-
-{% include 'web/_theme_js.html' %}
-
-<script>
-   var d = new Date(new Date().getTime() + 1000 * 120 * 120 * 2000);
-   simplyCountdown('.simply-countdown-one', {
-      year: d.getFullYear(),
-      month: d.getMonth() + 1,
-      day: d.getDate()
-   });
-   $('#simply-countdown-losange').simplyCountdown({
-      year: d.getFullYear(),
-      month: d.getMonth() + 1,
-      day: d.getDate(),
-      enableUtc: false
-   });
-</script>
-
-</div>
-</body>
-</html>
+{% endblock %}
