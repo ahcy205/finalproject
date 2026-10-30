@@ -1,0 +1,33 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ko">
+{% comment %}
+새 디자인으로 옮긴 화면의 공통 틀 (docs/adr/0020). 사용법: {% extends 'web/layout.html' %}
+- block title: 탭 제목 앞부분 ("공지 사항" → "공지 사항 · 돔고돔락")
+- block content: 본문 (<main> 안)
+- block head / block scripts: 화면 전용 CSS·JS
+예전 테마(_theme_css.html, Bootstrap, jQuery)는 불러오지 않는다.
+{% endcomment %}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}돔고돔락{% endblock %}{% block title_suffix %} · 돔고돔락{% endblock %}</title>
+  <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템">
+  {% include 'web/_shell_head.html' %}
+  <link rel="stylesheet" href="{% static 'css/dorm.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="dg-page">
+  <a class="dg-skip" href="#main">본문으로 건너뛰기</a>
+  {% include 'web/_nav.html' %}
+  <main id="main" class="dg-main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="dg-footer">
+    <div class="dg-wrap dg-footer__inner">
+      <span class="dg-footer__brand">돔고돔락</span>
+      <span>생활관 통합 관리 시스템</span>
+    </div>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

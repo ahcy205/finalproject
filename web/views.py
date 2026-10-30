@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from knowledge import sources as knowledge_sources
@@ -18,12 +19,14 @@ from knowledge.models import ChatLog
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
 from django.shortcuts import get_object_or_404
 
+from web.home import today_board
 from web.forms import CustomSignupForm, CommentForm, PostForm, InquiryForm, InquiryAnswerForm, OutingApplyForm, \
     NoticeForm, ChatQuestionForm, ChatFeedbackForm
 
 
 def index(request):
-    return render(request, 'web/index.html')
+    board = today_board(timezone.localtime(), request.user)
+    return render(request, 'web/index.html', {'board': board})
 
 def guide(request):
     return render(request, 'web/guide.html')

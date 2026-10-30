@@ -1,198 +1,154 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-   <head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>돔고돔락</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+홈 "오늘의 생활관" (docs/adr/0020). 값은 web/home.py의 today_board.
+학생이 하루에 여러 번 확인하는 것(출입·소등, 다음 셔틀, 오늘 식단, 내 외박 신청, 공지)을 첫 화면에 둔다.
+{% endcomment %}
+{% block title %}오늘의 생활관{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead">
+    <h1>오늘의 생활관</h1>
+    <p class="dg-pagehead__meta dg-num">{{ board.now|date:"n월 j일" }} {{ board.weekday }}요일 · {{ board.now|date:"H:i" }} 기준</p>
+  </header>
 
-
-   {% include 'web/_theme_css.html' %}
-
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-   <![endif]-->
-
-   </head>
-   <body>
-
-   <div class="fh5co-loader"></div>
-
-   <div id="page">
-   {% include 'web/_nav.html' %}
-
-   <aside id="fh5co-hero">
-      <div class="flexslider">
-         <ul class="slides">
-            <li style="background-image: url({% static 'images/img_bg_1.jpg' %});">
-               <div class="overlay-gradient"></div>
-               <div class="container">
-                  <div class="row">
-                     <div class="col-md-8 col-md-offset-2 text-center slider-text">
-                        <div class="slider-text-inner">
-                           <h1>돔고돔락 공지사항</h1>
-                           <h2>기숙사 생활에 필요한 소식을 확인하세요</h2>
-                           <p>
-                              <a class="btn btn-primary btn-lg" href="{% url 'web:notice' %}">공지사항 가기</a>
-                           </p>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </li>
-            <li style="background-image: url({% static 'images/img_bg_2.jpg' %});">
-               <div class="overlay-gradient"></div>
-               <div class="container">
-                  <div class="row">
-                     <div class="col-md-8 col-md-offset-2 text-center slider-text">
-                        <div class="slider-text-inner">
-                           <h1>오늘의 식단표</h1>
-                           <h2>이번 주 기숙사 식단을 확인하세요</h2>
-                           <p><a class="btn btn-primary btn-lg btn-learn" href="{% url 'web:menu' %}">확인하러 가기</a></p>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </li>
-            <li style="background-image: url({% static 'images/img_bg_3.jpg' %});">
-               <div class="overlay-gradient"></div>
-               <div class="container">
-                  <div class="row">
-                     <div class="col-md-8 col-md-offset-2 text-center slider-text">
-                        <div class="slider-text-inner">
-                           <h1>셔틀 버스 시간표</h1>
-                           <h2>셔틀버스 시간과 정류장을 확인하세요</h2>
-                           <p><a class="btn btn-primary btn-lg btn-learn" href="{% url 'web:bus' %}">확인하러 가기</a></p>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </li>
-         </ul>
+  <section class="dg-board" aria-label="오늘의 생활관 안내판">
+    {% if board.entry %}
+    <div class="dg-board__row">
+      <span class="dg-board__label">생활관 출입</span>
+      <div class="dg-board__value">
+        <span class="dg-board__span"><span class="dg-plate">{{ board.entry.start }}</span><span class="dg-dash">–</span><span class="dg-plate">{{ board.entry.end }}</span></span>
+        {% if board.entry.open %}
+        <span class="dg-board__note dg-board__note--now">지금 출입할 수 있어요</span>
+        {% else %}
+        <span class="dg-board__note">지금은 출입 시간이 아니에요</span>
+        {% endif %}
       </div>
-   </aside>
+    </div>
+    {% endif %}
+    {% if board.lights_out %}
+    <div class="dg-board__row">
+      <span class="dg-board__label">방 소등</span>
+      <div class="dg-board__value">
+        <span class="dg-board__span"><span class="dg-plate">{{ board.lights_out.start }}</span><span class="dg-dash">–</span><span class="dg-plate">{{ board.lights_out.end }}</span></span>
+        <span class="dg-board__note">실원 모두 합의하면 켤 수 있어요</span>
+      </div>
+    </div>
+    {% endif %}
+    <div class="dg-board__row">
+      <span class="dg-board__label">학교 출발 셔틀</span>
+      <div class="dg-board__value">
+        {% for shuttle in board.shuttles %}
+        <div class="dg-board__route">
+          <span class="dg-board__route-name">{{ shuttle.route }}</span>
+          <span class="dg-board__route-line">
+            {% if shuttle.time %}
+            <span class="dg-plate dg-plate--now">{{ shuttle.time }}</span>
+            {% if shuttle.later %}<span class="dg-board__later dg-num">다음 {{ shuttle.later|join:", " }}</span>{% endif %}
+            {% else %}
+            <span class="dg-board__note">오늘 운행 끝 · 첫차 <span class="dg-num">{{ shuttle.first }}</span></span>
+            {% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
 
-   <div id="fh5co-course-categories">
-     <div class="container">
-       <div class="row">
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-                          <a href="{% url 'web:check_in' %}">
-               <span class="icon"><i class="icon-home-outline"></i></span>
-               <div class="desc"><h3>기숙사 신청</h3></div>
-             </a>
-             
-           </div>
-         </div>
-
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-                          <a href="{% url 'web:outside' %}">
-               <span class="icon"><i class="icon-calender-outline"></i></span>
-               <div class="desc"><h3>외박 신청</h3></div>
-             </a>
-             
-           </div>
-         </div>
-
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-                          <a href="{% url 'web:notice' %}">
-               <span class="icon"><i class="icon-megaphone2"></i></span>
-               <div class="desc"><h3>공지 사항</h3></div>
-             </a>
-             
-           </div>
-         </div>
-
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-             <a href="{% url 'web:menu' %}">
-               <span class="icon"><i class="icon-food"></i></span>
-               <div class="desc"><h3>식단표</h3></div>
-             </a>
-           </div>
-         </div>
-
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-             <a href="{% url 'web:bus' %}">
-               <span class="icon"><i class="icon-map"></i></span>
-               <div class="desc"><h3>셔틀 버스</h3></div>
-             </a>
-           </div>
-         </div>
-
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-             <a href="{% url 'web:info' %}">
-               <span class="icon"><i class="icon-info-large"></i></span>
-               <div class="desc"><h3>생활관 안내</h3></div>
-             </a>
-           </div>
-         </div>
-
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-                          <a href="{% url 'web:community_home' %}">
-               <span class="icon"><i class="icon-messages"></i></span>
-               <div class="desc"><h3>자유게시판</h3></div>
-             </a>
-             
-           </div>
-         </div>
-
-         <div class="col-md-3 col-sm-6 text-center animate-box">
-           <div class="services">
-             <a href="{% url 'web:acc' %}">
-               <span class="icon"><i class="icon-shop"></i></span>
-               <div class="desc"><h3>편의 시설</h3></div>
-             </a>
-           </div>
-         </div>
-       </div>
-     </div>
-   </div>
-
-   <footer id="fh5co-footer" role="contentinfo" style="background-image: url({% static 'images/img_bg_4.jpg' %});">
-      <div class="overlay"></div>
-      <div class="container">
-         <div class="row copyright">
-            <div class="col-md-12 text-center">
-               <p>
-                  <small class="block">&copy; DORM苦DORM樂</small>
-                  <small class="block">Designed by team - 도미를 찾아서</small>
-               </p>
+  <div class="dg-grid">
+    <div class="dg-stack">
+      <section class="dg-section" aria-labelledby="meal-title">
+        <div class="dg-section__head">
+          <h2 id="meal-title">{{ board.weekday }}요일 식단</h2>
+          <a class="dg-section__more" href="{% url 'web:menu' %}">주간 식단표</a>
+        </div>
+        {% if board.meals %}
+        <ul class="dg-rows">
+          {% for meal in board.meals %}
+          <li{% if meal.over %} class="dg-rows--dim"{% endif %}>
+            <div class="dg-rows__key">
+              <span class="dg-rows__title">{{ meal.name }}</span><br>
+              <span class="dg-small dg-num">{{ meal.time }}</span>
             </div>
-         </div>
-      </div>
-   </footer>
-   </div>
-   <div class="gototop js-top">
-      <a href="#" class="js-gotop"><i class="icon-arrow-up"></i></a>
-   </div>
+            <div class="dg-rows__main">
+              <p>{{ meal.dishes|join:" · " }}</p>
+              <p class="dg-small dg-muted">{{ meal.price }}{% if meal.over %} · 배식 끝{% endif %}</p>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="dg-empty"><strong>주말에는 식단표가 없어요.</strong>평일 식단은 주간 식단표에서 볼 수 있어요.</p>
+        {% endif %}
+      </section>
 
-   <!-- jQuery -->
-   {% include 'web/_theme_js.html' %}
-   <script>
-    var d = new Date(new Date().getTime() + 1000 * 120 * 120 * 2000);
+      <section class="dg-section" aria-labelledby="notice-title">
+        <div class="dg-section__head">
+          <h2 id="notice-title">최근 공지</h2>
+          <a class="dg-section__more" href="{% url 'web:notice' %}">공지 전체</a>
+        </div>
+        {% if board.notices %}
+        <ul class="dg-notices">
+          {% for notice in board.notices %}
+          <li><a href="{% url 'web:notice_detail' notice.pk %}">
+            <span class="dg-notices__date">{{ notice.date|date:"Y.m.d" }}</span>
+            <span class="dg-notices__title">{{ notice.title }}</span>
+          </a></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="dg-empty">아직 올라온 공지가 없어요.</p>
+        {% endif %}
+      </section>
+    </div>
 
-    // default example
-    simplyCountdown('.simply-countdown-one', {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate()
-    });
+    <div class="dg-stack">
+      {% if user.is_staff %}
+      <section class="dg-panel" aria-labelledby="todo-title">
+        <h2 class="dg-panel__title" id="todo-title">처리할 외박 신청</h2>
+        <p><span class="dg-plate dg-plate--line">{{ board.pending_outings }}</span> <span class="dg-muted">건이 승인을 기다려요</span></p>
+        <a class="dg-btn" href="{% url 'web:outside_manage' %}">외박 신청 관리</a>
+      </section>
+      {% elif user.is_authenticated %}
+      <section class="dg-panel" aria-labelledby="outing-title">
+        <h2 class="dg-panel__title" id="outing-title">내 외박 신청</h2>
+        {% if board.outing %}
+        <p>
+          <span class="dg-plate dg-plate--line dg-plate--sm">{{ board.outing.out_date|date:"n/j" }}</span>
+          {% if board.outing.status == 'approved' %}<span class="dg-status dg-status--approved">승인됨</span>
+          {% elif board.outing.status == 'rejected' %}<span class="dg-status dg-status--rejected">반려됨</span>
+          {% else %}<span class="dg-status dg-status--pending">승인 대기</span>{% endif %}
+        </p>
+        <div class="dg-actions">
+          <a class="dg-btn dg-btn--quiet" href="{% url 'web:outing_info' %}">내 신청 보기</a>
+          <a class="dg-btn" href="{% url 'web:outside' %}">새로 신청</a>
+        </div>
+        {% else %}
+        <p class="dg-muted">아직 신청한 외박이 없어요.</p>
+        <a class="dg-btn" href="{% url 'web:outside' %}">외박 신청</a>
+        {% endif %}
+      </section>
+      {% else %}
+      <section class="dg-panel" aria-labelledby="login-title">
+        <h2 class="dg-panel__title" id="login-title">내 신청 현황</h2>
+        <p class="dg-muted">로그인하면 외박·입실 신청 상태를 여기서 바로 볼 수 있어요.</p>
+        <a class="dg-btn" href="{% url 'web:login' %}">로그인</a>
+      </section>
+      {% endif %}
 
-    //jQuery example
-    $('#simply-countdown-losange').simplyCountdown({
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate(),
-        enableUtc: false
-    });
-   </script>
-   </body>
-</html>
+      <section class="dg-section" aria-labelledby="quick-title">
+        <div class="dg-section__head"><h2 id="quick-title">바로 가기</h2></div>
+        <ul class="dg-linkrows">
+          {% if not user.is_staff %}
+          <li><a href="{% url 'web:outside' %}"><span class="dg-linkrows__title">외박 신청</span><span class="dg-linkrows__desc">외박하는 날짜를 미리 알려 주세요</span></a></li>
+          <li><a href="{% url 'web:check_in' %}"><span class="dg-linkrows__title">입실 신청</span><span class="dg-linkrows__desc">생활관 입실을 신청해요</span></a></li>
+          {% endif %}
+          <li><a href="{% url 'web:mypage' %}"><span class="dg-linkrows__title">문의하기</span><span class="dg-linkrows__desc">마이페이지에서 관리실에 문의를 남겨요</span></a></li>
+          <li><a href="{% url 'web:chatbot' %}"><span class="dg-linkrows__title">AI 챗봇</span><span class="dg-linkrows__desc">규칙·셔틀·식단을 바로 물어봐요</span></a></li>
+          <li><a href="{% url 'web:community_home' %}"><span class="dg-linkrows__title">자유 게시판</span><span class="dg-linkrows__desc">생활관 사람들과 이야기해요</span></a></li>
+          <li><a href="{% url 'web:bus' %}"><span class="dg-linkrows__title">셔틀버스 시간표</span><span class="dg-linkrows__desc">노선별 전체 시간표와 정류장</span></a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

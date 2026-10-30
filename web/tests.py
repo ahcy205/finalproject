@@ -508,10 +508,20 @@ class SharedThemeAssetTests(TestCase):
     """테마 CSS·JS는 _theme_css.html / _theme_js.html 에서 한 번씩만 로드된다."""
 
     def test_theme_css_and_js_load_once(self):
-        response = self.client.get(reverse('web:guide'))
+        response = self.client.get(reverse('web:bus'))
         self.assertContains(response, 'css/style.css', count=1)
         self.assertContains(response, 'js/main.js', count=1)
-        self.assertNotContains(response, 'bootstrap@5.3.0')
+        self.assertContains(response, 'css/dorm-shell.css', count=1)
+
+    def test_redesigned_pages_use_only_the_new_css(self):
+        """새 디자인으로 옮긴 화면은 예전 테마·Bootstrap·jQuery를 불러오지 않는다 (docs/adr/0020)."""
+        for name in ('web:home', 'web:guide', 'web:community'):
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name))
+                self.assertContains(response, 'css/dorm.css', count=1)
+                self.assertContains(response, 'css/dorm-shell.css', count=1)
+                for old in ('css/style.css', 'bootstrap', 'jquery', 'js/main.js'):
+                    self.assertNotContains(response, old)
 
     def test_bootstrap5_option_keeps_css_order(self):
         self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
@@ -841,3 +851,66 @@ class ChatbotConversationPageTests(TestCase):
 
     def test_page_has_a_new_conversation_button(self):
         self.assertContains(self.client.get(reverse('web:chatbot')), 'id="new-chat"')
+
+
+class HomeBoardTests(TestCase):
+    """홈 "오늘의 생활관": 규칙·식단·셔틀·내 외박 신청·공지를 한 화면에 (docs/adr/0020)."""
+
+    def board(self, when, user=None):
+        from web.home import today_board
+        return today_board(timezone.make_aware(when), user)
+
+    def test_hours_come_from_the_rules(self):
+        from datetime import datetime
+        board = self.board(datetime(2026, 10, 30, 22, 0))
+        self.assertEqual((board['entry']['start'], board['entry']['end']), ('06:00', '23:00'))
+        self.assertEqual((board['lights_out']['start'], board['lights_out']['end']), ('00:00', '06:00'))
+        self.assertTrue(board['entry']['open'])
+        self.assertFalse(self.board(datetime(2026, 10, 30, 23, 30))['entry']['open'])
+
+    def test_next_shuttle_from_school_skips_blank_cells(self):
+        from datetime import datetime
+        board = self.board(datetime(2026, 10, 30, 12, 30))  # 터미널 방면 12시대 편은 운행하지 않음('<--')
+        shuttles = {s['route']: s['time'] for s in board['shuttles']}
+        self.assertEqual(shuttles['천안 터미널 방면'], '13:40')
+        self.assertEqual(shuttles['천안 아산역 방면'], '14:00')
+        late = self.board(datetime(2026, 10, 30, 22, 0))
+        self.assertTrue(all(s['time'] is None and s['first'] for s in late['shuttles']))
+
+    def test_meals_follow_the_weekday_and_weekend_has_none(self):
+        from datetime import datetime
+        friday = self.board(datetime(2026, 10, 30, 9, 0))
+        self.assertEqual([m['name'] for m in friday['meals']], ['중식', '석식'])
+        self.assertEqual(friday['meals'][0]['time'], '11:00–13:30')
+        self.assertIn('잔치국수', friday['meals'][0]['dishes'])
+        self.assertEqual(self.board(datetime(2026, 10, 31, 9, 0))['meals'], [])
+
+    def test_latest_outing_for_the_student(self):
+        from datetime import datetime
+        student = User.objects.create_user('20250001', password='pw12345!')
+        OutingApply.objects.create(user=student, name='김학생', student_number='20250001', out_date=date(2026, 10, 1))
+        latest = OutingApply.objects.create(user=student, name='김학생', student_number='20250001',
+                                            out_date=date(2026, 11, 1))
+        self.assertEqual(self.board(datetime(2026, 10, 30, 9, 0), student)['outing'], latest)
+
+    def test_home_page_shows_the_board_and_recent_notices(self):
+        for i in range(4):
+            Notice.objects.create(title=f'공지{i}', content='내용')
+        response = self.client.get(reverse('web:home'))
+        self.assertContains(response, '오늘의 생활관')
+        self.assertContains(response, '06:00')
+        self.assertContains(response, 'css/dorm.css')
+        self.assertNotContains(response, 'css/style.css')
+        self.assertContains(response, '공지3')
+        self.assertNotContains(response, '공지0')  # 최근 3개만
+        self.assertContains(response, '로그인하면')
+
+    def test_student_sees_outing_status_and_staff_sees_pending_count(self):
+        student = User.objects.create_user('20250001', password='pw12345!')
+        OutingApply.objects.create(user=student, name='김학생', student_number='20250001', out_date=date(2026, 11, 1))
+        self.client.force_login(student)
+        response = self.client.get(reverse('web:home'))
+        self.assertContains(response, '승인 대기')
+        self.assertContains(response, reverse('web:outing_info'))
+        self.client.force_login(User.objects.create_user('admin', password='pw12345!', is_staff=True))
+        self.assertContains(self.client.get(reverse('web:home')), '처리할 외박 신청')
