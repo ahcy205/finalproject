@@ -1,371 +1,117 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-<head>
-  <meta charset="utf-8" />
-  <title>돔고돔락 - 마이페이지</title>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+마이페이지 (docs/adr/0020). 탭은 ?tab= 링크라 새로 고침·뒤로 가기에도 유지되고 자바스크립트 없이 동작한다(tab은 mypage_view가 정함).
+학생: 내 정보, 문의하기 / 직원: 내 정보, 모든 문의, 학생 검색
+{% endcomment %}
+{% block title %}마이페이지{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead"><h1>마이페이지</h1></header>
+  <nav class="dg-tabs" aria-label="마이페이지 탭">
+    <a href="?tab=info"{% if tab == 'info' %} aria-current="page"{% endif %}>내 정보</a>
+    <a href="?tab=inquiry"{% if tab == 'inquiry' %} aria-current="page"{% endif %}>{% if is_admin %}모든 문의{% else %}문의하기{% endif %}</a>
+    {% if is_admin %}<a href="?tab=search"{% if tab == 'search' %} aria-current="page"{% endif %}>학생 검색</a>{% endif %}
+  </nav>
 
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:300,400" rel="stylesheet" />
-
-  <link rel="stylesheet" href="{% static 'css/animate.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/icomoon.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" />
-  <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/magnific-popup.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/owl.carousel.min.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/owl.theme.default.min.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/flexslider.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/pricing.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-
-  <script src="{% static 'js/modernizr-2.6.2.min.js' %}"></script>
-
-  <style>
-    .tab-buttons {
-      display: flex;
-      border-bottom: 3px solid #007bff;
-      margin-bottom: 25px;
-    }
-    .tab-buttons button {
-      flex: 1;
-      padding: 12px 0;
-      cursor: pointer;
-      background-color: #e9ecef;
-      border: none;
-      border-bottom: 3px solid transparent;
-      font-weight: 600;
-      color: #007bff;
-      transition: background-color 0.3s, border-bottom-color 0.3s;
-      font-size: 1.1rem;
-    }
-    .tab-buttons button:not(:last-child) {
-      border-right: 1px solid #ced4da;
-    }
-    .tab-buttons button:hover {
-      background-color: #d0e2ff;
-    }
-    .tab-buttons button.active {
-      background-color: #fff;
-      border-bottom-color: #007bff;
-      color: #004085;
-      font-weight: 700;
-    }
-
-    .tab-content {
-      display: none;
-      padding-top: 10px;
-    }
-    .tab-content.active {
-      display: block;
-    }
-
-    h2 {
-      font-weight: 700;
-      margin-bottom: 20px;
-      color: #007bff;
-      border-bottom: 2px solid #007bff;
-      padding-bottom: 8px;
-      letter-spacing: 0.05em;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
-    }
-    table thead tr {
-      background-color: #007bff;
-      color: white;
-    }
-    table th, table td {
-      padding: 12px 15px;
-      border: 1px solid #dee2e6;
-      vertical-align: middle;
-    }
-    table tbody tr:hover {
-      background-color: #f1f9ff;
-      cursor: default;
-    }
-
-    form {
-      margin-bottom: 30px;
-    }
-
-    /* 검색폼 새 디자인 */
-    .search-form {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-
-    .search-form input[type="text"] {
-      flex: 1;
-      padding: 10px 15px;
-      border: 2px solid #007bff;
-      border-radius: 6px;
-      font-size: 1.4rem;
-      transition: border-color 0.3s ease;
-    }
-
-    .search-form input[type="text"]:focus {
-      border-color: #0056b3;
-      outline: none;
-      box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
-    }
-
-    .search-select {
-      padding: 10px 15px;
-      border: 2px solid #007bff;
-      border-radius: 6px;
-      font-size: 1.4rem;
-      background-color: white;
-      color: #333;
-      transition: border-color 0.3s ease;
-      cursor: pointer;
-      min-width: 140px;
-    }
-
-    .search-select:focus {
-      border-color: #0056b3;
-      outline: none;
-      box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
-    }
-
-    .btn-search {
-      padding: 10px 30px;
-      background-color: #007bff;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    .btn-search:hover {
-      background-color: #0056b3;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 80px auto 40px auto;
-      min-height: 80vh;
-      background: #fff;
-      padding: 30px 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-      font-family: 'Source Sans Pro', sans-serif;
-      color: #333;
-      box-sizing: border-box;
-    }
-  </style>
-{% include 'web/_shell_head.html' %}
-</head>
-<body>
-{% include 'web/_nav.html' %}
-
-  <div id="page">
-    <div class="container">
-      <div class="tab-buttons">
-        <button onclick="showTab('info', event)" class="active">내 정보</button>
-        <button onclick="showTab('inquiry', event)">문의하기</button>
-        {% if is_admin %}
-          <button onclick="showTab('search', event)">검색</button>
-        {% endif %}
+  {% if tab == 'info' %}
+  <div class="dg-formgrid">
+    <section class="dg-section" aria-labelledby="me-title">
+      <div class="dg-section__head"><h2 id="me-title">{{ user.userprofile.full_name|default:user.username }}</h2></div>
+      <dl class="dg-facts">
+        <div><dt>학번</dt><dd class="dg-num">{{ user.username }}</dd></div>
+        <div><dt>학과</dt><dd>{{ user.userprofile.department|default:"-" }}</dd></div>
+        <div><dt>전화 번호</dt><dd class="dg-num">{{ user.userprofile.phone_number|default:"-" }}</dd></div>
+        <div><dt>방</dt><dd>
+          {% if dorm and dorm.position %}<span class="dg-plate dg-plate--line dg-plate--sm">{{ dorm.building_name }} {{ dorm.r_number }}호</span> <span class="dg-muted">{{ dorm.position }}번 침대</span>
+          {% elif dorm %}<span class="dg-muted">배정 대기</span> · <a href="{% url 'web:dorminfo' %}">신청 현황</a>
+          {% else %}<span class="dg-muted">입실 신청 전</span>{% if not is_admin %} · <a href="{% url 'web:check_in' %}">입실 신청</a>{% endif %}{% endif %}
+        </dd></div>
+      </dl>
+    </section>
+    <section class="dg-panel" aria-labelledby="points-title">
+      <h2 class="dg-panel__title" id="points-title">상점·벌점</h2>
+      <div class="dg-points">
+        <div><span class="dg-points__label">상점</span><span class="dg-plate dg-plate--line">{{ user.userprofile.reward_point }}</span></div>
+        <div><span class="dg-points__label">벌점</span><span class="dg-plate dg-plate--line">{{ user.userprofile.penalty_point }}</span></div>
       </div>
-
-      <div id="info" class="tab-content active">
-        <h2>내 정보</h2>
-        <table class="table table-bordered">
-          <tr><th>이름</th><td>{{ user.userprofile.full_name }}</td></tr>
-          <tr><th>학번</th><td>{{ user.username }}</td></tr>
-          <tr><th>학과</th><td>{{ user.userprofile.department }}</td></tr>
-          <tr><th>전화 번호</th><td>{{ user.userprofile.phone_number }}</td></tr>
-          <tr><th>현재 상점</th><td>{{ user.userprofile.reward_point }}</td></tr>
-          <tr><th>현재 벌점</th><td>{{ user.userprofile.penalty_point }}</td></tr>
-          <tr><th>관 호실</th>
-            <td>
-              {% if dorm %}
-                {{ dorm.building_name }} {{ dorm.r_number }}호 (좌석: {{ dorm.position }})
-              {% else %}
-                미배정
-              {% endif %}
-            </td>
-          </tr>
-        </table>
-        {% if is_admin %}
-        <div class="text-start">
-          <a href="{% url 'web:reward_penalty' %}" class="btn btn-primary">상/벌점 관리</a>
-        </div>
-        {% endif %}
-      </div>
-
-      <div id="inquiry" class="tab-content">
-        {% if is_admin %}
-          <h2>모든 문의 내역</h2>
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>제목</th>
-                <th>작성자</th>
-                <th>작성일</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for inquiry in inquiries %}
-                <tr onclick="window.location.href='{% url 'web:inquiry_detail' inquiry.pk %}'" style="cursor:pointer;">
-                  <td>{{ inquiry.title }}</td>
-                  <td>{{ inquiry.user.username }}</td>
-                  <td>{{ inquiry.created_at|date:"Y-m-d H:i" }}</td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="3" class="text-center">문의 내역이 없습니다.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% else %}
-          <h2>문의하기</h2>
-          <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" name="submit_inquiry" class="btn btn-primary">문의 등록</button>
-          </form>
-          <hr>
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>제목</th>
-                <th>작성일</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for inquiry in inquiries %}
-                <tr onclick="window.location.href='{% url 'web:inquiry_detail' inquiry.pk %}'" style="cursor:pointer;">
-                  <td>{{ inquiry.title }}</td>
-                  <td>{{ inquiry.created_at|date:"Y-m-d H:i" }}</td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="2" class="text-center">문의 내역이 없습니다.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% endif %}
-      </div>
-
-      <div id="search" class="tab-content {% if request.GET.field %}active{% endif %}">
-        {% if is_admin %}
-          <h2>학생 정보 검색</h2>
-          <form method="get" class="search-form">
-            <input type="text" name="query" placeholder="검색어 입력..." value="{{ request.GET.query }}">
-            <select name="field" class="search-select">
-              <option value="full_name" {% if request.GET.field == 'full_name' %}selected{% endif %}>이름</option>
-              <option value="student_number" {% if request.GET.field == 'student_number' %}selected{% endif %}>학번</option>
-              <option value="department" {% if request.GET.field == 'department' %}selected{% endif %}>학과</option>
-              <option value="phone_number" {% if request.GET.field == 'phone_number' %}selected{% endif %}>전화 번호</option>
-              <option value="building_name" {% if request.GET.field == 'building_name' %}selected{% endif %}>건물명</option>
-              <option value="r_number" {% if request.GET.field == 'r_number' %}selected{% endif %}>호수 </option>
-              <option value="gender" {% if request.GET.field == 'gender' %}selected{% endif %}>성별</option>
-            </select>
-            <button type="submit" class="btn-search">검색</button>
-          </form>
-
-          <table class="table table-bordered mt-3">
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>학번</th>
-                <th>학과</th>
-                <th>전화 번호</th>
-                <th>상점</th>
-                <th>벌점</th>
-                <th>건물명</th>
-                <th>호수 번호</th>
-                <th>성별</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for student in students %}
-                {% with dorm=student.user.dorm %}
-                  <tr>
-                    <td>{{ student.full_name }}</td>
-                    <td>{{ student.user.username }}</td>
-                    <td>{{ student.department }}</td>
-                    <td>{{ student.phone_number }}</td>
-                    <td>{{ student.reward_point }}</td>
-                    <td>{{ student.penalty_point }}</td>
-                    <td>{% if dorm %}{{ dorm.building_name }}{% else %}-{% endif %}</td>
-                    <td>{% if dorm %}{{ dorm.r_number }}{% else %}-{% endif %}</td>
-                    <td>
-                      {% if dorm %}
-                        {% if dorm.gender == 'male' %}남자{% elif dorm.gender == 'female' %}여자{% else %}-{% endif %}
-                      {% else %}
-                        -
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endwith %}
-              {% empty %}
-                <tr>
-                  <td colspan="6" class="text-center">검색 결과가 없습니다.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% endif %}
-      </div>
-
-      <div class="text-end mt-4">
-        <a href="{% url 'web:home' %}" class="btn btn-primary" style="font-size: 1.2rem">홈으로 가기</a>
-      </div>
-    </div>
+      {% if is_admin %}
+      <a class="dg-btn dg-btn--quiet" href="{% url 'web:reward_penalty' %}">상벌점 관리</a>
+      {% else %}
+      <p class="dg-small dg-muted">벌점이 20점 이상이면 퇴관 조치돼요. <a href="{% url 'web:rules' %}">벌점 기준</a></p>
+      {% endif %}
+    </section>
   </div>
 
-  <script src="{% static 'js/jquery.min.js' %}"></script>
-  <script src="{% static 'js/jquery.easing.1.3.js' %}"></script>
-  <script src="{% static 'js/bootstrap.min.js' %}"></script>
-  <script src="{% static 'bootstrap1.min.js' %}"></script>
-  <script src="{% static 'js/jquery.waypoints.min.js' %}"></script>
-  <script src="{% static 'js/jquery.stellar.min.js' %}"></script>
-  <script src="{% static 'js/owl.carousel.min.js' %}"></script>
-  <script src="{% static 'js/jquery.flexslider-min.js' %}"></script>
-  <script src="{% static 'js/jquery.countTo.js' %}"></script>
-  <script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
-  <script src="{% static 'js/magnific-popup-options.js' %}"></script>
-  <script src="{% static 'js/simplyCountdown.js' %}"></script>
-  <script src="{% static 'js/main.js' %}"></script>
+  {% elif tab == 'inquiry' and is_admin %}
+  <section aria-label="모든 문의">
+    {% include 'web/_inquiry_rows.html' with show_author=True %}
+  </section>
 
-  <script>
-    function showTab(tabId, event) {
-      const contents = document.querySelectorAll('.tab-content');
-      const buttons = document.querySelectorAll('.tab-buttons button');
-      contents.forEach(el => el.classList.remove('active'));
-      buttons.forEach(btn => btn.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      // 클릭이 아닌 코드로 탭을 열 때도 해당 버튼을 선택 상태로 표시
-      const button = event ? event.currentTarget
-        : document.querySelector(`.tab-buttons button[onclick*="'${tabId}'"]`);
-      if (button) button.classList.add('active');
-    }
+  {% elif tab == 'inquiry' %}
+  <div class="dg-formgrid">
+    <form class="dg-form" method="post" action="{% url 'web:mypage' %}?tab=inquiry" novalidate>
+      {% csrf_token %}
+      <div class="dg-field">
+        <label class="dg-field__label" for="{{ form.title.id_for_label }}">제목</label>
+        <input class="dg-input" type="text" name="title" id="{{ form.title.id_for_label }}" maxlength="100" required
+               value="{{ form.title.value|default_if_none:'' }}"{% if form.title.errors %} aria-invalid="true" aria-describedby="title_err"{% endif %}>
+        {% if form.title.errors %}<span class="dg-field__error" id="title_err">제목을 입력해 주세요.</span>{% endif %}
+      </div>
+      <div class="dg-field">
+        <label class="dg-field__label" for="{{ form.content.id_for_label }}">내용</label>
+        <textarea class="dg-input" name="content" id="{{ form.content.id_for_label }}" rows="6" required
+                  placeholder="궁금한 점이나 불편한 점을 적어 주세요. 관리실이 답변하면 여기에서 볼 수 있어요."{% if form.content.errors %} aria-invalid="true" aria-describedby="content_err"{% endif %}>{{ form.content.value|default_if_none:'' }}</textarea>
+        {% if form.content.errors %}<span class="dg-field__error" id="content_err">내용을 입력해 주세요.</span>{% endif %}
+      </div>
+      <div class="dg-form__submit"><button class="dg-btn" type="submit" name="submit_inquiry" value="1">문의 보내기</button></div>
+    </form>
+    <section class="dg-section" aria-labelledby="mine-title">
+      <div class="dg-section__head"><h2 id="mine-title">내 문의</h2></div>
+      {% include 'web/_inquiry_rows.html' %}
+      <p class="dg-small dg-muted dg-after">자주 묻는 질문은 <a href="{% url 'web:chatbot' %}">AI 챗봇</a>이 바로 답해 줘요.</p>
+    </section>
+  </div>
 
-    // 페이지 로드 시, URL 쿼리 파라미터에 따라 탭 활성화 유지 (옵션)
-    window.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('query') || urlParams.has('field')) {
-        // 검색 탭 활성화
-        showTab('search');
-      }
-      // 문의 등록 후 또는 입력 오류 시 문의하기 탭 유지
-      if (urlParams.get('tab') === 'inquiry'{% if form.errors %} || true{% endif %}) {
-        showTab('inquiry');
-      }
-    });
-  </script>
-
-</body>
-</html>
+  {% elif tab == 'search' %}
+  <form class="dg-searchbar" method="get" role="search">
+    <input type="hidden" name="tab" value="search">
+    <label class="dg-sr" for="field">검색 항목</label>
+    <select class="dg-input" name="field" id="field">
+      {% for value, label in search_fields %}<option value="{{ value }}"{% if request.GET.field == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="dg-sr" for="query">검색어</label>
+    <input class="dg-input" type="search" name="query" id="query" value="{{ request.GET.query }}" placeholder="검색어 (성별은 남자·여자)">
+    <button class="dg-btn" type="submit">검색</button>
+  </form>
+  {% if request.GET.field %}
+  <div class="dg-tablewrap">
+    <table class="dg-table">
+      <caption class="dg-sr">학생 검색 결과</caption>
+      <thead><tr><th scope="col">이름</th><th scope="col">학번</th><th scope="col">학과</th><th scope="col">전화 번호</th>
+        <th scope="col" class="dg-table__num">상점</th><th scope="col" class="dg-table__num">벌점</th><th scope="col">방</th><th scope="col">성별</th></tr></thead>
+      <tbody>
+        {% for student in students %}
+        {% with dorm=student.user.dorm %}
+        <tr>
+          <td>{{ student.full_name }}</td>
+          <td class="dg-num">{{ student.user.username }}</td>
+          <td>{{ student.department|default:"-" }}</td>
+          <td class="dg-num">{{ student.phone_number|default:"-" }}</td>
+          <td class="dg-table__num">{{ student.reward_point }}</td>
+          <td class="dg-table__num">{{ student.penalty_point }}</td>
+          <td>{% if dorm and dorm.r_number %}{{ dorm.building_name }} {{ dorm.r_number }}호{% else %}-{% endif %}</td>
+          <td>{% if dorm.gender == 'male' %}남자{% elif dorm.gender == 'female' %}여자{% else %}-{% endif %}</td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr><td colspan="8" class="dg-table__empty">검색 결과가 없어요. 검색 항목과 검색어를 확인해 주세요.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="dg-empty">이름, 학번, 학과, 전화 번호, 건물명, 호수, 성별로 학생을 찾을 수 있어요.</p>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

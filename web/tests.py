@@ -973,3 +973,57 @@ class ApplyFlowPageTests(TestCase):
         response = self.client.get(reverse('web:apply_success'))
         self.assertContains(response, reverse('web:outing_info'))
         self.assertContains(response, 'css/dorm.css')
+
+
+class MyPageLayoutTests(TestCase):
+    """마이페이지: 탭은 링크(?tab=), 문의 목록은 키보드로도 열 수 있는 링크, 답변 상태 표시 (docs/adr/0020)."""
+
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.student.userprofile.full_name = '홍길동'
+        self.student.userprofile.save()
+        self.client.force_login(self.student)
+
+    def test_tabs_are_links_and_only_the_active_panel_renders(self):
+        response = self.client.get(reverse('web:mypage'))
+        self.assertContains(response, 'href="?tab=inquiry"')
+        self.assertContains(response, 'aria-current="page">내 정보')
+        self.assertContains(response, '홍길동')
+        self.assertNotContains(response, 'name="submit_inquiry"')
+        self.assertNotContains(response, 'onclick=')
+        self.assertContains(response, 'css/dorm.css')
+        self.assertNotContains(response, 'css/style.css')
+
+    def test_inquiry_tab_lists_inquiries_as_links_with_answer_status(self):
+        answered = Inquiry.objects.create(user=self.student, title='답변 받은 문의', content='c')
+        Inquiry.objects.create(user=self.student, title='기다리는 문의', content='c')
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        InquiryAnswer.objects.create(inquiry=answered, admin=staff, answer='a')
+        response = self.client.get(reverse('web:mypage'), {'tab': 'inquiry'})
+        self.assertContains(response, 'name="submit_inquiry"')
+        self.assertContains(response, f'href="{reverse("web:inquiry_detail", args=[answered.pk])}"')
+        self.assertContains(response, '답변 완료')
+        self.assertContains(response, '답변 대기')
+
+    def test_inquiry_list_query_count_does_not_grow(self):
+        for i in range(3):
+            Inquiry.objects.create(user=self.student, title=f'q{i}', content='c')
+        with CaptureQueriesContext(connection) as small:
+            self.client.get(reverse('web:mypage'), {'tab': 'inquiry'})
+        for i in range(5):
+            Inquiry.objects.create(user=self.student, title=f'r{i}', content='c')
+        with CaptureQueriesContext(connection) as large:
+            self.client.get(reverse('web:mypage'), {'tab': 'inquiry'})
+        self.assertEqual(len(small), len(large))
+
+    def test_invalid_inquiry_stays_on_the_inquiry_tab_with_errors(self):
+        response = self.client.post(reverse('web:mypage'), {'submit_inquiry': '1', 'title': '', 'content': ''})
+        self.assertContains(response, 'name="submit_inquiry"')
+        self.assertContains(response, 'aria-invalid="true"')
+
+    def test_staff_search_tab(self):
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.client.force_login(staff)
+        response = self.client.get(reverse('web:mypage'), {'field': 'full_name', 'query': '길동'})
+        self.assertContains(response, 'aria-current="page">학생 검색')
+        self.assertContains(response, '20250001')
