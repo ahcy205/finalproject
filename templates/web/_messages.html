@@ -1,0 +1,14 @@
+{% comment %}
+Django messages를 화면 오른쪽 위(휴대폰은 아래)에 알림으로 보여 준다. _nav.html이 포함한다.
+브라우저 alert() 창 대신 쓴다 (docs/adr/0020). 성공·안내는 6초 뒤 사라지고, 오류는 닫을 때까지 남는다.
+{% endcomment %}
+<div class="dg-toasts" role="status" aria-live="polite">
+  {% for message in messages %}
+  <div class="dg-toast dg-toast--{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}"{% if message.tags != 'error' and message.tags != 'warning' %} data-autohide{% endif %}>
+    <p class="dg-toast__text">{{ message }}</p>
+    <button class="dg-toast__close" type="button" aria-label="알림 닫기">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  {% endfor %}
+</div>

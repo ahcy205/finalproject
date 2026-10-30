@@ -1,0 +1,194 @@
+/*
+ * 돔고돔락 공통 틀: 색·글꼴 기준, 상단 메뉴, 모바일 서랍, 알림 (docs/adr/0020)
+ * 예전 테마를 쓰는 화면에도 같이 들어가므로, 선택자는 모두 .dg- 클래스로 한정한다.
+ */
+:root {
+  --dg-bg: #F4F6F5;
+  --dg-surface: #FFFFFF;
+  --dg-ink: #1B2420;
+  --dg-ink-2: #4A5651;
+  --dg-ink-3: #6B7671;
+  --dg-line: #D6DDD9;
+  --dg-line-strong: #AEB9B3;
+  --dg-pine: #1F5E4B;
+  --dg-pine-700: #174A3B;
+  --dg-pine-50: #E6EFEB;
+  --dg-brass: #B8862B;
+  --dg-brass-ink: #7A5A17;
+  --dg-brass-50: #F6EEDC;
+  --dg-danger: #B3261E;
+  --dg-danger-50: #FBEAE8;
+  --dg-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+             "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --dg-radius: 6px;
+  --dg-radius-plate: 2px;
+  --dg-shadow-pop: 0 1px 2px rgba(27, 36, 32, .08), 0 12px 32px rgba(27, 36, 32, .14);
+  --dg-bar-h: 60px;
+  --dg-focus: 0 0 0 3px rgba(184, 134, 43, .55);
+}
+
+/* ---------- 상단 막대 ---------- */
+.dg-bar, .dg-bar *, .dg-toasts, .dg-toasts * { box-sizing: border-box; }
+.dg-bar {
+  position: sticky; top: 0; z-index: 1000;
+  background: var(--dg-pine); color: #fff;
+  font-family: var(--dg-font); font-size: 15px; line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+.dg-bar__inner {
+  max-width: 1120px; height: var(--dg-bar-h); margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 28px;
+}
+.dg-brand {
+  color: #fff !important; text-decoration: none !important;
+  font-size: 19px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap;
+  padding: 4px 0; border-bottom: 3px solid transparent;
+}
+.dg-brand:focus-visible, .dg-bar button:focus-visible, .dg-bar a:focus-visible { outline: none; box-shadow: var(--dg-focus); border-radius: var(--dg-radius-plate); }
+
+.dg-nav { flex: 1; display: flex; align-items: center; justify-content: space-between; min-width: 0; }
+.dg-nav__head, .dg-bar__menu { display: none; }
+.dg-nav ul { list-style: none; margin: 0; padding: 0; }
+.dg-nav__groups { display: flex; align-items: stretch; gap: 4px; height: var(--dg-bar-h); }
+.dg-nav__group { position: relative; display: flex; align-items: stretch; }
+
+.dg-nav__toggle, .dg-nav__link {
+  display: flex; align-items: center; gap: 6px; height: 100%;
+  padding: 0 12px; margin: 0; border: 0; background: none;
+  color: rgba(255, 255, 255, .86) !important; font: inherit; font-weight: 600; text-decoration: none !important;
+  cursor: pointer; border-bottom: 3px solid transparent; border-top: 3px solid transparent;
+}
+.dg-nav__toggle::after {
+  content: ""; width: 7px; height: 7px; margin-top: -3px;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg);
+  transition: transform .15s ease;
+}
+.dg-nav__toggle[aria-expanded="true"]::after { transform: rotate(-135deg); margin-top: 3px; }
+.dg-nav__toggle:hover, .dg-nav__link:hover, .dg-nav__toggle[aria-expanded="true"] { color: #fff !important; }
+/* 지금 보고 있는 묶음: 안내판의 황동 띠 */
+.dg-nav__group.is-current > .dg-nav__toggle,
+.dg-nav__group.is-current > .dg-nav__link { color: #fff !important; border-bottom-color: var(--dg-brass); }
+
+.dg-nav__menu {
+  position: absolute; top: calc(100% - 4px); left: 0; min-width: 196px; padding: 6px !important;
+  background: var(--dg-surface); border: 1px solid var(--dg-line); border-radius: var(--dg-radius);
+  box-shadow: var(--dg-shadow-pop);
+  opacity: 0; visibility: hidden; transform: translateY(-4px);
+  transition: opacity .12s ease, transform .12s ease, visibility 0s linear .12s;
+}
+.dg-nav__group.is-open > .dg-nav__menu {
+  opacity: 1; visibility: visible; transform: none; transition: opacity .12s ease, transform .12s ease;
+}
+.dg-nav__menu a {
+  display: block; padding: 9px 12px; border-radius: 4px;
+  color: var(--dg-ink) !important; font-weight: 500; text-decoration: none !important; white-space: nowrap;
+}
+.dg-nav__menu a:hover { background: var(--dg-pine-50); }
+.dg-nav__menu a[aria-current="page"] { background: var(--dg-pine-50); color: var(--dg-pine) !important; font-weight: 700; }
+.dg-nav__menu a:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--dg-pine); }
+.dg-nav__ext { font-size: 12px; color: var(--dg-ink-3); font-weight: 400; margin-left: 4px; }
+
+.dg-nav__account { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.dg-nav__account form { margin: 0; }
+.dg-nav__who { color: rgba(255, 255, 255, .86); font-size: 14px; }
+.dg-nav__logout, .dg-nav__login {
+  display: inline-flex; align-items: center; height: 34px; padding: 0 14px; margin: 0;
+  border: 1px solid rgba(255, 255, 255, .45); border-radius: var(--dg-radius); background: transparent;
+  color: #fff !important; font: inherit; font-size: 14px; font-weight: 600; text-decoration: none !important; cursor: pointer;
+}
+.dg-nav__logout:hover, .dg-nav__login:hover { background: rgba(255, 255, 255, .12); border-color: #fff; }
+.dg-scrim { display: none; }
+
+/* ---------- 좁은 화면: 오른쪽 서랍 ---------- */
+@media (max-width: 959.98px) {
+  .dg-bar__inner { justify-content: space-between; height: 56px; }
+  .dg-bar__menu {
+    display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; margin: 0;
+    border: 1px solid rgba(255, 255, 255, .45); border-radius: var(--dg-radius); background: transparent;
+    color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .dg-nav {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 1100;
+    width: min(340px, 88vw); flex-direction: column; align-items: stretch; justify-content: flex-start;
+    background: var(--dg-surface); color: var(--dg-ink); overflow-y: auto;
+    transform: translateX(100%); visibility: hidden;
+    transition: transform .2s ease, visibility 0s linear .2s;
+  }
+  .dg-bar.is-drawer-open .dg-nav { transform: none; visibility: visible; transition: transform .2s ease; }
+  /* 서랍은 막대 안에 있으므로, 열렸을 때 막대 전체를 어두운 막(.dg-scrim)보다 위로 올린다 */
+  .dg-bar.is-drawer-open { z-index: 1100; }
+  .dg-nav__head {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px; padding: 0 12px 0 20px; background: var(--dg-pine); color: #fff; flex: none;
+  }
+  .dg-nav__title { font-weight: 700; }
+  .dg-nav__close {
+    display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+    border: 0; background: none; color: #fff; cursor: pointer; border-radius: var(--dg-radius);
+  }
+  .dg-nav__groups { flex-direction: column; height: auto; gap: 0; padding: 8px 0 !important; }
+  .dg-nav__group { flex-direction: column; border-bottom: 1px solid var(--dg-line); padding: 6px 0; }
+  .dg-nav__group:last-child { border-bottom: 0; }
+  /* 서랍에서는 묶음을 모두 펼쳐 보여 준다. 묶음 이름은 제목 역할만 한다 */
+  .dg-nav__toggle {
+    height: auto; padding: 10px 20px 4px; cursor: default; pointer-events: none;
+    color: var(--dg-ink-3) !important; font-size: 13px; font-weight: 600; border: 0;
+  }
+  .dg-nav__toggle::after { display: none; }
+  .dg-nav__group.is-current > .dg-nav__toggle { color: var(--dg-pine) !important; }
+  .dg-nav__link {
+    height: auto; padding: 12px 20px; color: var(--dg-ink) !important; font-size: 16px; border: 0;
+  }
+  .dg-nav__group.is-current > .dg-nav__link { color: var(--dg-pine) !important; }
+  .dg-nav__menu {
+    position: static; min-width: 0; padding: 0 8px !important; border: 0; box-shadow: none; background: none;
+    opacity: 1; visibility: visible; transform: none; transition: none;
+  }
+  .dg-nav__menu a { padding: 11px 12px; font-size: 16px; }
+  .dg-nav__account {
+    margin-top: auto; padding: 16px 20px 24px; border-top: 1px solid var(--dg-line);
+    justify-content: space-between; background: var(--dg-bg);
+  }
+  .dg-nav__who { color: var(--dg-ink-2); font-size: 15px; }
+  .dg-nav__logout, .dg-nav__login {
+    color: var(--dg-pine) !important; border-color: var(--dg-line-strong); background: var(--dg-surface); height: 40px;
+  }
+  .dg-scrim:not([hidden]) {
+    display: block; position: fixed; inset: 0; z-index: 1050; background: rgba(27, 36, 32, .45);
+  }
+}
+
+/* ---------- 알림 ---------- */
+.dg-toasts {
+  position: fixed; top: calc(var(--dg-bar-h) + 12px); right: 16px; z-index: 1200;
+  display: flex; flex-direction: column; gap: 8px; width: min(380px, calc(100vw - 32px));
+  font-family: var(--dg-font); pointer-events: none;
+}
+.dg-toast {
+  display: flex; align-items: flex-start; gap: 8px; pointer-events: auto;
+  padding: 12px 8px 12px 14px; background: var(--dg-surface); color: var(--dg-ink);
+  border: 1px solid var(--dg-line); border-left: 4px solid var(--dg-ink-2); border-radius: var(--dg-radius);
+  box-shadow: var(--dg-shadow-pop); animation: dg-toast-in .18s ease-out;
+}
+.dg-toast--success { border-left-color: var(--dg-pine); }
+.dg-toast--error { border-left-color: var(--dg-danger); }
+.dg-toast--warning { border-left-color: var(--dg-brass); }
+.dg-toast__text { flex: 1; margin: 1px 0 0; font-size: 15px; line-height: 1.5; font-weight: 500; }
+.dg-toast__close {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; margin: 0; border: 0; border-radius: 4px; background: none; color: var(--dg-ink-3); cursor: pointer;
+}
+.dg-toast__close:hover { background: var(--dg-bg); color: var(--dg-ink); }
+.dg-toast__close:focus-visible { outline: none; box-shadow: var(--dg-focus); }
+.dg-toast.is-leaving { opacity: 0; transform: translateY(-4px); transition: opacity .15s ease, transform .15s ease; }
+@keyframes dg-toast-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (max-width: 959.98px) {
+  .dg-toasts { top: auto; bottom: 16px; left: 16px; right: 16px; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dg-bar *, .dg-toast { transition: none !important; animation: none !important; }
+}
+
+/* 예전 테마(main.js)가 만드는 모바일 메뉴 버튼은 새 메뉴와 겹치므로 숨긴다. 모든 화면을 옮기면 지운다 */
+.js-fh5co-nav-toggle, #fh5co-offcanvas { display: none !important; }

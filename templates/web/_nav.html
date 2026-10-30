@@ -1,95 +1,83 @@
 {% comment %}
-모든 페이지의 상단 메뉴. 사용법: include 'web/_nav.html' with active='guide'
-- active: 강조할 메뉴 (home, guide, community)
-- 관리자(is_staff)에게는 입실·외박 관리 메뉴, superuser에게는 Django 관리자 링크가 보인다.
+모든 화면의 상단 메뉴와 알림 메시지. 사용법: include 'web/_nav.html' (docs/adr/0004, 0020)
+- 강조할 묶음은 web.context_processors.nav가 화면 이름으로 정한다(nav_section). 예전의 active 인자는 쓰지 않는다.
+- 관리자(is_staff)에게는 관리 묶음, superuser에게는 Django 관리자 링크가 보인다.
+- 넓은 화면은 묶음별 펼침 메뉴, 좁은 화면(960px 미만)은 오른쪽 서랍으로 보인다. 동작은 static/js/dorm-shell.js
 {% endcomment %}
-{% if request.user.is_superuser %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<style>
-  .admin-link {
-    margin-left: 12px;
-    border-radius: 6px;
-    background-color: #eab7b7;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  .admin-link a {
-    display: inline-block;
-    padding: 8px 14px;
-    color: #6c757d;
-    font-weight: 600;
-    font-size: 14px;
-    text-decoration: none;
-  }
-  nav ul li.admin-link a { color: #6c757d; }
-  .admin-link i { margin-right: 6px; color: #495057; }
-  .admin-link:hover { background-color: #dee2e6; }
-  .admin-link a:hover { color: #0d6efd; }
-</style>
-{% endif %}
-<nav class="fh5co-nav" role="navigation">
-   <div class="top-menu">
-      <div class="container">
-         <div class="row">
-            <div class="col-xs-2">
-               <div id="fh5co-logo"><a href="{% url 'web:home' %}"><i class="icon-study"></i>돔고돔락<span></span></a></div>
-            </div>
-            <div class="col-xs-10 text-right menu-1">
-               <ul>
-                  <li{% if active == 'home' %} class="active"{% endif %}><a href="{% url 'web:home' %}">홈페이지</a></li>
-                  <li class="has-dropdown{% if active == 'guide' %} active{% endif %}">
-                     <a href="{% url 'web:guide' %}">생활관 안내</a>
-                     <ul class="dropdown">
-                        {% if user.is_staff %}
-                        <li><a href="{% url 'web:dorminfo' %}">입실 신청 관리</a></li>
-                        <li><a href="{% url 'web:outside_manage' %}">외박 신청 관리</a></li>
-                        {% else %}
-                        <li><a href="{% url 'web:check_in' %}">입실 신청</a></li>
-                        <li><a href="{% url 'web:outside' %}">외박 신청</a></li>
-                        {% endif %}
-                        <li><a href="{% url 'web:info' %}">생활관 안내</a></li>
-                        <li><a href="{% url 'web:rules' %}">생활관 규칙</a></li>
-                        <li><a href="{% url 'web:chatbot' %}">AI 챗봇</a></li>
-                     </ul>
-                  </li>
-                  <li class="has-dropdown{% if active == 'community' %} active{% endif %}">
-                     <a href="{% url 'web:community' %}">커뮤니티</a>
-                     <ul class="dropdown">
-                        <li><a href="{% url 'web:notice' %}">공지 사항</a></li>
-                        <li><a href="{% url 'web:community_home' %}">자유 게시판</a></li>
-                     </ul>
-                  </li>
-                  <li class="has-dropdown">
-                     <a href="{% url 'web:mypage' %}">마이페이지</a>
-                  </li>
-                  {% if request.user.is_superuser %}
-                  <li class="nav-item admin-link">
-                     <a href="{% url 'admin:index' %}" target="_blank">
-                        <i class="fas fa-user-shield"></i> 관리자
-                     </a>
-                  </li>
-                  <li><span class="icon"><i class="icon-arrow-forward-outline"></i></span></li>
-                  {% endif %}
-                  {% if user.is_authenticated %}
-                 <li class="btn-cta" style="margin-right: 10px;">
-                    <span class="btn-cta">{{ user.userprofile.full_name|default:user.username }}님, 환영합니다!</span>
-                 </li>
-                 <li class="btn-cta">
-                    <form method="post" action="{% url 'web:logout' %}" style="display: inline;">
-                       {% csrf_token %}
-                       <button type="submit" class="btn btn-link p-0" style="text-decoration: none; color: blue;">
-                          로그아웃
-                       </button>
-                    </form>
-                 </li>
-                 {% else %}
-                 <li class="btn-cta">
-                    <a href="{% url 'web:login' %}"><span>로그인</span></a>
-                 </li>
-                 {% endif %}
-
-               </ul>
-            </div>
-         </div>
+{% with here=request.resolver_match.url_name %}
+<header class="dg-bar">
+  <div class="dg-bar__inner">
+    <a class="dg-brand" href="{% url 'web:home' %}"{% if here == 'home' %} aria-current="page"{% endif %}>돔고돔락</a>
+    <button class="dg-bar__menu" type="button" aria-expanded="false" aria-controls="dg-nav">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>메뉴</span>
+    </button>
+    <nav class="dg-nav" id="dg-nav" aria-label="주 메뉴">
+      <div class="dg-nav__head">
+        <span class="dg-nav__title">메뉴</span>
+        <button class="dg-nav__close" type="button" aria-label="메뉴 닫기">
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
       </div>
-   </div>
-</nav>
+      <ul class="dg-nav__groups">
+        <li class="dg-nav__group{% if nav_section == 'life' %} is-current{% endif %}">
+          <button class="dg-nav__toggle" type="button" aria-expanded="false" aria-controls="dg-menu-life">생활</button>
+          <ul class="dg-nav__menu" id="dg-menu-life">
+            {% if not user.is_staff %}
+            <li><a href="{% url 'web:outside' %}"{% if here == 'outside' %} aria-current="page"{% endif %}>외박 신청</a></li>
+            <li><a href="{% url 'web:check_in' %}"{% if here == 'check_in' %} aria-current="page"{% endif %}>입실 신청</a></li>
+            {% endif %}
+            <li><a href="{% url 'web:menu' %}"{% if here == 'menu' %} aria-current="page"{% endif %}>식단표</a></li>
+            <li><a href="{% url 'web:bus' %}"{% if here == 'bus' %} aria-current="page"{% endif %}>셔틀버스</a></li>
+            <li><a href="{% url 'web:acc' %}"{% if here == 'acc' %} aria-current="page"{% endif %}>주변 편의시설</a></li>
+          </ul>
+        </li>
+        <li class="dg-nav__group{% if nav_section == 'guide' %} is-current{% endif %}">
+          <button class="dg-nav__toggle" type="button" aria-expanded="false" aria-controls="dg-menu-guide">안내</button>
+          <ul class="dg-nav__menu" id="dg-menu-guide">
+            <li><a href="{% url 'web:info' %}"{% if here == 'info' %} aria-current="page"{% endif %}>생활관 안내</a></li>
+            <li><a href="{% url 'web:rules' %}"{% if here == 'rules' %} aria-current="page"{% endif %}>생활관 규칙</a></li>
+            <li><a href="{% url 'web:chatbot' %}"{% if here == 'chatbot' %} aria-current="page"{% endif %}>AI 챗봇</a></li>
+          </ul>
+        </li>
+        <li class="dg-nav__group{% if nav_section == 'community' %} is-current{% endif %}">
+          <button class="dg-nav__toggle" type="button" aria-expanded="false" aria-controls="dg-menu-community">커뮤니티</button>
+          <ul class="dg-nav__menu" id="dg-menu-community">
+            <li><a href="{% url 'web:notice' %}"{% if here == 'notice' %} aria-current="page"{% endif %}>공지 사항</a></li>
+            <li><a href="{% url 'web:community_home' %}"{% if here == 'community_home' %} aria-current="page"{% endif %}>자유 게시판</a></li>
+          </ul>
+        </li>
+        {% if user.is_staff %}
+        <li class="dg-nav__group{% if nav_section == 'staff' %} is-current{% endif %}">
+          <button class="dg-nav__toggle" type="button" aria-expanded="false" aria-controls="dg-menu-staff">관리</button>
+          <ul class="dg-nav__menu" id="dg-menu-staff">
+            <li><a href="{% url 'web:dorminfo' %}"{% if here == 'dorminfo' %} aria-current="page"{% endif %}>입실 신청 관리</a></li>
+            <li><a href="{% url 'web:outside_manage' %}"{% if here == 'outside_manage' or here == 'outing_info' %} aria-current="page"{% endif %}>외박 신청 관리</a></li>
+            <li><a href="{% url 'web:reward_penalty' %}"{% if here == 'reward_penalty' %} aria-current="page"{% endif %}>상벌점 관리</a></li>
+            {% if user.is_superuser %}
+            <li><a href="{% url 'admin:index' %}" target="_blank" rel="noopener">Django 관리자 <span class="dg-nav__ext">새 창</span></a></li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+        <li class="dg-nav__group{% if nav_section == 'mypage' %} is-current{% endif %}">
+          <a class="dg-nav__link" href="{% url 'web:mypage' %}"{% if here == 'mypage' %} aria-current="page"{% endif %}>마이페이지</a>
+        </li>
+      </ul>
+      <div class="dg-nav__account">
+        {% if user.is_authenticated %}
+        <span class="dg-nav__who">{{ user.userprofile.full_name|default:user.username }}님</span>
+        <form method="post" action="{% url 'web:logout' %}">
+          {% csrf_token %}
+          <button class="dg-nav__logout" type="submit">로그아웃</button>
+        </form>
+        {% else %}
+        <a class="dg-nav__login" href="{% url 'web:login' %}">로그인</a>
+        {% endif %}
+      </div>
+    </nav>
+  </div>
+</header>
+<div class="dg-scrim" hidden></div>
+{% endwith %}
+{% include 'web/_messages.html' %}

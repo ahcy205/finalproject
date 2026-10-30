@@ -23,9 +23,6 @@
       <div class="row">
         <div class="col-md-8 col-md-offset-2" style="background-color: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 6px;">
           <h4 class="text-center mb-4">기숙사 신청하기</h4>
-          {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}">{{ message }}</div>
-          {% endfor %}
           <form method="POST" class="post-form" id="applyForm">
             {% csrf_token %}
                <table class="table table-bordered">
