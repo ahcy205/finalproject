@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -156,20 +157,25 @@ KNOWLEDGE_LLM = {
     'KEEP_ALIVE': os.environ.get('KNOWLEDGE_LLM_KEEP_ALIVE', '30m'),
 }
 
+# 외부 판단 모델(TypeSafe Jev) 키. 테스트(manage.py test)에서는 키가 있어도 쓰지 않는다.
+# 셸에 키가 있으면 테스트가 실제 Jev를 불러 결과가 달라졌다(키 없는 CI와 다름).
+TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
+TYPESAFE_API_KEY = '' if TESTING else os.environ.get('TYPESAFE_API_KEY', '')
+
 # 챗봇 메시지 종류 판단기 (knowledge/router.py, docs/adr/0014)
 # BACKEND: 'jev'(TypeSafe Jev, 외부 API, 실패하면 'llm'), 'llm'(로컬 답변 모델), 'fake'(테스트)
 # 키(TYPESAFE_API_KEY)가 없으면 'llm'을 쓴다. 키는 환경변수로만 읽고 저장소에 넣지 않는다.
 KNOWLEDGE_ROUTER = {
-    'BACKEND': os.environ.get('KNOWLEDGE_ROUTER_BACKEND', 'jev' if os.environ.get('TYPESAFE_API_KEY') else 'llm'),
-    'API_KEY': os.environ.get('TYPESAFE_API_KEY', ''),
+    'BACKEND': os.environ.get('KNOWLEDGE_ROUTER_BACKEND', 'jev' if TYPESAFE_API_KEY else 'llm'),
+    'API_KEY': TYPESAFE_API_KEY,
     'MODEL': os.environ.get('KNOWLEDGE_ROUTER_MODEL', 'jev-1.14.0'),
 }
 
 # 챗봇 답 검증 (knowledge/verify.py, docs/adr/0015). 답을 보여 주기 전에 Jev로 '질문에 답하는가',
 # '근거와 어긋나는가'를 확인한다. 'none'이면 검증하지 않는다. 키가 없으면 'none'.
 KNOWLEDGE_VERIFIER = {
-    'BACKEND': os.environ.get('KNOWLEDGE_VERIFIER_BACKEND', 'jev' if os.environ.get('TYPESAFE_API_KEY') else 'none'),
-    'API_KEY': os.environ.get('TYPESAFE_API_KEY', ''),
+    'BACKEND': os.environ.get('KNOWLEDGE_VERIFIER_BACKEND', 'jev' if TYPESAFE_API_KEY else 'none'),
+    'API_KEY': TYPESAFE_API_KEY,
     'MODEL': os.environ.get('KNOWLEDGE_ROUTER_MODEL', 'jev-1.14.0'),
 }
 
