@@ -1,0 +1,10 @@
+{% comment %}글자 수 표시: data-count="표시할 요소 id". 처음 값은 서버가 채우고, 입력할 때마다 바꾼다. maxlength가 없으면 "N자".{% endcomment %}
+<script>
+  document.querySelectorAll('[data-count]').forEach(function (field) {
+    var out = document.getElementById(field.dataset.count);
+    var max = field.getAttribute('maxlength');
+    var show = function () { out.textContent = field.value.length + (max ? '/' + max : '') + '자'; };
+    field.addEventListener('input', show);
+    show();
+  });
+</script>

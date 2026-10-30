@@ -1,48 +1,27 @@
-<!DOCTYPE html>
-<html>
-{% load static %}
-<head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>공지사항 상세보기</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
-
-
-   {% include 'web/_theme_css.html' with bootstrap5=True %}
-
-   </head>
-
-<body>
-	<div id="page">
-{% include 'web/_nav.html' %}
-
-    <div class="container mt-5">
-        <div class="bg-secondary bg-opacity-10 p-4 rounded shadow-sm">
-            <h2 class="mb-3">제목: {{ notice.title }}</h2>
-            <p class="text-muted text-end mb-3"><strong>작성일:</strong> {{ notice.date }}</p>
-            <hr class="my-4 border-dark">
-            <div class="mb-4">
-                { 내용 } {{ notice.content|linebreaks }}
-            </div>
-
-            {% if notice.image %}
-            <hr class="my-4">
-            <div class="text-center mt-3">
-                <img src="{{ notice.image.url }}" alt="공지 이미지" class="img-fluid" style="max-width: 100%; height: auto;">
-            </div>
-            {% endif %}
-
-            <hr class="my-4">
-            <div class="text-end mt-4">
-                <a href="{% url 'web:notice' %}" class="btn btn-secondary">목록으로</a>
-                {% if user.is_staff %}
-                <a href="{% url 'web:notice_update' notice.id %}" class="btn btn-primary ms-2">수정하기</a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
+{% extends 'web/layout.html' %}
+{% comment %}공지 보기 (docs/adr/0020). 수정·삭제는 직원만(삭제는 삭제 확인 화면으로 간다).{% endcomment %}
+{% block title %}{{ notice.title }}{% endblock %}
+{% block content %}
+<div class="dg-wrap dg-narrow">
+  <a class="dg-backlink" href="{% url 'web:notice' %}">공지 사항</a>
+  <article class="dg-article">
+    <header class="dg-article__head">
+      <h1>{{ notice.title }}</h1>
+      <p class="dg-article__meta"><span>관리실</span> · <span class="dg-num">{{ notice.date|date:"Y.m.d" }}</span></p>
+    </header>
+    <div class="dg-article__body">{{ notice.content|linebreaks }}</div>
+    {% if notice.image %}
+    <figure class="dg-article__figure"><img src="{{ notice.image.url }}" alt="{{ notice.title }}"></figure>
+    {% endif %}
+    <footer class="dg-article__foot">
+      <a class="dg-btn dg-btn--quiet" href="{% url 'web:notice' %}">목록</a>
+      {% if user.is_staff %}
+      <div class="dg-actions">
+        <a class="dg-btn dg-btn--quiet" href="{% url 'web:notice_update' notice.id %}">수정</a>
+        <a class="dg-btn dg-btn--quiet" href="{% url 'web:notice_delete' notice.id %}">삭제</a>
+      </div>
+      {% endif %}
+    </footer>
+  </article>
 </div>
-</body>
-</html>
+{% endblock %}

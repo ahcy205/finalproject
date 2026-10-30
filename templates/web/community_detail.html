@@ -1,197 +1,73 @@
-<!DOCTYPE html>
-<html>
-{% load static %}
-<head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>게시글 상세보기</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+자유게시판 글 보기 (docs/adr/0020).
+- 글쓴이는 "익명"으로만 보인다. 댓글은 글쓴이면 "글쓴이", 나머지는 이 글 안에서 같은 사람에게 같은 "익명N"(community_detail이 정함).
+- 수정은 글쓴이, 삭제는 글쓴이와 직원(삭제 확인 화면으로 간다). 댓글 삭제는 "삭제"를 펼쳐 한 번 더 누른다.
+- 처리 결과 메시지는 공통 알림(_messages.html)으로 나온다.
+{% endcomment %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block content %}
+<div class="dg-wrap dg-narrow">
+  <a class="dg-backlink" href="{% url 'web:community_home' %}">자유 게시판</a>
+  <article class="dg-article">
+    <header class="dg-article__head">
+      <h1>{{ post.title }}</h1>
+      <p class="dg-article__meta"><span>{% if post.author_id == user.id %}내 글{% else %}익명{% endif %}</span> · <span class="dg-num">{{ post.created_at|date:"Y.m.d H:i" }}</span></p>
+    </header>
+    <div class="dg-article__body">{{ post.content|linebreaks }}</div>
+    {% if post.image %}
+    <figure class="dg-article__figure"><img src="{{ post.image.url }}" alt="{{ post.title }}"></figure>
+    {% endif %}
+    <footer class="dg-article__foot">
+      <form method="post" action="{% url 'web:toggle_like' post.id %}">
+        {% csrf_token %}
+        <button class="dg-btn dg-btn--quiet dg-like" type="submit" aria-pressed="{% if liked %}true{% else %}false{% endif %}">
+          좋아요 <span class="dg-like__count">{{ post.likes.count }}</span>
+        </button>
+      </form>
+      <div class="dg-actions">
+        {% if user == post.author %}<a class="dg-btn dg-btn--quiet" href="{% url 'web:community_update' post.id %}">수정</a>{% endif %}
+        {% if user == post.author or user.is_staff %}<a class="dg-btn dg-btn--quiet" href="{% url 'web:community_delete' post.id %}">삭제</a>{% endif %}
+      </div>
+    </footer>
+  </article>
 
-
-   {% include 'web/_theme_css.html' with bootstrap5=True fontawesome=True %}
-
-   <style>
-   .comment-section {
-       margin-top: 2rem;
-       padding-top: 2rem;
-       border-top: 1px solid #e9ecef;
-   }
-   .comment-item {
-       background-color: #f8f9fa;
-       border: 1px solid #e9ecef;
-       border-radius: 8px;
-       padding: 15px;
-       margin-bottom: 15px;
-   }
-   .comment-header {
-       display: flex;
-       justify-content: space-between;
-       align-items: center;
-       margin-bottom: 10px;
-   }
-   .comment-author {
-       font-weight: bold;
-       color: #495057;
-   }
-   .comment-date {
-       font-size: 0.85rem;
-       color: #6c757d;
-   }
-   .comment-content {
-       margin-bottom: 10px;
-       line-height: 1.6;
-   }
-   .comment-actions {
-       text-align: right;
-   }
-   .comment-form {
-       background-color: #f8f9fa;
-       padding: 20px;
-       border-radius: 8px;
-       margin-bottom: 20px;
-   }
-   .btn-delete {
-       background-color: #dc3545;
-       color: white;
-       border: none;
-       padding: 5px 10px;
-       border-radius: 4px;
-       font-size: 0.8rem;
-   }
-   .btn-delete:hover {
-       background-color: #c82333;
-   }
-   </style>
-</head>
-
-<body>
-	<div id="page">
-    {% include 'web/_nav.html' %}
-
-   <div class="container mt-5">
-       <div class="bg-secondary bg-opacity-10 p-4 rounded shadow-sm">
-           <div class="post-content">
-               <h2>{{ post.title }}</h2>
-               <p class="text-end mb-3"><strong>작성일:</strong> {{ post.created_at|date:"Y-m-d H:i" }}</p>
-               <hr class="border-dark">
-               <p>{{ post.content|linebreaks }}</p>
-               {% if post.image %}
-               <div class="text-center mt-3">
-                   <img src="{{ post.image.url }}" alt="게시글 이미지" class="img-fluid" style="max-width: 100%; height: auto;">
-               </div>
-               {% endif %}
-
-
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                      <h5 class="mb-0">
-                         <i class="fas fa-heart"></i> 좋아요 수
-                        <span class="badge bg-light text-dark"> {{ post.likes.count }}</span>
-                      </h5>
-                      <form method="post" action="{% url 'web:toggle_like' post.id %}">
-                        {% csrf_token %}
-                        {% if user.is_authenticated %}
-                          <button type="submit" class="btn {% if user in post.likes.all %}btn-danger{% else %}btn-outline-danger{% endif %}">
-                            <i class="fas fa-heart"></i> 좋아요 누르기
-                          </button>
-                        {% else %}
-                          <a href="{% url 'web:login' %}" class="btn btn-outline-secondary">
-                            로그인 후 좋아요
-                          </a>
-                        {% endif %}
-                      </form>
-                    </div>
-                  <div>
-                    <a href="{% url 'web:community_home' %}" class="btn btn-secondary">목록으로</a>
-                    {% if user.is_authenticated and user == post.author %}
-                      <a href="{% url 'web:community_update' post.id %}" class="btn btn-primary ms-2">수정하기</a>
-                    {% endif %}
-                  </div>
-                </div>
-           </div>
-       </div>
-
-       <!-- 댓글 섹션 -->
-       <div class="comment-section">
-           <h4><i class="fas fa-comments"></i> 댓글 <span class="badge bg-secondary">{{ comments.count }}</span></h4>
-
-           <!-- 댓글 작성 폼 -->
-           {% if user.is_authenticated %}
-           <div class="comment-form">
-               <form method="post" action="{% url 'web:add_comment' post.pk %}">
-                   {% csrf_token %}
-                   <div class="mb-3">
-                       <label class="form-label">댓글 작성</label>
-                       {{ comment_form.content }}
-                   </div>
-                   <button type="submit" class="btn btn-primary">
-                       <i class="fas fa-paper-plane"></i> 댓글 등록
-                   </button>
-               </form>
-           </div>
-           {% else %}
-           <div class="alert alert-info">
-               <i class="fas fa-info-circle"></i> 댓글을 작성하려면 <a href="{% url 'web:login' %}">로그인</a>이 필요합니다.
-           </div>
-           {% endif %}
-
-           <!-- 댓글 목록 -->
-           <div class="comments-list">
-               {% for comment in comments %}
-               <div class="comment-item">
-                   <div class="comment-header">
-                       <div class="comment-author">
-                           <i class="fas fa-user-circle"></i> 익명{{ forloop.counter }}
-                       </div>
-                       <div class="comment-date">
-                           {{ comment.created_at|date:"Y-m-d H:i" }}
-                       </div>
-                   </div>
-                   <div class="comment-content">
-                       {{ comment.content|linebreaks }}
-                   </div>
-                   {% if user.is_authenticated and user == comment.author or user.is_staff %}
-                   <div class="comment-actions">
-                       <form method="post" action="{% url 'web:delete_comment' comment.id %}" style="display: inline;"
-                             onsubmit="return confirm('정말로 이 댓글을 삭제하시겠습니까?');">
-                           {% csrf_token %}
-                           <button type="submit" class="btn-delete">
-                               <i class="fas fa-trash"></i> 삭제
-                           </button>
-                       </form>
-                   </div>
-                   {% endif %}
-               </div>
-               {% empty %}
-               <div class="alert alert-light text-center">
-                   <i class="fas fa-comment-slash"></i> 등록된 댓글이 없습니다.
-               </div>
-               {% endfor %}
-           </div>
-       </div>
-   </div>
-
-   <!-- Bootstrap JS -->
-   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-   <!-- Messages -->
-
-
-   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const textarea = document.getElementById("comment-textarea");
-      if (!textarea) return;
-      const form = textarea.closest("form");
-
-      textarea.addEventListener("keydown", function (event) {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          form.submit();
-        }
-      });
-    });
-  </script>
+  <section class="dg-section" aria-labelledby="comments-title">
+    <div class="dg-section__head"><h2 id="comments-title">댓글 <span class="dg-num">{{ comments.count }}</span></h2></div>
+    <form class="dg-form dg-commentform" method="post" action="{% url 'web:add_comment' post.pk %}">
+      {% csrf_token %}
+      <div class="dg-field">
+        <label class="dg-field__label dg-sr" for="comment-textarea">댓글 쓰기</label>
+        <textarea class="dg-input" name="content" id="comment-textarea" rows="3" required
+                  placeholder="댓글을 남겨 주세요. 다른 사람에게는 익명으로 보여요."></textarea>
+      </div>
+      <div class="dg-form__submit"><button class="dg-btn" type="submit">댓글 달기</button></div>
+    </form>
+    {% if comments %}
+    <ul class="dg-comments">
+      {% for comment in comments %}
+      <li>
+        <div class="dg-comments__head">
+          <span class="dg-comments__who{% if comment.anon_label == '글쓴이' %} dg-comments__who--writer{% endif %}">{{ comment.anon_label }}</span>
+          <span class="dg-num">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
+          {% if user == comment.author or user.is_staff %}
+          <details class="dg-comments__del">
+            <summary>삭제</summary>
+            <form method="post" action="{% url 'web:delete_comment' comment.id %}">
+              {% csrf_token %}
+              <span>이 댓글을 지울까요?</span>
+              <button class="dg-btn dg-btn--danger dg-btn--sm" type="submit">삭제</button>
+            </form>
+          </details>
+          {% endif %}
+        </div>
+        <div class="dg-comments__text">{{ comment.content|linebreaks }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="dg-empty">아직 댓글이 없어요.</p>
+    {% endif %}
+  </section>
 </div>
-</body>
-</html>
+{% endblock %}

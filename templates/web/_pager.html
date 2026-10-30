@@ -1,0 +1,27 @@
+{% comment %}
+쪽 번호 (자유게시판·공지 목록). page_obj, page_range(views._page_links), kw를 쓴다.
+검색어는 urlencode로 넣어 &·공백이 들어가도 검색이 유지된다.
+{% endcomment %}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="dg-pager" aria-label="쪽 번호">
+  {% if page_obj.has_previous %}
+  <a class="dg-pager__step" href="?page={{ page_obj.previous_page_number }}{% if kw %}&amp;kw={{ kw|urlencode }}{% endif %}">이전</a>
+  {% else %}
+  <span class="dg-pager__step" aria-disabled="true">이전</span>
+  {% endif %}
+  {% for num in page_range %}
+    {% if num == page_obj.number %}
+  <span aria-current="page"><span class="dg-sr">현재 </span>{{ num }}</span>
+    {% elif num == page_obj.paginator.ELLIPSIS %}
+  <span class="dg-pager__gap" aria-hidden="true">…</span>
+    {% else %}
+  <a href="?page={{ num }}{% if kw %}&amp;kw={{ kw|urlencode }}{% endif %}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page_obj.has_next %}
+  <a class="dg-pager__step" href="?page={{ page_obj.next_page_number }}{% if kw %}&amp;kw={{ kw|urlencode }}{% endif %}">다음</a>
+  {% else %}
+  <span class="dg-pager__step" aria-disabled="true">다음</span>
+  {% endif %}
+</nav>
+{% endif %}

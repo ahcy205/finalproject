@@ -1,201 +1,47 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-   <head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>공지사항</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+공지 사항 목록 (docs/adr/0020). 번호는 전체 목록에서의 순서라 쪽이 바뀌어도 이어진다.
+공지 쓰기·수정·삭제는 직원만 한다(삭제는 공지 화면 → 삭제 확인 화면).
+{% endcomment %}
+{% block title %}공지 사항{% endblock %}
+{% block content %}
+{% now "Y-m-d" as today %}
+<div class="dg-wrap">
+  <header class="dg-pagehead">
+    <h1>공지 사항</h1>
+    {% if user.is_staff %}<a class="dg-btn" href="{% url 'web:notice_create' %}">공지 쓰기</a>{% endif %}
+  </header>
 
+  <form class="dg-searchbar dg-searchbar--simple" method="get" role="search">
+    <label class="dg-sr" for="kw">제목 검색</label>
+    <input class="dg-input" type="search" name="kw" id="kw" value="{{ kw }}" placeholder="제목으로 찾기">
+    <button class="dg-btn dg-btn--quiet" type="submit">검색</button>
+  </form>
+  <p class="dg-listinfo">
+    {% if kw %}<span>‘{{ kw }}’ 검색 결과 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span> <a href="{% url 'web:notice' %}">검색 지우기</a>
+    {% else %}<span>공지 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span>{% endif %}
+  </p>
 
-   {% include 'web/_theme_css.html' with bootstrap5=True %}
+  <div class="dg-tablewrap">
+    <table class="dg-table dg-boardlist">
+      <caption class="dg-sr">공지 목록{% if page_obj.paginator.num_pages > 1 %}, {{ page_obj.paginator.num_pages }}쪽 중 {{ page_obj.number }}쪽{% endif %}</caption>
+      <thead><tr><th scope="col">번호</th><th scope="col">제목</th><th scope="col">게시일</th></tr></thead>
+      <tbody>
+        {% for notice in notices %}
+        {% with day=notice.date|date:"Y-m-d" %}
+        <tr>
+          <td class="dg-boardlist__no">{{ notice.row_no }}</td>
+          <td class="dg-boardlist__title"><a href="{% url 'web:notice_detail' notice.id %}">{{ notice.title }}</a>{% if day == today %}<span class="dg-new">오늘</span>{% endif %}</td>
+          <td class="dg-boardlist__meta">{{ notice.date|date:"Y.m.d" }}</td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr><td colspan="3" class="dg-table__empty">{% if kw %}‘{{ kw }}’ 제목의 공지가 없어요. 다른 낱말로 찾아보세요.{% else %}아직 공지가 없어요.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-   <style>
-        .page-link-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 20px;
-            font-size: 16px;
-        }
-
-        .page-link-wrapper a,
-        .page-link-wrapper span {
-            color: black;
-            text-decoration: none;
-            padding: 4px 8px;
-        }
-
-        .page-link-wrapper .current-page {
-            border: 1.5px solid black;
-            border-radius: 3px;
-            font-weight: bold;
-        }
-
-        .page-link-wrapper .arrow {
-            border: 1px solid #ccc;
-            padding: 2px 8px;
-            border-radius: 3px;
-        }
-
-        .page-link-wrapper .arrow.disabled {
-            pointer-events: none;
-            opacity: 0.3;
-        }
-    </style>
-
-   </head>
-   <body>
-
-   <div class="fh5co-loader"></div>
-
-   <div id="page">
-    {% include 'web/_nav.html' %}
-
-   <div class="container mt-5">
-        <h2 class="text-center mb-4">공지사항</h2>
-
-    <!-- 검색창 -->
-        <form method="get" class="text-center mb-4">
-            <div class="input-group w-50 mx-auto">
-                <input type="text" name="kw" value="{{ request.GET.kw }}" class="form-control" placeholder="검색어를 입력해 주세요.">
-                <span class="input-group-btn">
-                    <button type="submit" class="btn btn-cta"><span>검색</span></button>
-                </span>
-            </div>
-        </form>
-
-        <!-- 공지사항 테이블 -->
-        <table class="table table-bordered text-center">
-            <thead class="table-light">
-              <tr>
-                <th class="text-center" style="width: 10%;">번호</th>
-                <th class="text-center" >제목</th>
-                <th class="text-center"style="width: 20%;">작성일</th>
-                {% if user.is_authenticated and user.is_staff %}
-                <th class="text-center" style="width: 10%;">관리</th>
-                {% endif %}
-              </tr>
-            </thead>
-            <tbody>
-              {% if notices %}
-                {% for notice in notices %}
-                  <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td><a href="{% url 'web:notice_detail' notice.id %}">{{ notice.title }}</a></td>
-                    <td>{{ notice.date|date:"Y-m-d" }}</td>
-
-                    {% if user.is_authenticated and user.is_staff %}
-                    <td>
-                      <form method="POST" action="{% url 'web:notice_delete' notice.id %}" onsubmit="return confirm('정말 삭제하시겠습니까?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-danger">삭제</button>
-                      </form>
-                    </td>
-                    {% endif %}
-
-                  </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="{% if user.is_authenticated and user.is_staff %}4{% else %}3{% endif %}">공지사항이 없습니다.</td>
-                </tr>
-              {% endif %}
-            </tbody>
-        </table>
-
-          <!-- 글쓰기 버튼 -->
-       <div class="text-end mt-3">
-           {% if user.is_authenticated %}
-            <a href="{% url 'web:notice_create'%}" class="btn btn-primary ms-2">글쓰기</a>
-          {% else %}
-            <a href="{% url 'web:login' %}" class="btn btn-primary ms-2">글쓰기</a>
-          {% endif %}
-       </div>
-
-       <div class="page-link-wrapper">
-
-            {% if page_obj.has_previous %}
-                <a class="arrow" href="?page={{ page_obj.previous_page_number }}{% if kw %}&kw={{ kw }}{% endif %}">&lsaquo;</a>
-            {% else %}
-                <span class="arrow disabled">&lsaquo;</span>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-                {% if num == page_obj.number %}
-                    <span class="current-page">{{ num }}</span>
-                {% else %}
-                    <a href="?page={{ num }}{% if kw %}&kw={{ kw }}{% endif %}">{{ num }}</a>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-                <a class="arrow" href="?page={{ page_obj.next_page_number }}{% if kw %}&kw={{ kw }}{% endif %}">&rsaquo;</a>
-            {% else %}
-                <span class="arrow disabled">&rsaquo;</span>
-            {% endif %}
-
-        </div>
-    </div>
-
-   <!-- jQuery -->
-   {% include 'web/_theme_js.html' %}
-
-   <script>
-    var d = new Date(new Date().getTime() + 1000 * 120 * 120 * 2000);
-
-    // default example
-    simplyCountdown('.simply-countdown-one', {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate()
-    });
-
-    //jQuery example
-    $('#simply-countdown-losange').simplyCountdown({
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        day: d.getDate(),
-        enableUtc: false
-    });
-   </script>
-
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const tbody = document.getElementById("notice-body");
-            const notices = JSON.parse(localStorage.getItem("notices") || "[]");
-
-            if (notices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4">공지사항이 없습니다.</td></tr>';
-            } else {
-                tbody.innerHTML = ""; // 기존 내용 비움
-                notices.forEach((notice, index) => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${index + 1}</td>
-                        <td><a href="/web/notice/detail/?id=${index}">${notice.title}</a></td>
-                        <td>${notice.created_at.slice(0, 10)}</td>
-                        <td>
-                          <button class="btn btn-link btn-sm text-danger p-0" style="text-decoration: none;" onclick="deleteNotice(${index})">삭제</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-        });
-
-        function deleteNotice(index) {
-            if (!confirm("정말 삭제하시겠습니까?")) return;
-
-            let notices = JSON.parse(localStorage.getItem("notices") || "[]");
-            notices.splice(index, 1);
-            localStorage.setItem("notices", JSON.stringify(notices));
-            location.reload();  // 목록 새로고침
-        }
-    </script>
-   </div>
-   </body>
-</html>
-
+  {% include 'web/_pager.html' %}
+</div>
+{% endblock %}

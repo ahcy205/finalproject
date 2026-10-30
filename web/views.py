@@ -189,11 +189,12 @@ def notice_list(request):
 
     paginator = Paginator(notices, 10)
     page = request.GET.get('page')
-    page_obj = paginator.get_page(page)
+    page_obj = _number_rows(paginator.get_page(page))
 
     return render(request, 'web/notice.html', {
         'notices': page_obj,
         'page_obj': page_obj,
+        'page_range': _page_links(page_obj),
         'kw': kw,
     })
 
@@ -400,13 +401,27 @@ def community_home(request):
 
     paginator = Paginator(post_list, 10)  # 10개씩 페이징
     page = request.GET.get('page')
-    page_obj = paginator.get_page(page)
+    page_obj = _number_rows(paginator.get_page(page))
 
     return render(request, 'web/community_home.html', {
         'posts': page_obj,
         'page_obj': page_obj,
+        'page_range': _page_links(page_obj),
         'kw': kw
     })
+
+
+def _number_rows(page_obj):
+    """게시판 번호: 최신 글이 가장 큰 번호. 쪽이 바뀌어도 이어진다 (전체 개수에서 거꾸로 센다)."""
+    total = page_obj.paginator.count
+    for offset, item in enumerate(page_obj.object_list):
+        item.row_no = total - (page_obj.start_index() + offset) + 1
+    return page_obj
+
+
+def _page_links(page_obj):
+    """쪽 번호 링크 (화면 표시용). 쪽이 많으면 '…'로 줄인다: 1 … 4 5 [6] 7 8 … 20"""
+    return list(page_obj.paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1))
 
 @login_required
 def community_create(request):
@@ -445,11 +460,20 @@ def community_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
     comments = Comment.objects.filter(post=post).order_by('created_at', 'id')
     comment_form = CommentForm()
+    # 댓글 작성자 표시 (화면 표시용): 글쓴이는 "글쓴이", 나머지는 이 글에서 처음 댓글을 단 순서로 "익명N".
+    # 같은 사람은 이 글 안에서 늘 같은 번호이고, 다른 글과는 번호가 이어지지 않아 누구인지 드러나지 않는다.
+    numbers = {}
+    for comment in comments:
+        if comment.author_id == post.author_id:
+            comment.anon_label = '글쓴이'
+        else:
+            comment.anon_label = f'익명{numbers.setdefault(comment.author_id, len(numbers) + 1)}'
 
     context = {
         'post': post,
         'comments': comments,
         'comment_form': comment_form,
+        'liked': post.likes.filter(user=request.user).exists(),
     }
     return render(request, 'web/community_detail.html', context)
 

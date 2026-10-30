@@ -1,25 +1,26 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>게시글 삭제 확인</title>
-    <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}">
-{% include 'web/_shell_head.html' %}
-</head>
-<body>
-{% include 'web/_nav.html' %}
-<div class="container mt-5">
-    <h3>게시글 삭제 확인</h3>
-    <p><strong>제목:</strong> {{ post.title }}</p>
-    <p><strong>작성일:</strong> {{ post.created_at|date:"Y-m-d H:i" }}</p>
-    <p>정말 이 게시글을 삭제하시겠습니까?</p>
-
+{% extends 'web/layout.html' %}
+{% comment %}
+자유게시판 글 삭제 확인 (docs/adr/0020). GET이면 이 화면, POST면 community_delete가 지운다(글쓴이·직원만).
+탭 제목은 테스트가 정확히 "게시글 삭제 확인"으로 확인한다(title_suffix 비움).
+{% endcomment %}
+{% block title %}게시글 삭제 확인{% endblock %}
+{% block title_suffix %}{% endblock %}
+{% block content %}
+<div class="dg-wrap dg-narrow">
+  <div class="dg-confirm">
+    <header class="dg-pagehead"><h1>이 글을 삭제할까요?</h1></header>
+    <dl class="dg-facts">
+      <div><dt>제목</dt><dd>{{ post.title }}</dd></div>
+      <div><dt>작성일</dt><dd class="dg-num">{{ post.created_at|date:"Y.m.d H:i" }}</dd></div>
+    </dl>
+    <p>삭제하면 댓글과 좋아요도 함께 지워지고 되돌릴 수 없어요.</p>
     <form method="post">
-        {% csrf_token %}
-        <a href="{% url 'web:community_home' %}" class="btn btn-secondary">취소</a>
-        <button type="submit" class="btn btn-danger">삭제하기</button>
+      {% csrf_token %}
+      <div class="dg-actions">
+        <button class="dg-btn dg-btn--danger" type="submit">삭제</button>
+        <a class="dg-btn dg-btn--quiet" href="{% url 'web:community_detail' post.id %}">취소</a>
+      </div>
     </form>
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}

@@ -1,5 +1,6 @@
 from datetime import date
 import io
+import re
 import os
 import subprocess
 import sys
@@ -346,7 +347,7 @@ class PageTitleTests(TestCase):
         delete_page = self.client.get(reverse('web:community_delete', args=[self.post.pk]))
         self.assertContains(delete_page, '<title>게시글 삭제 확인</title>')
         self.assertNotContains(delete_page, '공지사항')
-        self.assertContains(delete_page, timezone.localtime(self.post.created_at).strftime('%Y-%m-%d'))
+        self.assertContains(delete_page, timezone.localtime(self.post.created_at).strftime('%Y.%m.%d'))
         self.assertContains(self.client.get(reverse('web:community_update', args=[self.post.pk])),
                             '<title>게시글 수정</title>')
 
@@ -523,12 +524,28 @@ class SharedThemeAssetTests(TestCase):
                 for old in ('css/style.css', 'bootstrap', 'jquery', 'js/main.js'):
                     self.assertNotContains(response, old)
 
-    def test_bootstrap5_option_keeps_css_order(self):
-        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
-        html = self.client.get(reverse('web:community_home')).content.decode()
-        order = [html.index(x) for x in ('bootstrap@5.3.0', 'font-awesome/6.0.0', '/static/css/bootstrap.css',
-                                         '/static/css/style.css')]
-        self.assertEqual(order, sorted(order))
+    def test_board_pages_use_only_the_new_css(self):
+        """게시판·공지 화면도 새 디자인만 쓴다 (docs/adr/0020, 5단계)."""
+        student = User.objects.create_user('20250001', password='pw12345!')
+        staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        post = Post.objects.create(author=student, title='t', content='c')
+        notice = Notice.objects.create(title='t', content='c')
+        pages = {
+            student: [reverse('web:community_home'), reverse('web:community_detail', args=[post.pk]),
+                      reverse('web:community_create'), reverse('web:community_update', args=[post.pk]),
+                      reverse('web:community_delete', args=[post.pk]), reverse('web:notice'),
+                      reverse('web:notice_detail', args=[notice.pk])],
+            staff: [reverse('web:notice_create'), reverse('web:notice_update', args=[notice.pk]),
+                    reverse('web:notice_delete', args=[notice.pk])],
+        }
+        for user, urls in pages.items():
+            self.client.force_login(user)
+            for url in urls:
+                with self.subTest(url=url):
+                    response = self.client.get(url)
+                    self.assertContains(response, 'css/dorm.css', count=1)
+                    for old in ('css/style.css', 'bootstrap', 'jquery', 'js/main.js', 'font-awesome'):
+                        self.assertNotContains(response, old)
 
 
 class CommunityHomeQueryCountTests(TestCase):
@@ -1027,3 +1044,130 @@ class MyPageLayoutTests(TestCase):
         response = self.client.get(reverse('web:mypage'), {'field': 'full_name', 'query': '길동'})
         self.assertContains(response, 'aria-current="page">학생 검색')
         self.assertContains(response, '20250001')
+
+
+BOARD_TEMPLATES = ('community_home.html', 'community_detail.html', 'community_create.html', 'community_update.html',
+                   'community_confirm_delete.html', 'notice.html', 'notice_detail.html', 'notice_create.html',
+                   'notice_update.html', 'notice_confirm_delete.html')
+
+
+class BoardPageTests(TestCase):
+    """자유게시판·공지 화면 (docs/adr/0020, 5단계)."""
+
+    def setUp(self):
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.other = User.objects.create_user('20250002', password='pw12345!')
+        self.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.client.force_login(self.student)
+
+    def test_row_numbers_continue_on_the_next_page(self):
+        for i in range(12):
+            Post.objects.create(author=self.other, title=f'글 {i}', content='c')
+            Notice.objects.create(title=f'공지 {i}', content='c')
+        for name in ('web:community_home', 'web:notice'):
+            with self.subTest(name=name):
+                first = self.client.get(reverse(name))
+                self.assertContains(first, '<td class="dg-boardlist__no">12</td>')  # 최신 글이 가장 큰 번호
+                response = self.client.get(reverse(name), {'page': 2})
+                self.assertContains(response, '<td class="dg-boardlist__no">2</td>')
+                self.assertContains(response, '<td class="dg-boardlist__no">1</td>')
+                self.assertNotContains(response, '<td class="dg-boardlist__no">12</td>')
+
+    def test_list_does_not_number_anonymous_authors(self):
+        Post.objects.create(author=self.other, title='남의 글', content='c')
+        Post.objects.create(author=self.student, title='내 글', content='c')
+        response = self.client.get(reverse('web:community_home'))
+        self.assertNotContains(response, '익명1')
+        self.assertNotContains(response, '익명2')
+        self.assertContains(response, '>익명<', count=1)
+        self.assertContains(response, '>나<', count=1)
+
+    def test_comment_labels_are_stable_per_author_within_a_post(self):
+        post = Post.objects.create(author=self.student, title='t', content='c')
+        for author in (self.other, self.staff, self.other, self.student):
+            Comment.objects.create(post=post, author=author, content='댓글')
+        html = self.client.get(reverse('web:community_detail', args=[post.pk])).content.decode()
+        labels = re.findall(r'class="dg-comments__who[^"]*">([^<]+)<', html)
+        self.assertEqual(labels, ['익명1', '익명2', '익명1', '글쓴이'])
+
+    def test_search_keyword_is_urlencoded_in_page_links(self):
+        for i in range(12):
+            Post.objects.create(author=self.other, title=f'a&b c {i}', content='c')
+            Notice.objects.create(title=f'a&b c {i}', content='c')
+        for name in ('web:community_home', 'web:notice'):
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name), {'kw': 'a&b c'})
+                self.assertContains(response, 'kw=a%26b%20c')
+                self.assertNotContains(response, 'kw=a&b c')
+                self.assertNotContains(response, 'kw=a&amp;b c')
+
+    def test_like_button_shows_whether_i_liked(self):
+        post = Post.objects.create(author=self.other, title='t', content='c')
+        url = reverse('web:community_detail', args=[post.pk])
+        self.assertContains(self.client.get(url), 'aria-pressed="false"')
+        Like.objects.create(user=self.student, post=post)
+        self.assertContains(self.client.get(url), 'aria-pressed="true"')
+
+    def test_comment_box_is_labelled_and_enter_does_not_submit(self):
+        post = Post.objects.create(author=self.other, title='t', content='c')
+        response = self.client.get(reverse('web:community_detail', args=[post.pk]))
+        self.assertContains(response, 'for="comment-textarea"')
+        self.assertContains(response, 'id="comment-textarea"', count=1)
+        self.assertNotContains(response, 'keydown')
+
+    def test_delete_goes_through_the_confirm_page(self):
+        post = Post.objects.create(author=self.student, title='t', content='c')
+        detail = self.client.get(reverse('web:community_detail', args=[post.pk]))
+        self.assertContains(detail, f'href="{reverse("web:community_delete", args=[post.pk])}"')
+        self.assertNotContains(self.client.get(reverse('web:community_home')), 'confirm(')
+        others = Post.objects.create(author=self.other, title='t', content='c')
+        self.assertNotContains(self.client.get(reverse('web:community_detail', args=[others.pk])),
+                               reverse('web:community_delete', args=[others.pk]))
+        notice = Notice.objects.create(title='공지', content='c')
+        self.assertNotContains(self.client.get(reverse('web:notice_detail', args=[notice.pk])),
+                               reverse('web:notice_delete', args=[notice.pk]))
+        self.client.force_login(self.staff)
+        self.assertContains(self.client.get(reverse('web:notice_detail', args=[notice.pk])),
+                            f'href="{reverse("web:notice_delete", args=[notice.pk])}"')
+        self.assertNotContains(self.client.get(reverse('web:notice')), 'confirm(')
+        confirm = self.client.get(reverse('web:notice_delete', args=[notice.pk]))
+        self.assertContains(confirm, '공지')
+        self.assertContains(confirm, notice.date.strftime('%Y.%m.%d'))
+        self.assertContains(confirm, 'dg-btn--danger')
+
+    def test_only_staff_sees_the_write_notice_button(self):
+        self.assertNotContains(self.client.get(reverse('web:notice')), f'href="{reverse("web:notice_create")}"')
+        self.client.force_login(self.staff)
+        self.assertContains(self.client.get(reverse('web:notice')), f'href="{reverse("web:notice_create")}"')
+
+    def test_notice_create_has_one_form(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse('web:notice_create'))
+        self.assertContains(response, 'name="title"', count=1)
+        self.assertContains(response, 'name="content"', count=1)
+
+    def test_notice_detail_has_no_placeholder_text(self):
+        notice = Notice.objects.create(title='공지', content='본문')
+        response = self.client.get(reverse('web:notice_detail', args=[notice.pk]))
+        self.assertNotContains(response, '{ 내용 }')
+        self.assertNotContains(response, '제목:')
+        self.assertContains(response, '<h1>공지</h1>')
+
+    def test_counters_start_at_the_current_length(self):
+        post = Post.objects.create(author=self.student, title='제목다섯자', content='c')
+        response = self.client.get(reverse('web:community_update', args=[post.pk]))
+        self.assertContains(response, '5/200자')
+        self.assertContains(response, '1/1000자')
+
+    def test_images_have_the_title_as_alt(self):
+        post = Post.objects.create(author=self.student, title='사진 글', content='c', image='posts/x.png')
+        response = self.client.get(reverse('web:community_detail', args=[post.pk]))
+        self.assertContains(response, 'alt="사진 글"')
+
+    def test_board_templates_have_no_dead_scripts(self):
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'web')
+        for name in BOARD_TEMPLATES:
+            with open(os.path.join(template_dir, name), encoding='utf-8') as f:
+                text = f.read()
+            for dead in ('alert(', 'confirm(', 'localStorage', 'notice-body', 'simplyCountdown', 'onsubmit', 'oninput'):
+                self.assertNotIn(dead, text, f'{name}: {dead}')

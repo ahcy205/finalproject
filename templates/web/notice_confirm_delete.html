@@ -1,25 +1,22 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>공지사항 삭제 확인</title>
-    <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}">
-{% include 'web/_shell_head.html' %}
-</head>
-<body>
-{% include 'web/_nav.html' %}
-<div class="container mt-5">
-    <h3>공지사항 삭제 확인</h3>
-    <p><strong>제목:</strong> {{ notice.title }}</p>
-    <p><strong>작성일:</strong> {{ notice.date }}</p>
-    <p>정말 이 공지사항을 삭제하시겠습니까?</p>
-
+{% extends 'web/layout.html' %}
+{% comment %}공지 삭제 확인 (docs/adr/0020, 직원만). GET이면 이 화면, POST면 notice_delete가 지운다.{% endcomment %}
+{% block title %}공지 삭제 확인{% endblock %}
+{% block content %}
+<div class="dg-wrap dg-narrow">
+  <div class="dg-confirm">
+    <header class="dg-pagehead"><h1>이 공지를 삭제할까요?</h1></header>
+    <dl class="dg-facts">
+      <div><dt>제목</dt><dd>{{ notice.title }}</dd></div>
+      <div><dt>게시일</dt><dd class="dg-num">{{ notice.date|date:"Y.m.d" }}</dd></div>
+    </dl>
+    <p>삭제하면 학생들이 더 이상 볼 수 없고 되돌릴 수 없어요.</p>
     <form method="post">
-        {% csrf_token %}
-        <a href="{% url 'web:notice' %}" class="btn btn-secondary">취소</a>
-        <button type="submit" class="btn btn-danger">삭제하기</button>
+      {% csrf_token %}
+      <div class="dg-actions">
+        <button class="dg-btn dg-btn--danger" type="submit">삭제</button>
+        <a class="dg-btn dg-btn--quiet" href="{% url 'web:notice_detail' notice.id %}">취소</a>
+      </div>
     </form>
+  </div>
 </div>
-</body>
-</html>
+{% endblock %}
