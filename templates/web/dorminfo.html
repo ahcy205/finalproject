@@ -1,63 +1,121 @@
-{% extends 'base.html' %}
+{% extends 'web/layout.html' %}
+{% comment %}
+입실 신청 관리(직원) / 입실 신청 현황(학생) (docs/adr/0020).
+직원: ?status=unassigned(배정 대기, 기본)|all 탭, 줄마다 배정 양식. assign_room은 빈칸을 지금 값 그대로 두고 입력한 값만 검증해서 바꾼다.
+학생: 내 신청과 배정 결과만 본다.
+{% endcomment %}
+{% block title %}{% if is_admin %}입실 신청 관리{% else %}입실 신청 현황{% endif %}{% endblock %}
 {% block content %}
-<div class="container" style="margin-top: 80px; min-height: 80vh;">
-  <div class="row justify-content-center">
-    <div class="col-lg-12">
-      <h3 class="text-center mb-4">기숙사 신청 현황</h3>
+<div class="dg-wrap">
+  {% if is_admin %}
+  <header class="dg-pagehead">
+    <h1>입실 신청 관리</h1>
+    <p class="dg-pagehead__meta">배정 대기 <span class="dg-num">{{ counts.unassigned }}</span>명 · 전체 <span class="dg-num">{{ counts.all }}</span>명</p>
+  </header>
+  <nav class="dg-tabs dg-tabs--tight" aria-label="신청 상태">
+    <a href="?status=unassigned"{% if status == 'unassigned' %} aria-current="page"{% endif %}>배정 대기 <span class="dg-num">{{ counts.unassigned }}</span></a>
+    <a href="?status=all"{% if status == 'all' %} aria-current="page"{% endif %}>전체 <span class="dg-num">{{ counts.all }}</span></a>
+  </nav>
+  <p class="dg-worknote">건물·방·침대 중 입력한 값만 바꾸고, 빈칸은 지금 값을 그대로 둬요.</p>
 
-      <div style="overflow-x: auto;">
-        <table class="table table-bordered table-hover bg-white" style="width: 100%; min-width: 1100px;">
-          <thead class="text-center">
-            <tr>
-              <th>이름</th>
-              <th>학번</th>
-              <th>성별</th>
-              <th>신청 내용</th>
-              <th>건물 이름</th>
-              <th>방 번호</th>
-              <th>침대 위치</th>
-              {% if is_admin %}
-                <th>관리자 조치</th>
-              {% endif %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for dorm in dorms %}
-            <tr class="text-center">
-              <td>{{ dorm.name }}</td>
-              <td>{{ dorm.student_number }}</td>
-              <td>{{ dorm.get_gender_display }}</td>
-              <td>{{ dorm.content|default:"-" }}</td>
-              <td>{{ dorm.building_name|default:"-" }}</td>
-              <td>{% if dorm.r_number %}{{ dorm.r_number }}{% else %}-{% endif %}</td>
-              <td>{% if dorm.position %}{{ dorm.position }}{% else %}-{% endif %}</td>
-              {% if is_admin %}
-              <td>
-                <form method="post" action="{% url 'web:assign_room' dorm.id %}" style="white-space: nowrap;">
-                  {% csrf_token %}
-                  <input type="text" name="building_name" class="form-control input-sm" placeholder="건물"
-                         style="display: inline-block; width: 100px; margin-right: 4px;">
-                  <input type="number" name="r_number" class="form-control input-sm" placeholder="방"
-                         style="display: inline-block; width: 100px; margin-right: 4px;">
-                  <input type="number" name="position" class="form-control input-sm" placeholder="침대"
-                         style="display: inline-block; width: 100px; margin-right: 4px;">
-                  <button type="submit" class="btn btn-primary btn-sm"
-                          style="display: inline-block; padding: 3px 10px;">배정</button>
-                </form>
-              </td>
-              {% endif %}
-            </tr>
-            {% empty %}
-            <tr><td colspan="8" class="text-center">신청 내역이 없습니다.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-         <div class="mt-4">
-          <a href="{% url 'web:home' %}" class="btn btn-outline-secondary">← 홈으로 돌아가기</a>
-        </div>
-      </div>
-
-    </div>
+  <div class="dg-tablewrap dg-tablewrap--work">
+    <table class="dg-table dg-worktable dg-assign">
+      <caption class="dg-sr">입실 신청 목록{% if status == 'unassigned' %} (배정 대기){% endif %}</caption>
+      <thead>
+        <tr>
+          <th scope="col">학생</th>
+          <th scope="col">성별</th>
+          <th scope="col">요청 사항</th>
+          <th scope="col">지금 배정</th>
+          <th scope="col">배정하기 <span class="dg-assign__thhint">건물 · 방 · 침대</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dorm in dorms %}
+        <tr>
+          <td class="dg-assign__who">
+            <span class="dg-assign__name">{{ dorm.name|default:"이름 없음" }}</span>
+            <span class="dg-num dg-muted">{{ dorm.student_number }}</span>
+          </td>
+          <td class="dg-assign__gender">{% if dorm.gender == 'male' %}남{% elif dorm.gender == 'female' %}여{% else %}-{% endif %}</td>
+          <td class="dg-assign__req{% if not dorm.content %} is-empty{% endif %}">{% if dorm.content %}{{ dorm.content }}{% else %}<span class="dg-muted">요청 없음</span>{% endif %}</td>
+          <td class="dg-assign__now">
+            {% if dorm.building_name and dorm.r_number and dorm.position %}
+            <span class="dg-plate dg-plate--line dg-plate--sm">{{ dorm.building_name }} {{ dorm.r_number }}호</span>
+            <span class="dg-assign__bed">{{ dorm.position }}번 침대</span>
+            {% else %}
+            <span class="dg-status dg-status--pending">미배정</span>
+            {% if dorm.building_name or dorm.r_number or dorm.position %}
+            <span class="dg-assign__partial dg-num">{% if dorm.building_name %}{{ dorm.building_name }}{% endif %}{% if dorm.r_number %} {{ dorm.r_number }}호{% endif %}{% if dorm.position %} {{ dorm.position }}번 침대{% endif %}</span>
+            {% endif %}
+            {% endif %}
+          </td>
+          <td class="dg-assign__cell">
+            <form class="dg-assign__form" method="post" action="{% url 'web:assign_room' dorm.id %}">
+              {% csrf_token %}
+              <div class="dg-assign__field">
+                <label class="dg-assign__label" for="building-{{ dorm.id }}">건물<span class="dg-sr"> ({{ dorm.name }})</span></label>
+                <input class="dg-input dg-input--sm" type="text" id="building-{{ dorm.id }}" name="building_name" maxlength="50"
+                       placeholder="건물" autocomplete="off">
+              </div>
+              <div class="dg-assign__field">
+                <label class="dg-assign__label" for="room-{{ dorm.id }}">방 번호<span class="dg-sr"> ({{ dorm.name }})</span></label>
+                <input class="dg-input dg-input--sm dg-num" type="text" id="room-{{ dorm.id }}" name="r_number" inputmode="numeric"
+                       pattern="[0-9]*" maxlength="6" placeholder="방 번호" autocomplete="off">
+              </div>
+              <div class="dg-assign__field">
+                <label class="dg-assign__label" for="bed-{{ dorm.id }}">침대<span class="dg-sr"> ({{ dorm.name }})</span></label>
+                <select class="dg-input dg-input--sm" id="bed-{{ dorm.id }}" name="position">
+                  <option value="">{% if dorm.position %}{{ dorm.position }}번 그대로{% else %}침대{% endif %}</option>
+                  {% for n in '1234' %}<option value="{{ n }}">{{ n }}번</option>{% endfor %}
+                </select>
+              </div>
+              <button class="dg-btn dg-btn--sm" type="submit">배정</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td class="dg-table__empty" colspan="5">
+          {% if status == 'unassigned' and counts.all %}배정을 기다리는 신청이 없어요. <a href="?status=all">전체 신청 보기</a>{% else %}아직 입실 신청이 없어요.{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
+
+  {% else %}
+  <header class="dg-pagehead"><h1>입실 신청 현황</h1></header>
+  {% for dorm in dorms %}
+  <div class="dg-formgrid">
+    <section class="dg-section" aria-labelledby="room-title">
+      <div class="dg-section__head"><h2 id="room-title">방 배정</h2></div>
+      <div class="dg-assigned">
+        {% if dorm.building_name and dorm.r_number and dorm.position %}
+        <span class="dg-plate">{{ dorm.building_name }} {{ dorm.r_number }}호</span>
+        <span class="dg-assigned__bed">{{ dorm.position }}번 침대</span>
+        {% else %}
+        <span class="dg-status dg-status--pending">배정 대기</span>
+        <span class="dg-muted">관리실이 방을 배정하면 여기에 호실이 보여요.</span>
+        {% endif %}
+      </div>
+      <dl class="dg-facts">
+        <div><dt>이름</dt><dd>{{ dorm.name|default:"-" }}</dd></div>
+        <div><dt>학번</dt><dd class="dg-num">{{ dorm.student_number }}</dd></div>
+        <div><dt>성별</dt><dd>{% if dorm.gender == 'male' %}남성{% elif dorm.gender == 'female' %}여성{% else %}-{% endif %}</dd></div>
+        <div><dt>요청 사항</dt><dd>{{ dorm.content|default:"없음" }}</dd></div>
+      </dl>
+    </section>
+    <aside class="dg-stack" aria-label="입실 안내">
+      <p class="dg-note">신청 내용을 바꾸려면 마이페이지의 <a href="{% url 'web:mypage' %}?tab=inquiry">문의하기</a>로 관리실에 알려 주세요.</p>
+    </aside>
+  </div>
+  {% empty %}
+  <div class="dg-empty">
+    <strong>아직 입실 신청을 하지 않았어요.</strong>
+    신청하면 배정 결과를 여기에서 볼 수 있어요.
+  </div>
+  <div class="dg-actions"><a class="dg-btn" href="{% url 'web:check_in' %}">입실 신청</a></div>
+  {% endfor %}
+  {% endif %}
 </div>
 {% endblock %}

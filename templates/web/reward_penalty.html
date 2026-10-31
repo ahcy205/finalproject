@@ -1,121 +1,46 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>상벌점 관리</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:300,400" rel="stylesheet" />
-  <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-  <style>
-    body {
-      background-color: #F2DCDC;
-      font-family: 'Source Sans Pro', sans-serif;
-      color: #333;
-    }
-
-    .container {
-      margin-top: 80px;
-      background: #fff;
-      padding: 30px 40px;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-      max-width: 700px;
-    }
-
-    h2 {
-      font-weight: 700;
-      margin-bottom: 30px;
-      color: #007bff;
-      border-bottom: 2px solid #007bff;
-      padding-bottom: 10px;
-      letter-spacing: 0.05em;
-    }
-
-    .form-label {
-      font-weight: 600;
-      margin-bottom: 6px;
-      font-size: 1.5rem;
-    }
-
-    .form-control {
-      border-radius: 4px;
-      border: 1px solid #ced4da;
-      padding: 10px 12px;
-      font-size: 1.5rem;
-      margin-bottom: 15px;
-    }
-
-    .form-check-label {
-      margin-left: 4px;
-      font-weight: 500;
-    }
-
-    .btn-primary {
-      background-color: #007bff;
-      border-color: #007bff;
-      padding: 10px 25px;
-      font-size: 1.5rem;
-      transition: background-color 0.3s, border-color 0.3s;
-    }
-
-    .btn-primary:hover {
-      background-color: #0056b3;
-      border-color: #004085;
-    }
-
-    .radio-group {
-      margin-bottom: 20px;
-    }
-
-    .text-end {
-      text-align: right;
-    }
-
-    @media (max-width: 576px) {
-      .container {
-        padding: 20px;
-      }
-    }
-  </style>
-{% include 'web/_shell_head.html' %}
-</head>
-<body>
-{% include 'web/_nav.html' %}
-
-<div class="container">
-  <h2>상벌점 관리</h2>
-  <form method="post">
-    {% csrf_token %}
-    <label for="student_number" class="form-label">학생 학번</label>
-    <input type="text" id="student_number" name="student_number" class="form-control" placeholder="학번 입력" required>
-
-    <label for="points" class="form-label">점수</label>
-    <input type="number" id="points" name="points" class="form-control" placeholder="점수 입력" required>
-
-    <div class="radio-group">
-      <label class="form-label">상벌점 선택</label><br>
-      <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="point_type" id="reward" value="reward" checked>
-        <label class="form-check-label" for="reward">상점</label>
+{% extends 'web/layout.html' %}
+{% comment %}
+상벌점 관리 (직원, docs/adr/0020). reward_penalty 뷰는 학번·종류·점수만 받고, 지금 점수에 더한다.
+결과는 공통 알림(_messages.html)으로 보여 준다.
+{% endcomment %}
+{% block title %}상벌점 관리{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead"><h1>상벌점 관리</h1></header>
+  <div class="dg-formgrid">
+    <form class="dg-form dg-points-form" method="post" action="{% url 'web:reward_penalty' %}">
+      {% csrf_token %}
+      <div class="dg-field">
+        <label class="dg-field__label" for="student_number">학번</label>
+        <input class="dg-input dg-num" type="text" id="student_number" name="student_number" maxlength="150" required
+               inputmode="numeric" autocomplete="off" placeholder="예: 20250001" aria-describedby="sn_help">
+        <span class="dg-field__help" id="sn_help">학생이 로그인할 때 쓰는 학번이에요.</span>
       </div>
-      <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="point_type" id="penalty" value="penalty">
-        <label class="form-check-label" for="penalty">벌점</label>
+      <fieldset class="dg-field">
+        <legend class="dg-field__label">종류</legend>
+        <div class="dg-choice">
+          <label><input type="radio" name="point_type" value="reward" checked><span>상점</span></label>
+          <label><input type="radio" name="point_type" value="penalty"><span>벌점</span></label>
+        </div>
+      </fieldset>
+      <div class="dg-field">
+        <label class="dg-field__label" for="points">점수</label>
+        <input class="dg-input dg-num dg-points-form__num" type="number" id="points" name="points" step="1" required
+               placeholder="예: 3" aria-describedby="points_help">
+        <span class="dg-field__help" id="points_help">지금 점수에 더해져요. 잘못 준 점수는 같은 종류에 음수(예: -3)로 되돌려요.</span>
       </div>
-    </div>
+      <div class="dg-form__submit"><button class="dg-btn" type="submit">점수 주기</button></div>
+    </form>
 
-    <div class="text-start">
-      <button type="submit" class="btn btn-primary">점수 부여</button>
-    </div>
-  </form>
-    <div class="text-end">
-      <a href="{% url 'web:mypage' %}" class="btn btn-outline-secondary">← 마이페이지로 돌아가기</a>
-    </div>
+    <aside class="dg-stack" aria-label="상벌점 안내">
+      <section class="dg-section" aria-labelledby="how-title">
+        <div class="dg-section__head"><h2 id="how-title">주기 전에</h2></div>
+        <ul class="dg-rows">
+          <li><span class="dg-rows__main">학생의 지금 점수는 <a href="{% url 'web:mypage' %}?tab=search">학생 검색</a>에서 확인해요.</span></li>
+          <li><span class="dg-rows__main">벌점이 20점 이상이면 퇴관 조치 대상이에요. <a href="{% url 'web:rules' %}#penalties">벌점 기준</a></span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
 </div>
-
-<script src="{% static 'js/bootstrap.min.js' %}"></script>
-</body>
-</html>
+{% endblock %}

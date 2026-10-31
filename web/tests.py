@@ -1398,3 +1398,202 @@ class InfoPageTests(TestCase):
             for name in files:
                 with open(os.path.join(root, name), encoding='utf-8') as f:
                     self.assertNotIn(self.OLD_KAKAO_KEY, f.read(), name)
+
+
+class StaffPageTests(TestCase):
+    """관리자 화면(입실·외박 신청 관리, 문의 상세, 상벌점)을 새 디자인으로 (docs/adr/0020, 9단계)."""
+    OLD = ('css/style.css', 'bootstrap', 'jquery', 'js/main.js', 'font-awesome', '#F2DCDC', '#007bff')
+
+    def setUp(self):
+        self.staff = User.objects.create_user('admin', password='pw12345!', is_staff=True)
+        self.student = User.objects.create_user('20250001', password='pw12345!')
+        self.other = User.objects.create_user('20250002', password='pw12345!')
+        self.inquiry = Inquiry.objects.create(user=self.student, title='문의', content='내용')
+
+    def outing(self, user, day, status='pending', name='홍길동'):
+        return OutingApply.objects.create(user=user, name=name, student_number=user.username,
+                                          out_date=date(2026, 11, day), status=status)
+
+    def test_staff_pages_use_only_the_new_css(self):
+        detail = reverse('web:inquiry_detail', args=[self.inquiry.pk])
+        pages = {
+            self.staff: [reverse(n) for n in ('web:dorminfo', 'web:outside_manage', 'web:outing_info',
+                                              'web:reward_penalty')] + [detail],
+            self.student: [reverse('web:dorminfo'), reverse('web:outing_info'), detail],
+        }
+        for user, urls in pages.items():
+            self.client.force_login(user)
+            for url in urls:
+                with self.subTest(user=user.username, url=url):
+                    response = self.client.get(url)
+                    self.assertContains(response, 'css/dorm.css', count=1)
+                    self.assertContains(response, 'css/dorm-shell.css', count=1)
+                    for old in self.OLD:
+                        self.assertNotContains(response, old)
+
+    # 입실 신청 관리
+    def test_assignment_inputs_are_labelled_and_bed_is_a_choice(self):
+        dorm = Dorm.objects.create(name='홍길동', student_number='20250001', gender='male')
+        self.client.force_login(self.staff)
+        html = self.client.get(reverse('web:dorminfo') + '?status=all').content.decode()
+        for field in ('building', 'room', 'bed'):
+            self.assertIn(f'for="{field}-{dorm.pk}"', html)
+            self.assertIn(f'id="{field}-{dorm.pk}"', html)
+        self.assertRegex(html, r'<select[^>]*name="position"')
+        for n in '1234':
+            self.assertIn(f'<option value="{n}">{n}번</option>', html)
+        self.assertIn(f'action="{reverse("web:assign_room", args=[dorm.pk])}"', html)
+        self.assertIn('미배정', html)
+        self.assertNotIn('>Male<', html)
+
+    def test_assigned_room_shows_as_a_plate(self):
+        Dorm.objects.create(name='홍길동', student_number='20250001', gender='male',
+                            building_name='A동', r_number=101, position=2)
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse('web:dorminfo') + '?status=all')
+        self.assertContains(response, 'A동 101호')
+        self.assertContains(response, '2번 침대')
+
+    def test_dorm_filter_tabs(self):
+        Dorm.objects.create(name='배정됨', student_number='20250001', gender='male',
+                            building_name='A동', r_number=101, position=2)
+        Dorm.objects.create(name='대기중', student_number='20250002', gender='female')
+        self.client.force_login(self.staff)
+        waiting = self.client.get(reverse('web:dorminfo'))
+        self.assertEqual([d.name for d in waiting.context['dorms']], ['대기중'])
+        self.assertContains(waiting, 'href="?status=all"')
+        everyone = self.client.get(reverse('web:dorminfo') + '?status=all')
+        self.assertEqual([d.name for d in everyone.context['dorms']], ['배정됨', '대기중'])
+
+    def test_dorm_list_query_count_is_constant(self):
+        self.client.force_login(self.staff)
+        url = reverse('web:dorminfo') + '?status=all'
+        Dorm.objects.create(name='a', student_number='1', gender='male')
+        with CaptureQueriesContext(connection) as one:
+            self.client.get(url)
+        for i in range(2, 7):
+            Dorm.objects.create(name='a', student_number=str(i), gender='male')
+        with CaptureQueriesContext(connection) as many:
+            self.client.get(url)
+        self.assertEqual(len(one), len(many))
+
+    def test_student_sees_only_own_application_without_assign_form(self):
+        Dorm.objects.create(user=self.student, name='내신청', student_number='20250001', gender='male')
+        Dorm.objects.create(user=self.other, name='남의신청', student_number='20250002', gender='male')
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('web:dorminfo'))
+        self.assertContains(response, '내신청')
+        self.assertNotContains(response, '남의신청')
+        self.assertNotContains(response, 'name="position"')
+        self.assertNotContains(response, 'dg-tabs')
+
+    def test_student_without_application_gets_a_link_to_apply(self):
+        self.client.force_login(self.student)
+        self.assertContains(self.client.get(reverse('web:dorminfo')), f'href="{reverse("web:check_in")}"')
+
+    # 외박 신청 관리
+    def test_reject_asks_once_more_and_approve_is_direct(self):
+        outing = self.outing(self.student, 1)
+        self.client.force_login(self.staff)
+        html = self.client.get(reverse('web:outside_manage')).content.decode()
+        self.assertNotIn('confirm(', html)
+        reject = reverse('web:reject_outing', args=[outing.pk])
+        self.assertRegex(html, r'<details[^>]*>\s*<summary[^>]*>반려</summary>\s*<form[^>]*method="post" action="'
+                         + re.escape(reject) + '"')
+        self.assertIn(f'action="{reverse("web:approve_outing", args=[outing.pk])}"', html)
+
+    def test_approve_and_reject_show_a_notice(self):
+        first, second = self.outing(self.student, 1), self.outing(self.student, 2)
+        self.client.force_login(self.staff)
+        response = self.client.post(reverse('web:approve_outing', args=[first.pk]), follow=True)
+        self.assertContains(response, '승인했습니다')
+        response = self.client.post(reverse('web:reject_outing', args=[second.pk]), follow=True)
+        self.assertContains(response, '반려했습니다')
+
+    def test_outing_status_is_written_not_only_coloured(self):
+        self.outing(self.student, 1)
+        self.outing(self.student, 2, 'approved')
+        self.outing(self.student, 3, 'rejected')
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse('web:outing_info') + '?status=all')
+        for text in ('승인 대기', '승인됨', '반려됨'):
+            self.assertContains(response, text)
+        self.assertContains(response, 'dg-status--rejected')
+
+    def test_outing_filter_defaults_to_pending_for_staff(self):
+        late = self.outing(self.student, 9)
+        done = self.outing(self.student, 1, 'approved')
+        early = self.outing(self.other, 2, name='김철수')
+        self.client.force_login(self.staff)
+        pending = self.client.get(reverse('web:outside_manage')).context['applications']
+        self.assertEqual([a.pk for a in pending], [early.pk, late.pk])  # 외박 날짜가 가까운 순
+        everyone = self.client.get(reverse('web:outside_manage') + '?status=all').context['applications']
+        self.assertEqual({a.pk for a in everyone}, {late.pk, done.pk, early.pk})
+        bogus = self.client.get(reverse('web:outside_manage') + '?status=nope')
+        self.assertEqual(bogus.status_code, 200)
+        self.assertEqual([a.pk for a in bogus.context['applications']], [early.pk, late.pk])
+
+    def test_outing_list_query_count_is_constant(self):
+        self.client.force_login(self.staff)
+        self.outing(self.student, 1)
+        for status in ('', '?status=all'):
+            with self.subTest(status=status):
+                url = reverse('web:outside_manage') + status
+                with CaptureQueriesContext(connection) as one:
+                    self.client.get(url)
+                for day in range(2, 7):
+                    self.outing(self.other, day)
+                with CaptureQueriesContext(connection) as many:
+                    self.client.get(url)
+                self.assertEqual(len(one), len(many))
+                OutingApply.objects.exclude(user=self.student).delete()
+
+    def test_student_sees_only_own_outings_without_actions(self):
+        mine = self.outing(self.student, 1, 'approved')
+        theirs = self.outing(self.other, 2, name='김철수')
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('web:outing_info'))
+        self.assertEqual([a.pk for a in response.context['applications']], [mine.pk])
+        self.assertNotContains(response, '김철수')
+        self.assertNotContains(response, reverse('web:approve_outing', args=[mine.pk]))
+        self.assertNotContains(response, reverse('web:reject_outing', args=[theirs.pk]))
+        self.assertContains(response, '승인됨')
+
+    def test_student_without_outings_gets_a_link_to_apply(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('web:outing_info'))
+        self.assertContains(response, f'href="{reverse("web:outside")}"')
+
+    # 문의 상세
+    def test_inquiry_answer_form_has_a_labelled_textarea(self):
+        self.client.force_login(self.staff)
+        html = self.client.get(reverse('web:inquiry_detail', args=[self.inquiry.pk])).content.decode()
+        self.assertIn('for="id_answer"', html)
+        self.assertRegex(html, r'<textarea[^>]*id="id_answer"')
+        self.assertIn('답변 보내기', html)
+        self.assertNotIn('onsubmit=', html)
+
+    def test_inquiry_answer_errors_are_shown(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(reverse('web:inquiry_detail', args=[self.inquiry.pk]), {'answer': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'dg-field__error')
+        self.assertContains(response, 'aria-invalid="true"')
+
+    def test_student_sees_answer_but_no_form(self):
+        InquiryAnswer.objects.create(inquiry=self.inquiry, admin=self.staff, answer='답변입니다')
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('web:inquiry_detail', args=[self.inquiry.pk]))
+        self.assertContains(response, '답변입니다')
+        self.assertNotContains(response, 'name="answer"')
+        self.assertNotContains(response, '답변 보내기')
+
+    # 상벌점
+    def test_reward_form_is_labelled_with_a_segmented_choice(self):
+        self.client.force_login(self.staff)
+        html = self.client.get(reverse('web:reward_penalty')).content.decode()
+        self.assertIn('for="student_number"', html)
+        self.assertIn('for="points"', html)
+        self.assertIn('class="dg-choice"', html)
+        self.assertRegex(html, r'name="point_type"[^>]*value="reward"[^>]*checked')
+        self.assertIn('점수 주기', html)

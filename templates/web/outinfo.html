@@ -1,65 +1,93 @@
-{% extends 'base.html' %}
+{% extends 'web/layout.html' %}
+{% comment %}
+외박 신청 관리(직원, /outside/manage/ · /outinfo/) / 내 외박 신청(학생) (docs/adr/0020).
+직원: ?status=pending(승인 대기, 기본)|all 탭. 승인은 바로, 반려는 <details>로 한 번 더 묻는다.
+상태는 색만이 아니라 글자로 보여 준다.
+{% endcomment %}
+{% block title %}{% if is_admin %}외박 신청 관리{% else %}내 외박 신청{% endif %}{% endblock %}
 {% block content %}
-<div class="container" style="margin-top: 80px; min-height: 80vh;">
-  <div class="row">
-    <div class="col-md-10 col-md-offset-1">
-      <h3 class="text-center mb-4">외박 신청 현황</h3>
+<div class="dg-wrap">
+  {% if is_admin %}
+  <header class="dg-pagehead">
+    <h1>외박 신청 관리</h1>
+    <p class="dg-pagehead__meta">승인 대기 <span class="dg-num">{{ counts.pending }}</span>건 · 전체 <span class="dg-num">{{ counts.all }}</span>건</p>
+  </header>
+  <nav class="dg-tabs dg-tabs--tight" aria-label="신청 상태">
+    <a href="?status=pending"{% if status == 'pending' %} aria-current="page"{% endif %}>승인 대기 <span class="dg-num">{{ counts.pending }}</span></a>
+    <a href="?status=all"{% if status == 'all' %} aria-current="page"{% endif %}>전체 <span class="dg-num">{{ counts.all }}</span></a>
+  </nav>
+  {% else %}
+  <header class="dg-pagehead">
+    <h1>내 외박 신청</h1>
+    <a class="dg-section__more" href="{% url 'web:outside' %}">외박 신청하기</a>
+  </header>
+  {% endif %}
 
-      <table class="table table-bordered table-hover bg-white">
-        <thead>
-          <tr class="text-center">
-            <th>이름</th>
-            <th>학번</th>
-            <th>신청 날짜</th>
-            <th>신청 시간</th>
-            <th>상태</th>
-            {% if is_admin %}
-              <th>관리자 조치</th>
+  {% if applications %}
+  <div class="dg-tablewrap">
+    <table class="dg-table dg-worktable dg-outings">
+      <caption class="dg-sr">{% if is_admin %}외박 신청 목록{% if status == 'pending' %} (승인 대기, 외박 날짜가 가까운 순){% endif %}{% else %}내 외박 신청 목록{% endif %}</caption>
+      <thead>
+        <tr>
+          {% if is_admin %}<th scope="col">이름</th><th scope="col">학번</th>{% endif %}
+          <th scope="col">외박 날짜</th>
+          <th scope="col">신청 시각</th>
+          <th scope="col">상태</th>
+          {% if is_admin %}<th scope="col" class="dg-outings__acthead">처리</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          {% if is_admin %}
+          <td class="dg-outings__name">{{ app.name }}</td>
+          <td class="dg-outings__sn dg-num dg-muted">{{ app.student_number }}</td>
+          {% endif %}
+          <td class="dg-outings__date dg-num">{{ app.out_date|date:"Y.m.d" }} <span class="dg-muted">({{ app.out_date|date:"D" }})</span></td>
+          <td class="dg-outings__at dg-num dg-muted" data-label="신청">{{ app.applied_at|date:"Y.m.d H:i" }}</td>
+          <td class="dg-outings__status">
+            {% if app.status == 'approved' %}<span class="dg-status dg-status--approved">승인됨</span>
+            {% elif app.status == 'rejected' %}<span class="dg-status dg-status--rejected">반려됨</span>
+            {% else %}<span class="dg-status dg-status--pending">승인 대기</span>{% endif %}
+          </td>
+          {% if is_admin %}
+          <td class="dg-outings__act">
+            {% if app.status == 'pending' %}
+            <div class="dg-outings__btns">
+              <form method="post" action="{% url 'web:approve_outing' app.id %}">
+                {% csrf_token %}
+                <button class="dg-btn dg-btn--sm" type="submit">승인<span class="dg-sr"> ({{ app.name }}, {{ app.out_date|date:"n월 j일" }})</span></button>
+              </form>
+              <details class="dg-confirmbox">
+                <summary class="dg-btn dg-btn--quiet dg-btn--sm">반려</summary>
+                <form class="dg-confirmbox__body" method="post" action="{% url 'web:reject_outing' app.id %}">
+                  {% csrf_token %}
+                  <span>{{ app.name }} 학생의 {{ app.out_date|date:"n월 j일" }} 외박을 반려할까요?</span>
+                  <button class="dg-btn dg-btn--danger dg-btn--sm" type="submit">반려하기</button>
+                </form>
+              </details>
+            </div>
+            {% else %}
+            <span class="dg-muted dg-small">처리됨</span>
             {% endif %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for app in applications %}
-            <tr class="text-center">
-              <td>{{ app.name }}</td>
-              <td>{{ app.student_number }}</td>
-              <td>{{ app.out_date }}</td>
-              <td>{{ app.applied_at|date:"Y-m-d H:i" }}</td>
-              <td>
-                {% if app.status == 'approved' %}
-                  <span class="text-success">승인</span>
-                {% elif app.status == 'rejected' %}
-                  <span class="text-danger">거절</span>
-                {% else %}
-                  <span class="text-muted">대기 중</span>
-                {% endif %}
-              </td>
-              {% if is_admin %}
-              <td>
-                {% if app.status == 'pending' %}
-                  <form method="post" action="{% url 'web:approve_outing' app.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-success btn-sm">승인</button>
-                  </form>
-                  <form method="post" action="{% url 'web:reject_outing' app.id %}" style="display:inline; margin-left: 5px;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-sm">거절</button>
-                  </form>
-                {% else %}
-                  처리 완료
-                {% endif %}
-              </td>
-              {% endif %}
-            </tr>
-          {% empty %}
-            <tr><td colspan="6" class="text-center">신청 내역이 없습니다.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-        <div class="mt-4">
-          <a href="{% url 'web:home' %}" class="btn btn-outline-secondary">← 돌아가기</a>
-        </div>
-    </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
+  {% elif is_admin %}
+  <div class="dg-empty">
+    {% if status == 'pending' %}<strong>처리할 외박 신청이 없어요.</strong>{% if counts.all %}<a href="?status=all">처리한 신청 보기</a>{% endif %}
+    {% else %}<strong>아직 외박 신청이 없어요.</strong>{% endif %}
+  </div>
+  {% else %}
+  <div class="dg-empty">
+    <strong>아직 신청한 외박이 없어요.</strong>
+    외박하기 전에 신청하면 관리실이 확인하고 승인해요.
+  </div>
+  <div class="dg-actions"><a class="dg-btn" href="{% url 'web:outside' %}">외박 신청</a></div>
+  {% endif %}
 </div>
 {% endblock %}
