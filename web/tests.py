@@ -1354,6 +1354,12 @@ class InfoPageTests(TestCase):
         late = bus_routes(sources.load('bus'), self.at(2026, 10, 30, 22, 0))
         self.assertTrue(all(r['next'] is None for r in late))
 
+    def test_bus_after_the_last_departure_says_tomorrow(self):
+        """막차가 끝나면 홈과 같은 말로 '내일 첫차'를 알려 준다."""
+        with mock.patch('web.views.timezone.localtime', return_value=self.at(2026, 10, 30, 23, 0)):
+            response = self.client.get(reverse('web:bus'))
+        self.assertContains(response, '오늘 운행이 끝났어요 · 내일 첫차')
+
     def test_bus_route_tabs_and_tables(self):
         response = self.client.get(reverse('web:bus'))
         self.assertContains(response, 'href="?route=terminal" aria-current="page"')
