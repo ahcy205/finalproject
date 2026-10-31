@@ -1,277 +1,303 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>AI 챗봇</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+학생 AI 챗봇 (docs/adr/0011, 0012, 0014, 0020).
+- 질문은 chatbot_ask로 보내고 답은 이 화면에서만 그린다. 답 글자는 textContent로만 넣는다(HTML로 해석하지 않음).
+- 응답: {status: answered|no_answer|unverified|error, text, sources, log_id, feedback_token, conversation_id, kind}
+  400·429는 {error}. 답마다 👍/👎(👎는 이유를 고름)를 chatbot_feedback으로 보낸다.
+- "새 대화"(#new-chat)는 이어지는 대화 번호를 비우고 첫 화면으로 돌아간다.
+- 화면을 열면 chatbot 뷰가 모델을 미리 올린다(warm-up, docs/adr/0013).
+{% endcomment %}
+{% block title %}AI 챗봇{% endblock %}
+{% block content %}
+<div class="dg-wrap dg-chat">
+  <header class="dg-pagehead dg-chat__head">
+    <h1>AI 챗봇</h1>
+    <button type="button" class="dg-btn dg-btn--quiet dg-btn--sm" id="new-chat">새 대화</button>
+  </header>
 
-  {% include 'web/_theme_css.html' with bootstrap5=True %}
+  <section class="dg-chat__empty" id="chat-empty" aria-labelledby="chat-empty-title">
+    <p class="dg-chat__intro" id="chat-empty-title">생활관 규칙·셔틀버스·식단·생활관 안내를 찾아 답해 드려요.</p>
+    <p class="dg-small dg-muted">자주 묻는 질문</p>
+    <ul class="dg-chat__suggest">
+      {% for item in suggestions %}
+      <li><button type="button" class="dg-chat__chip" data-question="{{ item.question }}">{{ item.label }}</button></li>
+      {% endfor %}
+    </ul>
+  </section>
 
-  <style>
-    .chat-wrap { max-width: 760px; margin: 40px auto 60px; padding: 0 16px; }
-    .chat-title { text-align: center; margin-bottom: 6px; }
-    .chat-sub { text-align: center; color: #777; font-size: 15px; margin-bottom: 20px; }
-    .chat-box {
-      background: #fff; border: 1px solid #e3e6ea; border-radius: 10px;
-      height: 52vh; min-height: 320px; overflow-y: auto; padding: 18px;
-    }
-    .msg { display: flex; margin-bottom: 14px; }
-    .msg.user { justify-content: flex-end; }
-    .bubble {
-      max-width: 85%; padding: 10px 14px; border-radius: 12px;
-      font-size: 15px; line-height: 1.6; white-space: pre-line; word-break: keep-all;
-    }
-    .msg.user .bubble { background: #0d6efd; color: #fff; border-bottom-right-radius: 4px; }
-    .msg.bot .bubble { background: #f1f3f5; color: #212529; border-bottom-left-radius: 4px; }
-    .msg.bot.notice .bubble { background: #fff8e1; }
-    .msg.bot.error .bubble { background: #fdecea; }
-    .sources { margin-top: 8px; font-size: 13px; white-space: normal; }
-    .sources-label { color: #666; font-weight: 600; }
-    .sources ol { margin: 4px 0 0; padding-left: 0; list-style: none; }
-    .sources li { margin-top: 2px; }
-    .sources .num { color: #0d6efd; font-weight: 600; margin-right: 4px; }
-    .suggestions { margin: 4px 0 12px; }
-    .suggestions-label { color: #666; font-size: 14px; margin-bottom: 8px; }
-    .suggestion {
-      display: inline-block; margin: 0 6px 8px 0; padding: 6px 12px; font-size: 14px;
-      border: 1px solid #ced4da; border-radius: 16px; background: #fff; color: #333; cursor: pointer;
-    }
-    .suggestion:hover { border-color: #0d6efd; color: #0d6efd; }
-    .chat-form { display: flex; gap: 8px; margin-top: 12px; }
-    .chat-form textarea { flex: 1; resize: none; font-size: 15px; }
-    .chat-form button { white-space: nowrap; }
-    .chat-caution { margin-top: 10px; font-size: 13px; color: #888; }
-    .typing { color: #888; font-style: italic; }
-    .feedback { margin-top: 8px; font-size: 13px; color: #666; white-space: normal; }
-    .feedback button {
-      border: 1px solid #ced4da; background: #fff; border-radius: 12px;
-      padding: 2px 10px; margin-right: 4px; font-size: 13px; cursor: pointer;
-    }
-    .feedback button:hover { border-color: #0d6efd; }
+  <div class="dg-chat__log" id="chat-log" role="log" aria-label="대화"></div>
+  <p class="dg-chat__typing" id="chat-status" role="status"></p>
 
-    @media (max-width: 768px) {
-      nav.fh5co-nav { display: none !important; }
-      .chat-box { height: 60vh; }
-    }
-    .js-fh5co-nav-toggle { display: none !important; }
-  </style>
-</head>
-
-<body>
-<div class="fh5co-loader"></div>
-
-<div id="page">
-  {% include 'web/_nav.html' %}
-  {% include 'web/_theme_js.html' %}
-
-  <div class="chat-wrap">
-    <h2 class="chat-title">AI 챗봇</h2>
-    <div class="text-end mb-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary" id="new-chat">새 대화</button>
-    </div>
-    <p class="chat-sub">생활관 규칙·안내·셔틀버스·식단·공지를 찾아 답해 드려요.</p>
-
-    <div class="chat-box" id="chat-box" aria-live="polite">
-      <div class="msg bot">
-        <div class="bubble">궁금한 점을 물어보세요. 아래 질문을 눌러도 돼요.</div>
-      </div>
-      <div class="suggestions" id="suggestions">
-        <div class="suggestions-label">자주 묻는 질문</div>
-        {% for item in suggestions %}
-          <button type="button" class="suggestion" data-question="{{ item.question }}">{{ item.label }}</button>
-        {% endfor %}
-      </div>
-    </div>
-
-    <form class="chat-form" id="chat-form" action="{% url 'web:chatbot_ask' %}" method="post"
-          data-feedback-url="{% url 'web:chatbot_feedback' %}">
+  <div class="dg-chat__dock" id="chat-dock">
+    <form class="dg-chat__form" id="chat-form" action="{% url 'web:chatbot_ask' %}" method="post"
+          data-feedback-url="{% url 'web:chatbot_feedback' %}" data-inquiry-url="{% url 'web:mypage' %}?tab=inquiry">
       {% csrf_token %}
-      <textarea class="form-control" id="question" name="question" rows="2" maxlength="{{ max_length }}"
-                placeholder="예: 전기장판 써도 되나요?" required></textarea>
-      <button type="submit" class="btn btn-primary" id="send">보내기</button>
+      <label class="dg-sr" for="question">챗봇에게 질문하기</label>
+      <textarea class="dg-input dg-chat__input" id="question" name="question" rows="1" maxlength="{{ max_length }}"
+                placeholder="예: 전기장판 써도 되나요?" enterkeyhint="enter" required></textarea>
+      <button type="submit" class="dg-btn dg-chat__send" id="send">보내기</button>
     </form>
-    <p class="chat-caution">
-      AI 답변은 틀릴 수 있어요. 답 아래의 출처에서 원문을 확인하시고, 정확한 안내가 필요하면
-      <a href="{% url 'web:mypage' %}">마이페이지에서 문의</a>를 남겨 주세요. 첫 질문은 AI를 준비하느라 30초 정도 걸릴 수 있어요.
-    </p>
-    <p class="chat-caution">
-      질문과 답은 누가 물었는지 남기지 않고 개인정보를 가린 뒤 익명으로 저장되어 챗봇 개선에만 쓰이며,
-      {{ retention_days }}일이 지나면 지워집니다. 이름·학번·연락처는 입력하지 마세요.
-    </p>
-    {{ reasons|json_script:"feedback-reasons" }}
+    <p class="dg-chat__caution">AI 답변은 틀릴 수 있어요. 답 아래의 출처에서 원문을 확인해 주세요.</p>
   </div>
+
+  <div class="dg-chat__notes">
+    <p>정확한 안내가 필요하면 <a href="{% url 'web:mypage' %}?tab=inquiry">마이페이지에서 문의</a>를 남겨 주세요. 첫 질문은 AI를 준비하느라 30초 정도 걸릴 수 있어요.</p>
+    <p>질문과 답은 누가 물었는지 남기지 않고 개인정보를 가린 뒤 익명으로 저장되어 챗봇 개선에만 쓰이며,
+      <span class="dg-num">{{ retention_days }}</span>일이 지나면 지워집니다. 이름·학번·연락처는 입력하지 마세요.</p>
+  </div>
+  {{ reasons|json_script:"feedback-reasons" }}
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-  (function () {
-    var box = document.getElementById('chat-box');
-    var form = document.getElementById('chat-form');
-    var input = document.getElementById('question');
-    var send = document.getElementById('send');
-    var csrf = form.querySelector('input[name=csrfmiddlewaretoken]').value;
+(function () {
+  var log = document.getElementById('chat-log');
+  var empty = document.getElementById('chat-empty');
+  var statusLine = document.getElementById('chat-status');
+  var dock = document.getElementById('chat-dock');
+  var form = document.getElementById('chat-form');
+  var input = document.getElementById('question');
+  var send = document.getElementById('send');
+  var csrf = form.querySelector('input[name=csrfmiddlewaretoken]').value;
+  var feedbackUrl = form.dataset.feedbackUrl;
+  var inquiryUrl = form.dataset.inquiryUrl;
+  var reasons = JSON.parse(document.getElementById('feedback-reasons').textContent);
+  var root = document.documentElement;
+  var touch = window.matchMedia('(pointer: coarse)');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    function addMessage(who, text, kind) {
-      var row = document.createElement('div');
-      row.className = 'msg ' + who + (kind ? ' ' + kind : '');
-      var bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      bubble.textContent = text;  // 답은 글자로만 넣는다 (HTML로 해석하지 않음)
-      row.appendChild(bubble);
-      box.appendChild(row);
-      box.scrollTop = box.scrollHeight;
-      return bubble;
-    }
+  var conversationId = null;  // 이어지는 대화 번호 (앞 대화 내용은 서버에만 있음). "새 대화"를 누르면 비운다
+  var busy = false;
+  var generation = 0;         // "새 대화" 뒤에 늦게 온 앞 대화의 답은 버린다
+  var slowTimer = null;
 
-    function addSources(bubble, sources, status) {
-      if (!sources || !sources.length) return;
-      var wrap = document.createElement('div');
-      wrap.className = 'sources';
-      var label = document.createElement('div');
-      label.className = 'sources-label';
-      label.textContent = status === 'answered' ? '출처' : '관련 자료';
-      wrap.appendChild(label);
-      var list = document.createElement('ol');
-      sources.forEach(function (s) {
-        var item = document.createElement('li');
-        if (status === 'answered') {
-          var num = document.createElement('span');
-          num.className = 'num';
-          num.textContent = '[' + s.number + ']';
-          item.appendChild(num);
-        }
-        if (s.url && s.url.charAt(0) === '/') {
-          var link = document.createElement('a');
-          link.href = s.url;
-          link.target = '_blank';
-          link.rel = 'noopener';
-          link.textContent = s.title;
-          item.appendChild(link);
-        } else {
-          item.appendChild(document.createTextNode(s.title));
-        }
-        list.appendChild(item);
-      });
-      wrap.appendChild(list);
-      bubble.appendChild(wrap);
-      box.scrollTop = box.scrollHeight;
-    }
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  }
 
-    var feedbackUrl = form.dataset.feedbackUrl;
-    // 이어지는 대화 번호 (앞 대화 내용은 서버에만 있음). "새 대화"를 누르면 비운다
-    var conversationId = null;
-    var firstScreen = box.innerHTML;
-    document.getElementById('new-chat').addEventListener('click', function () {
-      conversationId = null;
-      box.innerHTML = firstScreen;
-      document.querySelectorAll('.suggestion').forEach(function (button) {
-        button.addEventListener('click', function () { ask(button.dataset.question); });
-      });
-      input.focus();
+  function reveal(node, block) {
+    node.scrollIntoView({block: block, behavior: reduced.matches ? 'auto' : 'smooth'});
+  }
+
+  function post(url, fields) {
+    var body = new URLSearchParams();
+    Object.keys(fields).forEach(function (key) { body.append(key, fields[key]); });
+    return fetch(url, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: body.toString(),
+      credentials: 'same-origin'
     });
-    var reasons = JSON.parse(document.getElementById('feedback-reasons').textContent);
+  }
 
-    function sendFeedback(wrap, logId, token, rating, reason) {
-      var body = new URLSearchParams();
-      body.append('log_id', logId);
-      body.append('token', token);
-      body.append('rating', rating);
-      body.append('reason', reason || '');
-      wrap.textContent = '보내는 중…';
-      fetch(feedbackUrl, {
-        method: 'POST',
-        headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
-        body: body.toString(),
-        credentials: 'same-origin'
-      }).then(function (response) {
-        wrap.textContent = response.ok ? '의견 고마워요. 챗봇 개선에 쓸게요.' : '평가를 보내지 못했어요.';
+  // ---------- 화면 그리기 ----------
+  function addQuestion(text) {
+    var row = el('div', 'dg-chat__turn dg-chat__turn--me');
+    row.appendChild(el('p', 'dg-chat__mine', text));
+    log.appendChild(row);
+    return row;
+  }
+
+  // status: answered | no_answer | unverified | error | failed(요청 자체가 안 됨)
+  function addAnswer(data) {
+    var status = data.status;
+    var row = el('div', 'dg-chat__turn dg-chat__turn--bot');
+    var tone = status === 'answered' ? '' : (status === 'no_answer' || status === 'unverified') ? ' is-notice' : ' is-error';
+    var block = el('div', 'dg-chat__answer' + tone);
+    block.appendChild(el('p', 'dg-chat__text', data.text));
+    addSources(block, data.sources, status);
+    if (status === 'no_answer' || status === 'unverified' || status === 'error') {
+      var ask = el('p', 'dg-chat__ask');
+      var link = el('a', '', '마이페이지에서 관리실에 문의하기');
+      link.href = inquiryUrl;
+      ask.appendChild(link);
+      block.appendChild(ask);
+    }
+    if (status !== 'error' && status !== 'failed') addFeedback(block, data.log_id, data.feedback_token);
+    row.appendChild(block);
+    log.appendChild(row);
+    return row;
+  }
+
+  function addSources(block, sources, status) {
+    if (!sources || !sources.length) return;
+    var wrap = el('div', 'dg-chat__sources');
+    wrap.appendChild(el('p', 'dg-chat__label', status === 'answered' ? '출처' : '관련 자료'));
+    var list = el('ol');
+    sources.forEach(function (s) {
+      var item = el('li');
+      if (status === 'answered') item.appendChild(el('span', 'dg-chat__num dg-num', '[' + s.number + ']'));
+      if (s.url && s.url.charAt(0) === '/') {  // 사이트 안 주소만 링크로 만든다
+        var link = el('a', '', s.title);
+        link.href = s.url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.appendChild(el('span', 'dg-sr', ' (새 탭)'));
+        item.appendChild(link);
+      } else {
+        item.appendChild(document.createTextNode(s.title));
+      }
+      list.appendChild(item);
+    });
+    wrap.appendChild(list);
+    block.appendChild(wrap);
+  }
+
+  // ---------- 👍/👎 ----------
+  function rateButton(emoji, label) {
+    var b = el('button', 'dg-chat__rate', emoji);
+    b.type = 'button';
+    b.setAttribute('aria-label', label);
+    b.setAttribute('aria-pressed', 'false');
+    return b;
+  }
+
+  function addFeedback(block, logId, token) {
+    if (!logId || !token) return;
+    var wrap = el('div', 'dg-chat__feedback');
+    var bar = el('div', 'dg-chat__feedbar');
+    bar.appendChild(el('span', '', '도움이 됐나요?'));
+    var up = rateButton('👍', '도움이 됐어요');
+    var down = rateButton('👎', '도움이 안 됐어요');
+    bar.appendChild(up);
+    bar.appendChild(down);
+    var more = el('div', 'dg-chat__feedmore');
+    more.setAttribute('aria-live', 'polite');
+    wrap.appendChild(bar);
+    wrap.appendChild(more);
+
+    function choose(button) {
+      up.setAttribute('aria-pressed', String(button === up));
+      down.setAttribute('aria-pressed', String(button === down));
+    }
+    function lock(locked) { up.disabled = locked; down.disabled = locked; }
+    function submit(rating, reason) {
+      lock(true);
+      more.textContent = '보내는 중…';
+      post(feedbackUrl, {log_id: logId, token: token, rating: rating, reason: reason || ''}).then(function (response) {
+        if (response.ok) { more.textContent = '의견 고마워요. 챗봇 개선에 쓸게요.'; return; }
+        throw new Error(String(response.status));
       }).catch(function () {
-        wrap.textContent = '평가를 보내지 못했어요.';
+        more.textContent = '평가를 보내지 못했어요.';
+        choose(null);
+        lock(false);
       });
     }
 
-    function button(label, onClick) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      b.addEventListener('click', onClick);
-      return b;
-    }
-
-    function addFeedback(bubble, logId, token) {
-      if (!logId || !token) return;
-      var wrap = document.createElement('div');
-      wrap.className = 'feedback';
-      wrap.appendChild(document.createTextNode('도움이 됐나요? '));
-      wrap.appendChild(button('👍', function () { sendFeedback(wrap, logId, token, 'up'); }));
-      wrap.appendChild(button('👎', function () {
-        wrap.textContent = '어떤 점이 아쉬웠나요? ';
-        reasons.forEach(function (pair) {
-          wrap.appendChild(button(pair[1], function () { sendFeedback(wrap, logId, token, 'down', pair[0]); }));
-        });
-      }));
-      bubble.appendChild(wrap);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function ask(question) {
-      question = question.trim();
-      if (!question) return;
-      var suggestions = document.getElementById('suggestions');
-      if (suggestions) suggestions.remove();
-      addMessage('user', question);
-      var waiting = addMessage('bot', '답변을 찾는 중이에요…');
-      waiting.classList.add('typing');
-      send.disabled = true;
-      input.value = '';
-
-      var body = new URLSearchParams();
-      body.append('question', question);
-      if (conversationId) body.append('conversation_id', conversationId);
-      fetch(form.action, {
-        method: 'POST',
-        headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
-        body: body.toString(),
-        credentials: 'same-origin'
-      }).then(function (response) {
-        return response.json().then(function (data) { return {ok: response.ok, data: data}; });
-      }).then(function (result) {
-        waiting.parentNode.remove();
-        if (!result.ok) {
-          addMessage('bot', result.data.error || '요청을 처리하지 못했어요.', 'error');
-          return;
-        }
-        var data = result.data;
-        conversationId = data.conversation_id || conversationId;
-        var kind = data.status === 'answered' ? '' : (data.status === 'error' ? 'error' : 'notice');
-        var bubble = addMessage('bot', data.text, kind);
-        addSources(bubble, data.sources, data.status);
-        if (data.status !== 'error') addFeedback(bubble, data.log_id, data.feedback_token);
-      }).catch(function () {
-        waiting.parentNode.remove();
-        addMessage('bot', '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.', 'error');
-      }).finally(function () {
-        send.disabled = false;
-        input.focus();
+    up.addEventListener('click', function () { choose(up); submit('up'); });
+    down.addEventListener('click', function () {
+      choose(down);
+      more.textContent = '';
+      more.appendChild(el('span', 'dg-chat__label', '어떤 점이 아쉬웠나요?'));
+      var list = el('div', 'dg-chat__reasons');
+      reasons.forEach(function (pair) {
+        var b = el('button', 'dg-btn dg-btn--quiet dg-btn--sm', pair[1]);
+        b.type = 'button';
+        b.addEventListener('click', function () { submit('down', pair[0]); });
+        list.appendChild(b);
       });
-    }
+      more.appendChild(list);
+      if (list.firstChild) list.firstChild.focus({preventScroll: true});
+    });
+    block.appendChild(wrap);
+  }
 
-    form.addEventListener('submit', function (event) {
+  // ---------- 보내기 ----------
+  function setBusy(on) {
+    busy = on;
+    send.disabled = on;
+    log.setAttribute('aria-busy', String(on));
+    clearTimeout(slowTimer);
+    statusLine.textContent = on ? '답을 찾고 있어요…' : '';
+    if (on) slowTimer = setTimeout(function () {
+      statusLine.textContent = '답을 찾고 있어요… 첫 질문은 AI를 준비하느라 30초 정도 걸릴 수 있어요.';
+    }, 8000);
+  }
+
+  function ask(question) {
+    question = (question || '').trim();
+    if (!question || busy) return;
+    var mine = generation;
+    empty.hidden = true;
+    addQuestion(question);
+    input.value = '';
+    grow();
+    setBusy(true);
+    reveal(statusLine, 'end');
+
+    var fields = {question: question};
+    if (conversationId) fields.conversation_id = conversationId;
+    post(form.action, fields).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (data) {
+        return {ok: response.ok, data: data};
+      });
+    }).then(function (result) {
+      if (mine !== generation) return;
+      var data = result.data;
+      if (!result.ok) {  // 400(질문 형식)·429(너무 많이 물음)·500
+        return show({status: 'failed', text: data.error || '요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.'});
+      }
+      conversationId = data.conversation_id || conversationId;
+      show(data);
+    }).catch(function () {
+      if (mine !== generation) return;
+      show({status: 'failed', text: '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.'});
+    });
+
+    function show(data) {
+      setBusy(false);
+      reveal(addAnswer(data), 'nearest');
+      if (!touch.matches) input.focus();  // 휴대폰은 키보드가 답을 가리지 않게 다시 열지 않는다
+    }
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    ask(input.value);
+  });
+  // PC: Enter 보내기, Shift+Enter 줄 바꿈 / 휴대폰: Enter 줄 바꿈, 보내기 버튼으로 보낸다
+  input.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229 && !touch.matches) {
       event.preventDefault();
       ask(input.value);
-    });
-    input.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-        event.preventDefault();
-        ask(input.value);
-      }
-    });
-    document.querySelectorAll('.suggestion').forEach(function (button) {
-      button.addEventListener('click', function () { ask(button.dataset.question); });
-    });
-  })();
+    }
+  });
+  empty.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-question]');
+    if (button) ask(button.dataset.question);
+  });
+  document.getElementById('new-chat').addEventListener('click', function () {
+    generation += 1;
+    conversationId = null;
+    setBusy(false);
+    log.textContent = '';
+    empty.hidden = false;
+    input.value = '';
+    grow();
+    input.focus();
+  });
+
+  // ---------- 입력 칸: 5줄까지 늘어남, 화면 키보드 위에 붙음 ----------
+  function grow() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight + 2, parseFloat(getComputedStyle(input).maxHeight) || 9999) + 'px';
+    root.style.setProperty('--dg-dock-h', dock.offsetHeight + 'px');
+  }
+  input.addEventListener('input', grow);
+  if (window.visualViewport) {
+    var keyboard = function () {
+      var vv = window.visualViewport;
+      var inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      root.style.setProperty('--dg-kb', inset + 'px');
+    };
+    window.visualViewport.addEventListener('resize', keyboard);
+    window.visualViewport.addEventListener('scroll', keyboard);
+  }
+  grow();
+})();
 </script>
-</body>
-</html>
+{% endblock %}

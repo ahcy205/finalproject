@@ -506,20 +506,31 @@ class DormFieldValidationTests(TestCase):
 
 
 class SharedThemeAssetTests(TestCase):
-    """테마 CSS·JS는 _theme_css.html / _theme_js.html 에서 한 번씩만 로드된다."""
+    """예전 테마(_theme_css.html / _theme_js.html)는 더 쓰지 않고, 새 화면은 새 CSS만 불러온다 (docs/adr/0020)."""
 
-    def test_theme_css_and_js_load_once(self):
-        # 예전 테마를 아직 쓰는 화면은 챗봇뿐이다 (7단계에서 옮김)
-        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
-        with mock.patch('web.views.start_warm_up'):
-            response = self.client.get(reverse('web:chatbot'))
-        self.assertContains(response, 'css/style.css', count=1)
-        self.assertContains(response, 'js/main.js', count=1)
-        self.assertContains(response, 'css/dorm-shell.css', count=1)
+    def test_no_template_includes_the_old_theme_partials(self):
+        # 챗봇(7단계)을 끝으로 _theme_css.html / _theme_js.html 을 쓰는 화면이 없다.
+        # 남은 예전 화면(로그인·회원가입 등)은 base.html을 쓰며 8단계에서 옮긴다.
+        from django.conf import settings
+        pattern = re.compile(r"{%\s*include\s+['\"]web/_theme_(css|js)\.html")
+        users = []
+        for root in settings.TEMPLATES[0]['DIRS']:
+            for folder, _, files in os.walk(root):
+                for name in files:
+                    path = os.path.join(folder, name)
+                    with open(path, encoding='utf-8') as f:
+                        if pattern.search(f.read()):
+                            users.append(os.path.relpath(path, root))
+        self.assertEqual(users, [])
 
     def test_redesigned_pages_use_only_the_new_css(self):
         """새 디자인으로 옮긴 화면은 예전 테마·Bootstrap·jQuery를 불러오지 않는다 (docs/adr/0020)."""
-        for name in ('web:home', 'web:guide', 'web:community'):
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        with mock.patch('web.views.start_warm_up'):
+            self.check_new_css_only(('web:home', 'web:guide', 'web:community', 'web:chatbot'))
+
+    def check_new_css_only(self, names):
+        for name in names:
             with self.subTest(name=name):
                 response = self.client.get(reverse(name))
                 self.assertContains(response, 'css/dorm.css', count=1)
@@ -871,6 +882,32 @@ class ChatbotConversationPageTests(TestCase):
 
     def test_page_has_a_new_conversation_button(self):
         self.assertContains(self.client.get(reverse('web:chatbot')), 'id="new-chat"')
+
+
+class ChatbotPageLayoutTests(TestCase):
+    """챗봇 화면의 새 디자인 (docs/adr/0020, 7단계). 답을 그리는 동작은 화면의 자바스크립트가 한다."""
+
+    def setUp(self):
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        with mock.patch('web.views.start_warm_up'):
+            self.response = self.client.get(reverse('web:chatbot'))
+
+    def test_question_box_has_a_label_and_a_send_button(self):
+        self.assertContains(self.response, '<label class="dg-sr" for="question">')
+        self.assertContains(self.response, 'id="question" name="question"')
+        self.assertContains(self.response, '>보내기</button>')
+
+    def test_suggested_questions_are_buttons_that_send_the_question(self):
+        from knowledge.chat import load_suggestions
+        for item in load_suggestions():
+            self.assertContains(self.response, f'data-question="{item["question"]}"')
+
+    def test_conversation_is_announced_and_notes_stay(self):
+        self.assertContains(self.response, 'role="log"')
+        self.assertContains(self.response, 'role="status"')
+        self.assertContains(self.response, 'AI 답변은 틀릴 수 있어요')
+        self.assertContains(self.response, '익명으로 저장')
+        self.assertContains(self.response, f'{reverse("web:mypage")}?tab=inquiry')
 
 
 class HomeBoardTests(TestCase):
