@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -359,15 +359,29 @@ def apply_success(request):
 
     return render(request, 'web/apply_success.html', {'show_alert': show_alert})
 
+# 외박 신청 관리의 상태 탭. 직원은 처리할 신청(대기)부터 본다
+OUTING_TABS = ('pending', 'all')
+
+
 @login_required
 def outing_info(request):
-    if request.user.is_staff:
-        applications = OutingApply.objects.order_by('id')
+    if not request.user.is_staff:
+        applications = OutingApply.objects.filter(user=request.user).order_by('-out_date', '-id')
+        return render(request, 'web/outinfo.html', {'applications': applications, 'is_admin': False})
+
+    status = request.GET.get('status')
+    if status not in OUTING_TABS:
+        status = 'pending'
+    if status == 'pending':
+        applications = OutingApply.objects.filter(status='pending').order_by('out_date', 'id')
     else:
-        applications = OutingApply.objects.filter(user=request.user).order_by('id')
+        applications = OutingApply.objects.order_by('-out_date', '-id')
+    counts = OutingApply.objects.aggregate(pending=Count('id', filter=Q(status='pending')), all=Count('id'))
     return render(request, 'web/outinfo.html', {
         'applications': applications,
-        'is_admin': request.user.is_staff
+        'is_admin': True,
+        'status': status,
+        'counts': counts,
     })
 
 
@@ -378,6 +392,7 @@ def approve_outing(request, pk):
     outing = get_object_or_404(OutingApply, pk=pk)
     outing.status = 'approved'
     outing.save()
+    messages.success(request, f'{outing.name} 학생의 {outing.out_date.month}월 {outing.out_date.day}일 외박을 승인했습니다.')
     return redirect('web:outing_info')
 
 
@@ -388,6 +403,7 @@ def reject_outing(request, pk):
     outing = get_object_or_404(OutingApply, pk=pk)
     outing.status = 'rejected'
     outing.save()
+    messages.success(request, f'{outing.name} 학생의 {outing.out_date.month}월 {outing.out_date.day}일 외박을 반려했습니다.')
     return redirect('web:outing_info')
 
 
@@ -702,14 +718,27 @@ def apply_outing(request):
 
     return redirect('web:outside')
 
+# 건물·방·침대 중 하나라도 비어 있으면 배정이 끝나지 않은 신청이다
+DORM_UNASSIGNED = Q(building_name='') | Q(r_number=0) | Q(position=0)
+DORM_TABS = ('unassigned', 'all')
+
+
 @login_required
 def dorm_info_view(request):
-    is_admin = request.user.is_staff
-    if is_admin:
-        dorms = Dorm.objects.order_by('id')
-    else:
+    if not request.user.is_staff:
         dorms = Dorm.objects.filter(user=request.user).order_by('id')
-    return render(request, 'web/dorminfo.html', {'dorms': dorms, 'is_admin': is_admin})
+        return render(request, 'web/dorminfo.html', {'dorms': dorms, 'is_admin': False})
+
+    status = request.GET.get('status')
+    if status not in DORM_TABS:
+        status = 'unassigned'
+    dorms = Dorm.objects.order_by('id')
+    if status == 'unassigned':
+        dorms = dorms.filter(DORM_UNASSIGNED)
+    counts = Dorm.objects.aggregate(unassigned=Count('id', filter=DORM_UNASSIGNED), all=Count('id'))
+    return render(request, 'web/dorminfo.html', {
+        'dorms': dorms, 'is_admin': True, 'status': status, 'counts': counts,
+    })
 
 
 @require_POST

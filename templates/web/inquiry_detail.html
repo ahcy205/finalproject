@@ -1,177 +1,130 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>문의 상세</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #F2DCDC;
-      font-family: 'Source Sans Pro', sans-serif;
-      padding-top: 50px;
-    }
-    .container {
-      background: #fff;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-    }
-    h2 {
-      font-weight: 700;
-      margin-bottom: 30px;
-      color: #007bff;
-      border-bottom: 2px solid #007bff;
-      padding-bottom: 8px;
-    }
-    .meta-info {
-      font-size: 1.05rem;
-      margin-bottom: 10px;
-    }
-    .meta-info strong {
-      color: #333;
-    }
-    .inquiry-content {
-      font-size: 1.1rem;
-      margin-bottom: 30px;
-      white-space: pre-line;
-    }
-    .answer-section {
-      background-color: #f1f9ff;
-      padding: 20px;
-      border-left: 5px solid #007bff;
-      border-radius: 6px;
-      margin-bottom: 30px;
-    }
-    .answer-meta {
-      font-size: 0.95rem;
-      color: #666;
-    }
-    .no-answer {
-      font-style: italic;
-      color: #999;
-      margin-bottom: 30px;
-    }
-    .form-control, .btn {
-      font-size: 1rem;
-    }
-    .btn-primary {
-      padding: 8px 25px;
-    }
-    .draft-panel {
-      background: #fafbfc;
-      border: 1px solid #e3e6ea;
-      border-radius: 6px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
-    }
-    .draft-hint {
-      font-size: 0.9rem;
-      color: #666;
-      margin-left: 8px;
-    }
-    .draft-evidence summary {
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .draft-evidence ol {
-      margin: 8px 0 0;
-      padding-left: 1.4rem;
-    }
-    .draft-evidence li {
-      margin-bottom: 8px;
-    }
-    .draft-evidence li.cited {
-      font-weight: 600;
-    }
-    .evidence-text {
-      font-size: 0.88rem;
-      font-weight: 400;
-      color: #555;
-      white-space: pre-line;
-    }
-  </style>
-{% include 'web/_shell_head.html' %}
-</head>
-<body>
-{% include 'web/_nav.html' %}
-  <div class="container">
-    <h2>{{ inquiry.title }}</h2>
-    <div class="meta-info"><strong>작성자:</strong> {{ inquiry.user.username }}</div>
-    <div class="meta-info"><strong>작성일:</strong> {{ inquiry.created_at|date:"Y-m-d H:i" }}</div>
-    <div class="inquiry-content">{{ inquiry.content|linebreaksbr }}</div>
+{% extends 'web/layout.html' %}
+{% comment %}
+문의 보기 (docs/adr/0020). 학생은 자기 문의와 답변만, 직원은 답변 양식과 AI 답변 초안(ADR 0007)을 함께 본다.
+AI 초안은 POST /inquiry/<id>/draft/ 가 답변 칸에 채워 다시 그린다. 저장·발송은 직원이 "답변 보내기"로 직접 한다.
+{% endcomment %}
+{% block title %}{{ inquiry.title }}{% endblock %}
+{% block content %}
+<div class="dg-wrap{% if not is_admin %} dg-narrow{% endif %}">
+  <a class="dg-backlink" href="{% url 'web:mypage' %}?tab=inquiry">{% if is_admin %}모든 문의{% else %}내 문의{% endif %}</a>
 
-    <h3 class="mt-5 mb-3">답변</h3>
-    {% if inquiry.inquiryanswer %}
-      <div class="answer-section">
-        <p>{{ inquiry.inquiryanswer.answer|linebreaksbr }}</p>
-        <div class="answer-meta">
-          <small>작성자: {{ inquiry.inquiryanswer.admin.username }} | 작성일: {{ inquiry.inquiryanswer.answered_at|date:"Y-m-d H:i" }}</small>
-        </div>
-      </div>
-    {% else %}
-      <p class="no-answer">아직 답변이 없습니다.</p>
-    {% endif %}
+  <div class="{% if is_admin %}dg-reply{% endif %}">
+    <div class="dg-reply__read">
+      <article class="dg-article">
+        <header class="dg-article__head">
+          <h1>{{ inquiry.title }}</h1>
+          <p class="dg-article__meta">
+            <span>{{ inquiry.user.userprofile.full_name|default:inquiry.user.username }}</span>{% if inquiry.user.userprofile.full_name %} <span class="dg-num">{{ inquiry.user.username }}</span>{% endif %}
+            · <span class="dg-num">{{ inquiry.created_at|date:"Y.m.d H:i" }}</span>
+            {% if inquiry.inquiryanswer %}<span class="dg-status dg-status--approved">답변 완료</span>{% else %}<span class="dg-status dg-status--pending">답변 대기</span>{% endif %}
+          </p>
+        </header>
+        <div class="dg-article__body">{{ inquiry.content|linebreaks }}</div>
+      </article>
+
+      <section class="dg-answer" aria-labelledby="answer-title">
+        <h2 class="dg-answer__title" id="answer-title">관리실 답변</h2>
+        {% if inquiry.inquiryanswer %}
+        <div class="dg-answer__text">{{ inquiry.inquiryanswer.answer|linebreaks }}</div>
+        <p class="dg-answer__meta">{{ inquiry.inquiryanswer.admin.username }} · <span class="dg-num">{{ inquiry.inquiryanswer.answered_at|date:"Y.m.d H:i" }}</span></p>
+        {% else %}
+        <p class="dg-answer__none">{% if is_admin %}아직 답변하지 않았어요.{% else %}관리실이 확인하고 답변하면 여기에 보여요.{% endif %}</p>
+        {% endif %}
+      </section>
+    </div>
 
     {% if is_admin %}
-      <h3 class="mt-5 mb-3">답변 작성/수정</h3>
+    <div class="dg-reply__work">
+      <form class="dg-form dg-reply__form" method="post" action="{% url 'web:inquiry_detail' inquiry.pk %}" novalidate>
+        {% csrf_token %}
+        <div class="dg-field">
+          <label class="dg-field__label" for="id_answer">{% if inquiry.inquiryanswer %}답변 고치기{% else %}답변 쓰기{% endif %}</label>
+          {% if draft.status == 'ok' %}<span class="dg-field__help dg-reply__drafted" id="answer_help">AI 초안이 들어 있어요. 근거와 맞는지 확인하고 고친 뒤 보내세요.</span>
+          {% else %}<span class="dg-field__help" id="answer_help">보내면 학생의 문의 화면에 바로 보여요.{% if inquiry.inquiryanswer %} 지금 답변을 바꿔요.{% endif %}</span>{% endif %}
+          <textarea class="dg-input dg-reply__input" name="answer" id="id_answer" rows="10" required
+                    aria-describedby="answer_help{% if form.answer.errors %} answer_err{% endif %}"{% if form.answer.errors %} aria-invalid="true"{% endif %}
+                    placeholder="학생에게 보낼 답변을 적어 주세요.">{{ form.answer.value|default_if_none:'' }}</textarea>
+          {% if form.answer.errors %}<span class="dg-field__error" id="answer_err">답변 내용을 입력해 주세요.</span>{% endif %}
+        </div>
+        <div class="dg-form__submit"><button class="dg-btn" type="submit">답변 보내기</button></div>
+      </form>
 
-      <div class="draft-panel">
-        <form method="post" action="{% url 'web:inquiry_draft' inquiry.pk %}" class="draft-request"
-              onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='초안 만드는 중… (수십 초 걸릴 수 있음)';">
+      <section class="dg-panel dg-draft" aria-labelledby="draft-title">
+        <h2 class="dg-panel__title" id="draft-title">AI 답변 초안</h2>
+        <p class="dg-small dg-muted">규칙·안내·공지·이전 답변을 근거로 초안을 만들어 답변 칸에 채워요. 학생에게 자동으로 보내지 않아요.</p>
+        <form method="post" action="{% url 'web:inquiry_draft' inquiry.pk %}" data-draft-form>
           {% csrf_token %}
-          <button type="submit" class="btn btn-outline-primary btn-sm">AI 답변 초안 만들기</button>
-          <span class="draft-hint">규칙·안내·공지·이전 답변을 근거로 초안을 만듭니다. 학생에게 자동으로 보내지 않습니다.</span>
+          <button class="dg-btn dg-btn--quiet dg-btn--block" type="submit">{% if draft %}초안 다시 만들기{% else %}AI 답변 초안 만들기{% endif %}</button>
+          <p class="dg-draft__busy dg-small dg-muted" role="status" aria-live="polite"></p>
         </form>
 
         {% if draft %}
           {% if draft.status == 'ok' %}
-            <div class="alert alert-info mt-3 mb-2">
-              AI 초안을 아래 답변 칸에 채웠습니다. <strong>근거와 맞는지 확인하고 고친 뒤 저장하세요.</strong>
-              <small class="d-block text-muted">모델 {{ draft.model }} · {{ draft.seconds|floatformat:1 }}초</small>
-            </div>
+          <div class="dg-draft__state dg-draft__state--ok">
+            <p>초안을 답변 칸에 채웠어요. <strong>근거와 맞는지 확인하고 고친 뒤 보내세요.</strong></p>
+            <p class="dg-small dg-muted">모델 {{ draft.model }} · <span class="dg-num">{{ draft.seconds|floatformat:1 }}</span>초</p>
+          </div>
           {% elif draft.status == 'insufficient_evidence' %}
-            <div class="alert alert-secondary mt-3 mb-2">관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요.</div>
+          <div class="dg-draft__state">관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요.</div>
           {% else %}
-            <div class="alert alert-danger mt-3 mb-2">초안을 만들지 못했습니다.</div>
+          <div class="dg-draft__state dg-draft__state--error">초안을 만들지 못했습니다.</div>
           {% endif %}
 
           {% if draft.status != 'insufficient_evidence' %}
             {% for warning in draft.warnings %}
-              <div class="alert alert-warning py-2 mb-2">{{ warning }}</div>
+            <p class="dg-draft__warn">{{ warning }}</p>
             {% endfor %}
           {% endif %}
 
           {% if draft.evidence and draft.status != 'error' %}
-            <details class="draft-evidence" {% if draft.status == 'ok' %}open{% endif %}>
-              <summary>근거 {{ draft.evidence|length }}개</summary>
-              <ol>
-                {% for hit in draft.evidence %}
-                  <li class="{% if forloop.counter in draft.cited %}cited{% endif %}">
+          <details class="dg-draft__evidence"{% if draft.status == 'ok' %} open{% endif %}>
+            <summary>근거 <span class="dg-num">{{ draft.evidence|length }}</span>개</summary>
+            <ol>
+              {% for hit in draft.evidence %}
+              <li{% if forloop.counter in draft.cited %} class="is-cited"{% endif %}>
+                <span class="dg-draft__num dg-num">{{ forloop.counter }}</span>
+                <div>
+                  <div class="dg-draft__title">
                     {% if hit.chunk.url %}<a href="{{ hit.chunk.url }}" target="_blank" rel="noopener">{{ hit.chunk.title }}</a>{% else %}{{ hit.chunk.title }}{% endif %}
-                    {% if forloop.counter in draft.cited %}<span class="badge bg-primary">인용됨</span>{% endif %}
-                    {% if hit.similarity is not None %}<small class="text-muted">유사도 {{ hit.similarity|floatformat:2 }}</small>{% endif %}
-                    <div class="evidence-text">{{ hit.chunk.content|truncatechars:160 }}</div>
-                  </li>
-                {% endfor %}
-              </ol>
-            </details>
+                    {% if forloop.counter in draft.cited %}<span class="dg-draft__cited">인용됨</span>{% endif %}
+                    {% if hit.similarity is not None %}<span class="dg-small dg-muted dg-num">유사도 {{ hit.similarity|floatformat:2 }}</span>{% endif %}
+                  </div>
+                  <p class="dg-draft__excerpt">{{ hit.chunk.content|truncatechars:160 }}</p>
+                </div>
+              </li>
+              {% endfor %}
+            </ol>
+          </details>
           {% endif %}
         {% endif %}
-      </div>
-
-      <form method="post" action="{% url 'web:inquiry_detail' inquiry.pk %}">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">저장</button>
-      </form>
-    {% endif %}
-
-    <div class="mt-4">
-      <a href="{% url 'web:mypage' %}" class="btn btn-outline-secondary">← 마이페이지로 돌아가기</a>
+      </section>
     </div>
+    {% endif %}
   </div>
-</body>
-</html>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if is_admin %}
+<script>
+  // 초안은 수십 초 걸릴 수 있어 두 번 누르지 않도록 버튼을 막고 진행 중임을 알린다
+  (function () {
+    var form = document.querySelector('[data-draft-form]');
+    if (!form) return;
+    var button = form.querySelector('button');
+    var busy = form.querySelector('.dg-draft__busy');
+    var label = button.textContent;
+    form.addEventListener('submit', function () {
+      button.disabled = true;
+      button.textContent = '초안 만드는 중…';
+      busy.textContent = '수십 초 걸릴 수 있어요. 이 화면을 닫지 마세요.';
+    });
+    // 뒤로 가기로 돌아왔을 때(bfcache) 버튼을 다시 쓸 수 있게
+    window.addEventListener('pageshow', function () {
+      button.disabled = false;
+      button.textContent = label;
+      busy.textContent = '';
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}
