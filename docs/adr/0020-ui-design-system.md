@@ -61,3 +61,7 @@
 
 - `tools/snapshot.py` 화면 비교로 바뀐 화면이 의도한 화면인지 확인한다.
 - Chrome으로 휴대폰(390px), 태블릿(768px), PC(1280px) 화면을 캡처해 확인한다.
+
+## 진행 결과 (2026-10-31)
+
+PR #66–#75로 화면 30개를 모두 옮겼고, #76에서 예전 테마 파일을 지웠다: `templates/base.html`, `_theme_css.html`, `_theme_js.html`, `static/` 아래 테마 CSS·JS·글꼴·이미지·Sass(Bootstrap 3·5, jQuery와 플러그인 12개 포함). 남은 정적 파일은 `css/dorm-shell.css`, `css/dorm.css`, `js/dorm-shell.js`, `js/dorm-map.js` 네 개다.

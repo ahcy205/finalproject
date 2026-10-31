@@ -1,6 +1,6 @@
 # 0004. 화면 공통 부분은 include 조각으로 나눈다
 
-- 상태: 채택
+- 상태: 채택 (테마 조각 `_theme_css.html`·`_theme_js.html`은 2026-10-31 화면 개편으로 없어짐 → [ADR 0020](0020-ui-design-system.md). `_nav.html`은 계속 씀)
 - 날짜: 2026-10-26
 
 ## 배경

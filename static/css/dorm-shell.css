@@ -1,6 +1,6 @@
 /*
  * 돔고돔락 공통 틀: 색·글꼴 기준, 상단 메뉴, 모바일 서랍, 알림 (docs/adr/0020)
- * 예전 테마를 쓰는 화면에도 같이 들어가므로, 선택자는 모두 .dg- 클래스로 한정한다.
+ * 선택자는 모두 .dg- 클래스로 한정한다(본문 CSS dorm.css와 겹치지 않게).
  */
 :root {
   --dg-bg: #F4F6F5;
@@ -190,5 +190,3 @@
   .dg-bar *, .dg-toast { transition: none !important; animation: none !important; }
 }
 
-/* 예전 테마(main.js)가 만드는 모바일 메뉴 버튼은 새 메뉴와 겹치므로 숨긴다. 모든 화면을 옮기면 지운다 */
-.js-fh5co-nav-toggle, #fh5co-offcanvas { display: none !important; }

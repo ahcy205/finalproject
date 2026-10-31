@@ -80,9 +80,8 @@ flowchart LR
 ### Frontend
 - HTML5
 - Django Template
-- Bootstrap
 - JavaScript
-- UI 기반: [FreeHTML5.co](https://freehtml5.co/) 무료 템플릿 ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))
+- 화면: 직접 만든 CSS(`static/css/dorm-shell.css`, `dorm.css`), Pretendard 글꼴. 디자인 기준은 [ADR 0020](docs/adr/0020-ui-design-system.md)
 
 ### Mobile
 - Kotlin (Android Studio)
