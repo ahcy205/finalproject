@@ -19,7 +19,7 @@ body.dg-page {
 .dg-page ul, .dg-page ol { padding: 0; list-style: none; }
 .dg-page a { color: var(--dg-pine); text-underline-offset: 3px; }
 .dg-page a:hover { color: var(--dg-pine-700); }
-.dg-page :focus-visible { outline: none; box-shadow: var(--dg-focus); border-radius: var(--dg-radius-plate); }
+.dg-page :focus-visible { outline: none; box-shadow: var(--dg-focus); } /* 모서리는 각 부품 것을 그대로 쓴다 */
 .dg-page button, .dg-page input, .dg-page select, .dg-page textarea { font: inherit; color: inherit; }
 .dg-num { font-variant-numeric: tabular-nums; letter-spacing: 0; }
 
@@ -122,7 +122,7 @@ body.dg-page {
 textarea.dg-input { min-height: 112px; resize: vertical; }
 .dg-input:hover { border-color: var(--dg-ink-3); }
 .dg-page .dg-input:focus, .dg-page .dg-input:focus-visible {
-  outline: none; border-color: var(--dg-pine); box-shadow: 0 0 0 3px rgba(31, 94, 75, .18); border-radius: var(--dg-radius);
+  outline: none; border-color: var(--dg-pine); box-shadow: 0 0 0 3px rgba(31, 94, 75, .18);
 }
 .dg-input[aria-invalid="true"] { border-color: var(--dg-danger); }
 .dg-choice { display: flex; gap: 8px; }
