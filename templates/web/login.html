@@ -13,7 +13,7 @@ next(로그인 뒤 갈 주소)는 숨은 칸으로 그대로 보내고, 같은 �
       <p class="dg-pagehead__meta">생활관 계정으로 로그인해요</p>
     </header>
     {% if next %}
-    <p class="dg-note">로그인이 필요한 페이지입니다. 로그인하면 요청한 페이지로 이동합니다.</p>
+    <p class="dg-note">로그인이 필요한 화면이에요. 로그인하면 보려던 화면으로 돌아가요.</p>
     {% endif %}
     <form class="dg-form" method="post" action="{% url 'web:login' %}">
       {% csrf_token %}
