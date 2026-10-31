@@ -29,7 +29,7 @@
     {% if user.is_staff %}
     <a href="{% url 'web:outside_manage' %}"{% if nav_section == 'staff' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='settings' %}<span>관리</span></a>
     {% else %}
-    <a href="{% url 'web:outside' %}"{% if nav_section == 'life' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='moon' %}<span>신청</span></a>
+    <a href="{% url 'web:outside' %}"{% if request_page %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='moon' %}<span>신청</span></a>
     {% endif %}
     <a href="{% url 'web:chatbot' %}"{% if here == 'chatbot' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='spark' %}<span>챗봇</span></a>
     <a href="{% url 'web:community_home' %}"{% if nav_section == 'community' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='board' %}<span>게시판</span></a>
