@@ -825,3 +825,8 @@ textarea.dg-input.dg-reply__input { min-height: 220px; line-height: 1.7; }
 /* 상벌점 */
 .dg-points-form { max-width: 520px; }
 .dg-points-form__num { max-width: 200px; }
+
+/* 탭 줄: 링크의 -1px 아래 여백 때문에 세로로 넘쳐 Windows에서 세로 스크롤바가 생겼다.
+   세로는 자르고, 좁은 화면의 가로 스크롤은 남기되 스크롤바는 그리지 않는다 */
+.dg-tabs { overflow-y: hidden; scrollbar-width: none; }
+.dg-tabs::-webkit-scrollbar { display: none; }
