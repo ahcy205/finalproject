@@ -1693,6 +1693,21 @@ class SoftAppShellTests(TestCase):
             with self.subTest(message=text):
                 self.assertNotRegex(text, r'니다[.!]?$')
 
+    def test_every_details_uses_the_shared_chevron_not_the_browser_triangle(self):
+        """접는 칸(<details>)마다 브라우저 기본 삼각형(▶) 대신 화면의 꺾쇠 모양을 쓴다."""
+        css = ''
+        for filename in ('dorm.css', 'dorm-soft.css'):
+            with open(os.path.join(os.path.dirname(self.TEMPLATE_DIR), '..', 'static', 'css', filename), encoding='utf-8') as f:
+                css += f.read()
+        classes = set()
+        for filename in os.listdir(self.TEMPLATE_DIR):
+            with open(os.path.join(self.TEMPLATE_DIR, filename), encoding='utf-8') as f:
+                classes.update(re.findall(r'<details class="([\w-]+)', f.read()))
+        self.assertGreaterEqual(len(classes), 5)
+        for name in sorted(classes):
+            with self.subTest(details=name):
+                self.assertRegex(css, r'\.' + name + r'(\[open\])?\s*>?\s*summary\s*\{[^}]*list-style:\s*none')
+
     def test_every_icon_used_in_templates_draws_something(self):
         """아이콘 이름을 잘못 쓰면 빈 <svg>가 조용히 그려진다. 템플릿이 쓰는 이름마다 그림이 있는지 확인한다."""
         from django.template.loader import render_to_string
