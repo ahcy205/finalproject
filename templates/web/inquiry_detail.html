@@ -65,9 +65,9 @@ AI 초안은 POST /inquiry/<id>/draft/ 가 답변 칸에 채워 다시 그린다
             <p class="dg-small dg-muted">모델 {{ draft.model }} · <span class="dg-num">{{ draft.seconds|floatformat:1 }}</span>초</p>
           </div>
           {% elif draft.status == 'insufficient_evidence' %}
-          <div class="dg-draft__state">관련 근거를 찾지 못해 초안을 만들지 않았습니다. 직접 답변해 주세요.</div>
+          <div class="dg-draft__state">관련 근거를 찾지 못해 초안을 만들지 않았어요. 직접 답변해 주세요.</div>
           {% else %}
-          <div class="dg-draft__state dg-draft__state--error">초안을 만들지 못했습니다.</div>
+          <div class="dg-draft__state dg-draft__state--error">초안을 만들지 못했어요.</div>
           {% endif %}
 
           {% if draft.status != 'insufficient_evidence' %}

@@ -242,7 +242,7 @@ def notice_update(request, notice_id):
             return redirect('web:notice_detail', pk=notice.pk)
 
         if 'image' in form.errors:
-            error = '이미지 파일(jpg, png 등)만 올릴 수 있습니다.'
+            error = '이미지 파일(jpg, png 등)만 올릴 수 있어요.'
         else:
             error = '제목과 내용을 모두 입력해주세요.'
         # 검증 실패 시 form이 바꿔 둔 값 대신 저장된 원래 공지를 다시 보여준다
@@ -270,19 +270,19 @@ def check_in(request):
         content = request.POST.get('content')
 
         if not all([name, student_number, gender]):
-            messages.error(request, '필수 항목을 모두 입력해주세요.')
+            messages.error(request, '필수 항목을 모두 입력해 주세요.')
             return _check_in_page(request)
 
         if Dorm.objects.filter(user=request.user).exists():
-            messages.error(request, '이미 신청한 기록이 있습니다.')
+            messages.error(request, '이미 입실 신청을 했어요. 신청 현황에서 확인해 주세요.')
             return _check_in_page(request)
 
         if len(student_number) > 10:
-            messages.error(request, '학번은 10자 이하로 입력해주세요.')
+            messages.error(request, '학번은 10자 이하로 입력해 주세요.')
             return _check_in_page(request)
 
         if Dorm.objects.filter(student_number=student_number).exists():
-            messages.error(request, '이미 등록된 학번입니다. 학번을 확인해주세요.')
+            messages.error(request, '이미 신청한 학번이에요. 학번을 확인해 주세요.')
             return _check_in_page(request)
 
         Dorm.objects.create(
@@ -292,7 +292,7 @@ def check_in(request):
             gender=gender,
             content=content
         )
-        messages.success(request, '기숙사 신청이 완료되었습니다.')
+        messages.success(request, '입실 신청을 보냈어요.')
         return redirect('web:home')
 
     return _check_in_page(request)
@@ -339,7 +339,7 @@ def _save_outing(request):
     name = form.cleaned_data['name'].strip()
     student_number = form.cleaned_data['student_number'].strip()
     if name != request.user.userprofile.full_name.strip() or student_number != request.user.username.strip():
-        messages.error(request, "제출한 이름 또는 학번이 로그인 정보와 일치하지 않습니다.")
+        messages.error(request, "이름이나 학번이 로그인한 계정과 달라요.")
         return redirect('web:outside')
 
     outing = form.save(commit=False)
@@ -392,7 +392,7 @@ def approve_outing(request, pk):
     outing = get_object_or_404(OutingApply, pk=pk)
     outing.status = 'approved'
     outing.save()
-    messages.success(request, f'{outing.name} 학생의 {outing.out_date.month}월 {outing.out_date.day}일 외박을 승인했습니다.')
+    messages.success(request, f'{outing.name} 학생의 {outing.out_date.month}월 {outing.out_date.day}일 외박을 승인했어요.')
     return redirect('web:outing_info')
 
 
@@ -403,7 +403,7 @@ def reject_outing(request, pk):
     outing = get_object_or_404(OutingApply, pk=pk)
     outing.status = 'rejected'
     outing.save()
-    messages.success(request, f'{outing.name} 학생의 {outing.out_date.month}월 {outing.out_date.day}일 외박을 반려했습니다.')
+    messages.success(request, f'{outing.name} 학생의 {outing.out_date.month}월 {outing.out_date.day}일 외박을 반려했어요.')
     return redirect('web:outing_info')
 
 
@@ -450,10 +450,10 @@ def community_create(request):
             post = form.save(commit=False)
             post.author = request.user
             post.save()
-            messages.success(request, '게시글이 성공적으로 작성되었습니다.')
+            messages.success(request, '글을 올렸어요.')
             return redirect('web:community_detail', pk=post.pk)
         else:
-            messages.error(request, '게시글 작성에 실패했습니다. 다시 시도해주세요.')
+            messages.error(request, '표시한 칸을 고쳐 주세요.')
     else:
         form = PostForm()
 
@@ -508,7 +508,7 @@ def add_comment(request, pk):
             comment.author = request.user
             comment.save()
         else:
-            messages.error(request, '댓글 등록에 실패했습니다.')
+            messages.error(request, '댓글 내용을 확인해 주세요.')
 
     return redirect('web:community_detail', pk=pk)
 
@@ -520,9 +520,9 @@ def delete_comment(request, comment_id):
 
     if comment.author == request.user or request.user.is_staff:
         comment.delete()
-        messages.success(request, '댓글이 삭제되었습니다.')
+        messages.success(request, '댓글을 삭제했어요.')
     else:
-        messages.error(request, '댓글을 삭제할 권한이 없습니다.')
+        messages.error(request, '내가 쓴 댓글만 삭제할 수 있어요.')
 
     return redirect('web:community_detail', pk=post_pk)
 
@@ -538,10 +538,10 @@ def community_update(request, post_id):
         form = PostForm(request.POST, request.FILES, instance=post)  # request.FILES 추가
         if form.is_valid():
             form.save()
-            messages.success(request, '게시글이 성공적으로 수정되었습니다.')
+            messages.success(request, '글을 고쳤어요.')
             return redirect('web:community_detail', pk=post.id)
         else:
-            messages.error(request, '게시글 수정에 실패했습니다. 다시 시도해주세요.')
+            messages.error(request, '표시한 칸을 고쳐 주세요.')
     else:
         form = PostForm(instance=post)
 
@@ -655,7 +655,7 @@ def login_views(request):
                 return redirect(next_url)
             return redirect('web:home')
         else:
-            messages.error(request, "아이디 또는 비밀번호가 올바르지 않습니다.")
+            messages.error(request, "학번이나 비밀번호가 맞지 않아요.")
             return render(request, 'web/login.html', {'username': username, 'next': next_url})
 
     else:
@@ -694,7 +694,7 @@ def reward_penalty(request):
             profile.save()
             messages.success(request, f"{user.username} 학생에게 {points}점 부여 완료!")
         except User.DoesNotExist:
-            messages.error(request, "해당 학번의 사용자를 찾을 수 없습니다.")
+            messages.error(request, "이 학번으로 가입한 학생이 없어요. 학번을 확인해 주세요.")
 
         return redirect('web:reward_penalty')
 
@@ -768,5 +768,5 @@ def assign_room(request, dorm_id):
         dorm.building_name = building
 
     dorm.save()
-    messages.success(request, f'{dorm.name} 학생의 방 배정을 저장했습니다.')
+    messages.success(request, f'{dorm.name} 학생의 방 배정을 저장했어요.')
     return redirect('web:dorminfo')

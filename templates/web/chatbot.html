@@ -47,7 +47,7 @@
   <div class="dg-chat__notes">
     <p>정확한 안내가 필요하면 <a href="{% url 'web:mypage' %}?tab=inquiry">마이페이지에서 문의</a>를 남겨 주세요. 첫 질문은 AI를 준비하느라 30초 정도 걸릴 수 있어요.</p>
     <p>질문과 답은 누가 물었는지 남기지 않고 개인정보를 가린 뒤 익명으로 저장되어 챗봇 개선에만 쓰이며,
-      <span class="dg-num">{{ retention_days }}</span>일이 지나면 지워집니다. 이름·학번·연락처는 입력하지 마세요.</p>
+      <span class="dg-num">{{ retention_days }}</span>일이 지나면 지워져요. 이름·학번·연락처는 입력하지 마세요.</p>
   </div>
   {{ reasons|json_script:"feedback-reasons" }}
 </div>

@@ -369,7 +369,7 @@ class CheckInDuplicateTests(TestCase):
         response = self.client.post(reverse('web:check_in'),
                                     {'name': '김철수', 'student_number': '20250001', 'gender': 'male'})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '이미 등록된 학번입니다.')
+        self.assertContains(response, '이미 신청한 학번이에요.')
         self.assertFalse(Dorm.objects.filter(user=self.student).exists())
 
 
@@ -579,7 +579,7 @@ class DormFieldValidationTests(TestCase):
         self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
         response = self.client.post(reverse('web:check_in'),
                                     {'name': '홍길동', 'student_number': '12345678901', 'gender': 'male'})
-        self.assertContains(response, '학번은 10자 이하로 입력해주세요.')
+        self.assertContains(response, '학번은 10자 이하로 입력해 주세요.')
         self.assertFalse(Dorm.objects.exists())
 
 
@@ -693,8 +693,8 @@ class LoginRequiredLinkTests(TestCase):
 
     def test_login_page_explains_why_when_redirected(self):
         self.assertContains(self.client.get(reverse('web:login'), {'next': '/check_in/'}),
-                            '로그인이 필요한 페이지입니다.')
-        self.assertNotContains(self.client.get(reverse('web:login')), '로그인이 필요한 페이지입니다.')
+                            '로그인이 필요한 화면이에요.')
+        self.assertNotContains(self.client.get(reverse('web:login')), '로그인이 필요한 화면이에요.')
 
     def test_user_returns_to_requested_page_after_login(self):
         User.objects.create_user('20250001', password='pw12345!')
@@ -1083,7 +1083,7 @@ class ApplyFlowPageTests(TestCase):
         self.assertContains(response, 'value="20250001"')
         response = self.client.post(reverse('web:check_in'),
                                     {'name': '홍길동', 'student_number': '20250001', 'content': '조용한 방 희망'})
-        self.assertContains(response, '필수 항목을 모두 입력해주세요.')
+        self.assertContains(response, '필수 항목을 모두 입력해 주세요.')
         self.assertContains(response, '조용한 방 희망')
         self.assertFalse(Dorm.objects.exists())
 
@@ -1096,7 +1096,7 @@ class ApplyFlowPageTests(TestCase):
     def test_successful_check_in_goes_home_with_a_notice(self):
         response = self.client.post(reverse('web:check_in'),
                                     {'name': '홍길동', 'student_number': '20250001', 'gender': 'male'}, follow=True)
-        self.assertContains(response, '기숙사 신청이 완료되었습니다.')
+        self.assertContains(response, '입실 신청을 보냈어요.')
         self.assertContains(response, 'dg-toast--success')
 
     def test_no_success_alert_before_the_server_answers(self):
@@ -1527,9 +1527,9 @@ class StaffPageTests(TestCase):
         first, second = self.outing(self.student, 1), self.outing(self.student, 2)
         self.client.force_login(self.staff)
         response = self.client.post(reverse('web:approve_outing', args=[first.pk]), follow=True)
-        self.assertContains(response, '승인했습니다')
+        self.assertContains(response, '승인했어요')
         response = self.client.post(reverse('web:reject_outing', args=[second.pk]), follow=True)
-        self.assertContains(response, '반려했습니다')
+        self.assertContains(response, '반려했어요')
 
     def test_outing_status_is_written_not_only_coloured(self):
         self.outing(self.student, 1)
@@ -1682,6 +1682,16 @@ class SoftAppShellTests(TestCase):
             css = f.read()
         self.assertRegex(css, r'\.is-keyboard \.dg-tabbar\s*\{\s*display:\s*none')
         self.assertRegex(css, r'\.is-keyboard \.dg-chat__dock\s*\{\s*bottom:\s*var\(--dg-kb')
+
+    def test_toast_messages_use_the_page_voice(self):
+        """화면 알림은 화면의 다른 문장처럼 '~해요/~해 주세요'로 말한다 ('~습니다'가 섞이면 딱딱하게 읽힌다)."""
+        views_path = os.path.join(os.path.dirname(__file__), 'views.py')
+        with open(views_path, encoding='utf-8') as f:
+            calls = re.findall(r"messages\.(?:error|success|info|warning)\(request,\s*f?(['\"])(.*?)\1", f.read())
+        self.assertGreater(len(calls), 15)
+        for _, text in calls:
+            with self.subTest(message=text):
+                self.assertNotRegex(text, r'니다[.!]?$')
 
     def test_every_icon_used_in_templates_draws_something(self):
         """아이콘 이름을 잘못 쓰면 빈 <svg>가 조용히 그려진다. 템플릿이 쓰는 이름마다 그림이 있는지 확인한다."""
