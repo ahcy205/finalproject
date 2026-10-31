@@ -1,0 +1,20 @@
+{% comment %}셔틀 시간표 한 방향 (web/info_pages.bus_routes). 정류장은 열, 편은 줄. 사용: include with direction=... title=... caption=...{% endcomment %}
+<div class="dg-tablewrap">
+  <table class="dg-table dg-timetable">
+    <caption class="dg-sr">{{ caption }}</caption>
+    <thead><tr>
+      <th scope="col" class="dg-timetable__bus">차량</th>
+      {% for stop in direction.stops %}<th scope="col">{{ stop }}</th>{% endfor %}
+    </tr></thead>
+    <tbody>
+      {% for row in direction.rows %}
+      <tr{% if row.is_next %} class="is-next"{% elif row.skip %} class="is-skip"{% endif %}>
+        <th scope="row" class="dg-timetable__bus">{{ row.bus }}{% if row.is_next %}<span class="dg-sr">, 다음 출발</span>{% endif %}</th>
+        {% if row.skip %}<td class="dg-timetable__skip" colspan="{{ direction.stops|length }}">{{ row.skip }}</td>
+        {% else %}{% for cell in row.cells %}<td class="dg-num">{% if not cell.time %}<span class="dg-timetable__dash" aria-hidden="true">–</span><span class="dg-sr">운행 안 함</span>{% elif row.is_next and forloop.first %}<span class="dg-plate dg-plate--now dg-plate--sm">{{ cell.time }}</span>{% else %}{{ cell.time }}{% endif %}</td>{% endfor %}
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

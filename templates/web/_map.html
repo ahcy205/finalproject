@@ -1,0 +1,13 @@
+{% comment %}
+카카오 지도 칸 (셔틀버스·주변 편의시설). 키는 settings.KAKAO_MAP_KEY(환경변수)에서 온다.
+키가 없거나 지도를 불러오지 못하면 안내 문구를 보여 주고, 화면의 시간표·목록은 그대로 쓸 수 있다.
+사용: {% include 'web/_map.html' with label="노선 지도" fallback="위 시간표를 이용해 주세요." %}
+스크립트는 block scripts에서 {% include 'web/_map_js.html' %} 뒤에 window.dgMapReady(function (el) {...}) 로 그린다.
+{% endcomment %}
+<div class="dg-map{% if not kakao_map_key %} dg-map--off{% endif %}" data-map>
+  {% if kakao_map_key %}<div class="dg-map__canvas" role="region" aria-label="{{ label }}"></div>{% endif %}
+  <div class="dg-map__fallback"{% if kakao_map_key %} hidden{% endif %}>
+    <p><strong>지도를 불러오지 못했어요.</strong> {{ fallback }}</p>
+    {% if user.is_staff and not kakao_map_key %}<p class="dg-small">관리자 안내: 지도를 보려면 KAKAO_MAP_KEY 환경변수가 필요해요.</p>{% endif %}
+  </div>
+</div>

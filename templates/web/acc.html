@@ -1,172 +1,114 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>돔고돔락</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+주변 편의시설 (docs/adr/0020). 장소 목록은 web/info_pages.PLACES.
+지도 없이도 쓸 수 있도록 목록을 함께 보여 주고, 목록을 누르면 지도에서 그 장소를 연다.
+분류 버튼(aria-pressed)은 목록과 지도를 함께 거른다(자바스크립트가 있을 때만 보인다).
+{% endcomment %}
+{% block title %}주변 편의시설{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead"><h1>주변 편의시설</h1></header>
 
+  <div class="dg-seg" role="group" aria-label="분류로 걸러 보기" data-filter hidden>
+    <button type="button" class="dg-seg__btn" data-category="" aria-pressed="true">전체</button>
+    {% for category in categories %}<button type="button" class="dg-seg__btn" data-category="{{ category }}" aria-pressed="false">{{ category }}</button>{% endfor %}
+  </div>
 
-	{% include 'web/_theme_css.html' %}
-
-  <meta charset="utf-8">
-  <title>편의시설</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    body {
-      margin: 0;
-      background-color: #f3dede;
-      font-family: 'Noto Sans KR', sans-serif;
-    }
-
-    .header-bar {
-      position: relative;
-      width: 100%;
-      height: 80px;
-      background-color: #f3dede;
-      padding-left: 30px;
-      display: flex;
-      align-items: center;
-    }
-
-    .button-group {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .button-group button {
-      border: none;
-      background-color: #ffffff;
-      border-radius: 4px;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 14px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .button-group button:hover {
-      background-color: #e9ecef;
-    }
-
-    .section-title {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 22px;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-
-    #map { height: 70vh; width: 100%; }
-  </style>
-</head>
-
-<body>
-
-
-<div id="page">
-   {% include 'web/_nav.html' %}
-
-<div class="container d-flex justify-content-center my-3">
-  <div style=" width: 100%;">
-      <!-- 제목: 한 줄에 단독으로 배치 -->
-      <div class="container mt-4 text-center">
-          <h2 class="fw-bold">편의시설</h2>
-      </div>
-
-        <!-- 버튼: 아래에 따로 정렬 -->
-      <div class="container d-flex justify-content-center mb-2">
-      <div class="btn-group" role="group">
-      <button class="btn btn-light" onclick="filterMarkers('식당')">식당</button>
-      <button class="btn btn-light" onclick="filterMarkers('편의점')">편의점</button>
-      <button class="btn btn-light" onclick="filterMarkers('카페')">카페</button>
-      <button class="btn btn-light" onclick="filterMarkers('주유소')">주유소</button>
-      <button class="btn btn-light" onclick="filterMarkers('전체')">전체 보기</button>
-      </div>
-      </div>
-
-    <div id="map" style=" border-radius: 10px;"></div>
+  <div class="dg-places">
+    <div class="dg-places__map">
+      {% include 'web/_map.html' with label="주변 편의시설 지도" fallback="아래 목록을 이용해 주세요." %}
+    </div>
+    <section class="dg-places__list" aria-labelledby="places-title">
+      <h2 id="places-title" class="dg-sr">장소 목록</h2>
+      <p class="dg-places__count dg-small dg-muted" aria-live="polite" data-count>학교 주변 <span class="dg-num">{{ places|length }}</span>곳</p>
+      <ul class="dg-placelist">
+        {% for place in places %}
+        <li data-category="{{ place.category }}">
+          {% if kakao_map_key %}
+          <button type="button" class="dg-place" data-place="{{ place.id }}">
+            <span class="dg-place__name">{{ place.title }}</span><span class="dg-place__cat">{{ place.category }}</span>
+          </button>
+          {% else %}
+          <div class="dg-place"><span class="dg-place__name">{{ place.title }}</span><span class="dg-place__cat">{{ place.category }}</span></div>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
   </div>
 </div>
+{{ places|json_script:"places-data" }}
+{% endblock %}
+{% block scripts %}
+{% include 'web/_map_js.html' %}
+<script>
+  (function () {
+    var places = JSON.parse(document.getElementById('places-data').textContent);
+    var filter = document.querySelector('[data-filter]');
+    var buttons = filter.querySelectorAll('[data-category]');
+    var items = document.querySelectorAll('.dg-placelist > li');
+    var count = document.querySelector('[data-count] .dg-num');
+    var map = null, info = null, markers = {}, current = '';
 
-  <!-- Kakao 지도 API -->
-  <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=aca3f50bafe4f955bd781786417506fb&libraries=services,geometry"></script>
-  <script>
-    const locations = [
-      { lat: 36.8514, lng: 127.0615, title: "중앙 정류장", category: "정류장" },
-      { lat: 36.8505, lng: 127.0620, title: "GS25", category: "편의점" },
-      { lat: 36.8505, lng: 127.0620, title: "블루포트 카페", category: "카페" },
-      { lat: 36.8506, lng: 127.0606, title: "교내식당", category: "식당" },
-      { lat: 36.8498, lng: 127.0510, title: "이마트 24", category: "편의점" },
-      { lat: 36.8499, lng: 127.0510, title: "삼순이 감자탕", category: "식당" },
-      { lat: 36.8496, lng: 127.0511, title: "커피에 반하다", category: "카페" },
-      { lat: 36.8495, lng: 127.0511, title: "기봉이 김밥", category: "식당" },
-      { lat: 36.8494, lng: 127.0512, title: "도향", category: "식당" },
-      { lat: 36.8456, lng: 127.0449, title: "CU", category: "편의점" },
-      { lat: 36.8456, lng: 127.0449, title: "카페 온더웨이", category: "카페" },
-      { lat: 36.8455, lng: 127.0472, title: "GS25", category: "편의점" },
-      { lat: 36.8450, lng: 127.0481, title: "SK 주유소", category: "주유소" },
-      { lat: 36.8462, lng: 127.0505, title: "이레 관광농원 대동 소머리국밥", category: "식당" },
-      { lat: 36.8450, lng: 127.0478, title: "세븐일레븐", category: "편의점" },
-    ];
+    function show(place) { return !current || place.category === current; }
 
-let map;
-let markers = [];
-
-window.onload = function () {
-  const mapCenter = new kakao.maps.LatLng(36.8514, 127.0615);
-
-  map = new kakao.maps.Map(document.getElementById('map'), {
-    center: mapCenter,
-    level: 6
-  });
-
-  // 마커 생성하되 지도에는 표시하지 않음
-  locations.forEach(loc => {
-    const marker = new kakao.maps.Marker({
-      position: new kakao.maps.LatLng(loc.lat, loc.lng),
-      map: null,
-      title: loc.title  // 마커의 title 속성도 설정해둠 (기본 툴팁)
-    });
-
-    // 인포윈도우 생성
-    const infoWindow = new kakao.maps.InfoWindow({
-      content: `<div style="padding:5px;font-size:13px;">${loc.title}</div>`,
-    });
-
-    // 마우스 올리면 인포윈도우 표시
-    kakao.maps.event.addListener(marker, 'mouseover', function () {
-      infoWindow.open(map, marker);
-    });
-
-    // 마우스 나가면 인포윈도우 닫기
-    kakao.maps.event.addListener(marker, 'mouseout', function () {
-      infoWindow.close();
-    });
-
-    marker.category = loc.category;
-    marker.infoWindow = infoWindow;  // 필요 시 닫기 위해 저장
-    markers.push(marker);
-  });
-};
-
-function filterMarkers(category) {
-  markers.forEach(marker => {
-    if (category === '전체' || marker.category === category) {
-      marker.setMap(map);
-    } else {
-      marker.setMap(null);
-      marker.infoWindow.close();  // 숨길 때 인포윈도우도 닫음
+    function apply(category) {
+      current = category;
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.category === category)); });
+      var shown = 0;
+      items.forEach(function (li) {
+        li.hidden = !!category && li.dataset.category !== category;
+        if (!li.hidden) shown++;
+      });
+      count.textContent = shown;
+      if (!map) return;
+      places.forEach(function (p) { markers[p.id].setMap(show(p) ? map : null); });
+      if (info) info.close();
     }
-  });
-}
 
-  </script>
-</div>
-</body>
-</html>
+    function open(id) {
+      var place = places.filter(function (p) { return p.id === id; })[0];
+      if (!map || !place) return;
+      var label = document.createElement('div');
+      label.className = 'dg-mapinfo';
+      var name = document.createElement('strong');
+      name.textContent = place.title;
+      var cat = document.createElement('span');
+      cat.textContent = place.category;
+      label.appendChild(name);
+      label.appendChild(cat);
+      info.setContent(label);
+      info.open(map, markers[id]);
+      map.panTo(markers[id].getPosition());
+      document.querySelectorAll('.dg-place[aria-current]').forEach(function (b) { b.removeAttribute('aria-current'); });
+      var item = document.querySelector('.dg-place[data-place="' + id + '"]');
+      if (item) item.setAttribute('aria-current', 'true');
+    }
+
+    filter.hidden = false;
+    buttons.forEach(function (b) { b.addEventListener('click', function () { apply(b.dataset.category); }); });
+    document.querySelectorAll('button.dg-place').forEach(function (b) {
+      b.addEventListener('click', function () {
+        open(Number(b.dataset.place));
+        var box = document.querySelector('[data-map]');
+        if (box && box.getBoundingClientRect().top < 0) box.scrollIntoView({ block: 'start' });
+      });
+    });
+
+    window.dgMapReady(function (el) {
+      map = new kakao.maps.Map(el, { center: new kakao.maps.LatLng(36.8490, 127.0540), level: 5 });
+      info = new kakao.maps.InfoWindow({ removable: true });
+      var bounds = new kakao.maps.LatLngBounds();
+      places.forEach(function (p) {
+        var position = new kakao.maps.LatLng(p.lat, p.lng);
+        bounds.extend(position);
+        var marker = new kakao.maps.Marker({ map: map, position: position, title: p.title });
+        kakao.maps.event.addListener(marker, 'click', function () { open(p.id); });
+        markers[p.id] = marker;
+      });
+      map.setBounds(bounds, 32, 32, 32, 32);
+      apply(current);
+    });
+  })();
+</script>
+{% endblock %}

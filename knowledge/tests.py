@@ -1,3 +1,4 @@
+import re
 import io
 import json
 import math
@@ -60,11 +61,18 @@ class RegulationPagesTests(TestCase):
             doc = sources.load(page)
             for section in doc['sections']:
                 for article in section['articles']:
-                    self.assertIn(f'<strong>{article["title"]}</strong>', html)
+                    # 제목은 "제3조 (생활규범)" → 번호와 이름으로 나눠 제목 태그에 보여 준다 (docs/adr/0020)
+                    found = re.match(r'^(제\s*\d+\s*조(?:의\s*\d+)?)\s*(?:\((.*)\))?\s*$', article['title'])
+                    label, name = (found.group(1), found.group(2)) if found else (article['title'], None)
+                    anchor = f'article-{article["number"]}' if article.get('number') else 'article-addenda'
+                    self.assertIn(f'id="{anchor}" class="dg-clause__title"><span class="dg-clause__no">{label}</span>', html)
+                    if name:
+                        self.assertIn(f'<span>{name}</span>', html)
 
     def test_rules_page_shows_the_penalty_table(self):
         response = self.client.get(reverse('web:rules'))
-        self.assertContains(response, '<td>관내 흡연</td><td>퇴관</td>')
+        self.assertRegex(response.content.decode(),
+                         r'<td>관내 흡연</td>\s*<td class="dg-table__num dg-penalties__out">퇴관</td>')
         self.assertContains(response, '1시간당 2점 감면')
 
     def test_quotes_are_escaped_safely(self):
@@ -106,15 +114,19 @@ class TableDataTests(TestCase):
     def test_bus_page_shows_both_routes_from_the_data(self):
         response = self.client.get(reverse('web:bus'))
         self.assertContains(response, 'id="table-terminal"')
-        self.assertContains(response, 'id="table-asan" style="display: none;"')
-        self.assertContains(response, '<td>(1호차)</td><td>08:25</td>')
-        self.assertContains(response, '<th class="text-center" scope="col">천안 아산역(KTX)</th>')
+        self.assertNotContains(response, 'id="table-asan"')  # 노선 탭: 한 번에 한 노선 (?route=)
+        self.assertRegex(response.content.decode(),
+                         r'<th scope="row" class="dg-timetable__bus">1호차</th>\s*<td class="dg-num">08:25</td>')
+        asan = self.client.get(reverse('web:bus'), {'route': 'asan'})
+        self.assertContains(asan, 'id="table-asan"')
+        self.assertContains(asan, '<th scope="col">천안 아산역(KTX)</th>')
 
     def test_menu_page_shows_meals_and_escapes_ampersand(self):
         response = self.client.get(reverse('web:menu'))
-        self.assertContains(response, '<td class="time-col" rowspan="3">중식<br>(4,500원)</td>')
-        self.assertContains(response, '<td>상추쌈&amp;쌈장</td>')
-        self.assertNotContains(response, '</span></td>')
+        self.assertContains(response, '<span class="dg-menu__mealname">중식</span>')
+        self.assertContains(response, '<span class="dg-muted">4,500원</span>')
+        self.assertContains(response, '<li>상추쌈&amp;쌈장</li>')
+        self.assertNotContains(response, '상추쌈&amp;amp;')
 
 
 class PrivacyTests(TestCase):

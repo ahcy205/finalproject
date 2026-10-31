@@ -509,7 +509,10 @@ class SharedThemeAssetTests(TestCase):
     """테마 CSS·JS는 _theme_css.html / _theme_js.html 에서 한 번씩만 로드된다."""
 
     def test_theme_css_and_js_load_once(self):
-        response = self.client.get(reverse('web:bus'))
+        # 예전 테마를 아직 쓰는 화면은 챗봇뿐이다 (7단계에서 옮김)
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        with mock.patch('web.views.start_warm_up'):
+            response = self.client.get(reverse('web:chatbot'))
         self.assertContains(response, 'css/style.css', count=1)
         self.assertContains(response, 'js/main.js', count=1)
         self.assertContains(response, 'css/dorm-shell.css', count=1)
@@ -1171,3 +1174,126 @@ class BoardPageTests(TestCase):
                 text = f.read()
             for dead in ('alert(', 'confirm(', 'localStorage', 'notice-body', 'simplyCountdown', 'onsubmit', 'oninput'):
                 self.assertNotIn(dead, text, f'{name}: {dead}')
+
+
+class InfoPageTests(TestCase):
+    """안내 화면(규칙·안내·식단·셔틀·편의시설)을 새 디자인으로 (docs/adr/0020, 6단계)."""
+    OLD_KAKAO_KEY = 'aca3f50bafe4f955bd781786417506fb'
+    PAGES = ('web:rules', 'web:info', 'web:menu', 'web:bus', 'web:acc')
+
+    def at(self, *args):
+        from datetime import datetime
+        return timezone.make_aware(datetime(*args))
+
+    def test_info_pages_use_only_the_new_css(self):
+        for name in self.PAGES:
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'css/dorm.css', count=1)
+                self.assertContains(response, 'css/dorm-shell.css', count=1)
+                for old in ('css/style.css', 'bootstrap', 'jquery', 'js/main.js', 'fh5co', '#f3dede', 'Noto Sans KR'):
+                    self.assertNotContains(response, old)
+
+    def test_rules_have_a_table_of_contents_with_article_anchors(self):
+        response = self.client.get(reverse('web:rules'))
+        self.assertContains(response, 'href="#article-3"')
+        self.assertContains(response, 'id="article-3"')
+        self.assertContains(response, 'id="article-14-2"')
+        self.assertContains(response, 'href="#penalties"')
+        self.assertContains(response, '<h2 id="article-1"', html=False)
+        self.assertNotContains(response, '<br>')
+
+    def test_rules_penalty_table_is_a_real_table(self):
+        response = self.client.get(reverse('web:rules'))
+        html = response.content.decode()
+        table = html[html.index('id="penalties"'):]
+        self.assertIn('class="dg-table', table)
+        self.assertIn('<th scope="col">위반내용</th>', table)
+        self.assertIn('class="dg-table__num">3점</td>', table)
+        self.assertContains(response, '벌점 20점 이상 또는 퇴관 사유 위반 시')
+
+    def test_info_has_chapters_and_articles_as_headings(self):
+        response = self.client.get(reverse('web:info'))
+        self.assertContains(response, '<h2 id="chapter-1"', html=False)
+        self.assertContains(response, '<h3 id="article-26"', html=False)
+        self.assertContains(response, 'href="#article-26"')
+        self.assertContains(response, '관생 인원 점검 (매일 24:00)</li>')
+
+    def test_menu_marks_today_by_weekday(self):
+        from knowledge import sources
+        from web.info_pages import week_menu
+        friday = week_menu(sources.load('menu'), self.at(2026, 10, 30, 9, 0))
+        self.assertEqual([d['is_today'] for d in friday['days']], [False, False, False, False, True])
+        self.assertEqual(friday['meals'][0]['time'], '11:00–13:30')
+        self.assertEqual(friday['days'][4]['meals'][0]['dishes'], ['잔치국수', '떡갈비', '영양고추치'])
+        saturday = week_menu(sources.load('menu'), self.at(2026, 10, 31, 9, 0))
+        self.assertFalse(any(d['is_today'] for d in saturday['days']))
+        self.assertTrue(saturday['weekend'])
+
+    def test_menu_page_shows_notes_and_today(self):
+        with mock.patch('web.views.timezone.localtime', return_value=self.at(2026, 10, 28, 9, 0)):  # 수요일
+            response = self.client.get(reverse('web:menu'))
+        self.assertContains(response, '한 주의 예시 식단입니다')
+        self.assertContains(response, 'dg-menu__day is-today', count=1)
+        self.assertContains(response, '<details class="dg-menuday is-today" open>', html=False)
+
+    def test_bus_marks_the_next_departure_from_school(self):
+        from knowledge import sources
+        from web.info_pages import bus_routes
+        routes = {r['key']: r for r in bus_routes(sources.load('bus'), self.at(2026, 10, 30, 12, 30))}
+        terminal = routes['terminal']
+        self.assertEqual(terminal['next'], '13:40')
+        marked = [row for row in terminal['inbound']['rows'] if row['is_next']]
+        self.assertEqual([row['cells'][0]['time'] for row in marked], ['13:40'])
+        self.assertFalse(any(row['is_next'] for row in terminal['outbound']['rows']))
+        skipped = [row for row in terminal['outbound']['rows'] if row['skip']]
+        self.assertEqual(skipped[0]['skip'], '운행 안 함')
+        self.assertEqual(routes['asan']['next'], '14:00')
+        late = bus_routes(sources.load('bus'), self.at(2026, 10, 30, 22, 0))
+        self.assertTrue(all(r['next'] is None for r in late))
+
+    def test_bus_route_tabs_and_tables(self):
+        response = self.client.get(reverse('web:bus'))
+        self.assertContains(response, 'href="?route=terminal" aria-current="page"')
+        self.assertContains(response, '학교에서 나가는 편')
+        self.assertContains(response, '학교로 오는 편')
+        self.assertContains(response, 'id="table-terminal"')
+        self.assertNotContains(response, 'id="table-asan"')
+        self.assertNotContains(response, '&lt;--')
+        asan = self.client.get(reverse('web:bus'), {'route': 'asan'})
+        self.assertContains(asan, 'id="table-asan"')
+        self.assertContains(asan, '휴게 시간')
+        self.assertEqual(self.client.get(reverse('web:bus'), {'route': 'nope'}).status_code, 200)
+
+    def test_acc_lists_every_place_without_the_map(self):
+        from web.info_pages import PLACES
+        response = self.client.get(reverse('web:acc'))
+        for place in PLACES:
+            self.assertContains(response, place['title'])
+        self.assertContains(response, 'aria-pressed="true"')
+
+    @override_settings(KAKAO_MAP_KEY='')
+    def test_map_pages_render_a_fallback_without_the_key(self):
+        for name in ('web:acc', 'web:bus'):
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 200)
+                self.assertNotContains(response, 'dapi.kakao.com')
+                self.assertContains(response, '지도를 불러오지 못했어요')
+
+    @override_settings(KAKAO_MAP_KEY='test-key-123')
+    def test_map_pages_load_the_map_with_the_key_from_settings(self):
+        for name in ('web:acc', 'web:bus'):
+            with self.subTest(name=name):
+                self.assertContains(self.client.get(reverse(name)),
+                                    'dapi.kakao.com/v2/maps/sdk.js?appkey=test-key-123', count=1)
+
+    def test_kakao_key_is_read_from_the_environment(self):
+        from django.conf import settings
+        self.assertTrue(hasattr(settings, 'KAKAO_MAP_KEY'))
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
+        for root, _, files in os.walk(template_dir):
+            for name in files:
+                with open(os.path.join(root, name), encoding='utf-8') as f:
+                    self.assertNotIn(self.OLD_KAKAO_KEY, f.read(), name)

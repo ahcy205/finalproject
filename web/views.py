@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -19,6 +20,7 @@ from knowledge.models import ChatLog
 from dorm.models import Notice, UserProfile, Post, Comment, Inquiry, InquiryAnswer, Dorm, OutingApply, Like
 from django.shortcuts import get_object_or_404
 
+from web import info_pages
 from web.home import today_board
 from web.forms import CustomSignupForm, CommentForm, PostForm, InquiryForm, InquiryAnswerForm, OutingApplyForm, \
     NoticeForm, ChatQuestionForm, ChatFeedbackForm
@@ -253,7 +255,8 @@ def notice_update(request, notice_id):
 
 
 def menu(request):
-    return render(request, 'web/menu.html', {'doc': knowledge_sources.load('menu')})
+    return render(request, 'web/menu.html',
+                  {'week': info_pages.week_menu(knowledge_sources.load('menu'), timezone.localtime())})
 
 @login_required
 def check_in(request):
@@ -529,16 +532,26 @@ def community_update(request, post_id):
     return render(request, 'web/community_update.html', {'post': post})
 
 def bus(request):
-    return render(request, 'web/bus.html', {'doc': knowledge_sources.load('bus')})
+    now = timezone.localtime()
+    routes = info_pages.bus_routes(knowledge_sources.load('bus'), now)
+    keys = [route['key'] for route in routes]
+    key = request.GET.get('route')
+    route = routes[keys.index(key)] if key in keys else routes[0]  # 모르는 값은 첫 노선
+    return render(request, 'web/bus.html', {'routes': routes, 'route': route, 'now': now,
+                                            'kakao_map_key': settings.KAKAO_MAP_KEY})
 
 def acc(request):
-    return render(request, 'web/acc.html')
+    return render(request, 'web/acc.html', {'places': info_pages.places(), 'categories': info_pages.CATEGORIES,
+                                            'kakao_map_key': settings.KAKAO_MAP_KEY})
 
 def info(request):
-    return render(request, 'web/info.html', {'doc': knowledge_sources.load('info')})
+    doc = knowledge_sources.load('info')
+    return render(request, 'web/info.html', {'doc': doc, 'sections': info_pages.regulation(doc)})
 
 def rules(request):
-    return render(request, 'web/rules.html', {'doc': knowledge_sources.load('rules')})
+    doc = knowledge_sources.load('rules')
+    return render(request, 'web/rules.html', {'doc': doc, 'sections': info_pages.regulation(doc),
+                                              'penalties': info_pages.penalty_table(doc)})
 
 
 @login_required
