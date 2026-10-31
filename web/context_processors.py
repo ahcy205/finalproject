@@ -13,8 +13,11 @@ NAV_SECTIONS = {
     'dorminfo': 'staff', 'outside_manage': 'staff', 'outing_info': 'staff', 'reward_penalty': 'staff',
 }
 
+# 휴대폰 아래 탭 막대의 '신청' 탭을 켤 화면 (식단·셔틀·편의시설은 '생활' 묶음이지만 신청이 아니다)
+REQUEST_PAGES = {'outside', 'check_in', 'apply_success', 'outing_info'}
+
 
 def nav(request):
     match = getattr(request, 'resolver_match', None)
     name = match.url_name if match else None
-    return {'nav_section': NAV_SECTIONS.get(name, '')}
+    return {'nav_section': NAV_SECTIONS.get(name, ''), 'request_page': name in REQUEST_PAGES}

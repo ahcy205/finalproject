@@ -1622,6 +1622,16 @@ class SoftAppShellTests(TestCase):
             self.assertEqual(self.current_tabs(reverse('web:chatbot')), ['챗봇'])
         self.assertNotIn('관리', self.tabbar(reverse('web:home')))
 
+    def test_requests_tab_is_only_for_request_pages(self):
+        """'신청' 탭은 신청 화면과 내 신청 현황에서만 켜진다. 식단·셔틀·편의시설은 신청이 아니다."""
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        for name in ('outside', 'check_in', 'outing_info'):
+            with self.subTest(page=name):
+                self.assertEqual(self.current_tabs(reverse(f'web:{name}')), ['신청'])
+        for name in ('menu', 'bus', 'acc'):
+            with self.subTest(page=name):
+                self.assertEqual(self.current_tabs(reverse(f'web:{name}')), [])
+
     def test_staff_tabbar_has_the_staff_section_instead_of_requests(self):
         self.client.force_login(User.objects.create_user('admin', password='pw12345!', is_staff=True))
         bar = self.tabbar(reverse('web:dorminfo'))
