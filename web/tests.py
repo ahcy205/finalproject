@@ -1640,6 +1640,16 @@ class SoftAppShellTests(TestCase):
         self.assertEqual(self.current_tabs(reverse('web:dorminfo')), ['관리'])
         self.assertEqual(self.current_tabs(reverse('web:reward_penalty')), ['관리'])
 
+    def test_focus_ring_keeps_each_component_shape(self):
+        """키보드 초점 표시가 모서리 값을 덮으면 둥근 버튼·탭이 Tab 키를 누를 때 네모로 바뀐다."""
+        css_dir = os.path.join(os.path.dirname(self.TEMPLATE_DIR), '..', 'static', 'css')
+        for filename in ('dorm-shell.css', 'dorm.css', 'dorm-soft.css'):
+            with open(os.path.join(css_dir, filename), encoding='utf-8') as f:
+                rules = re.findall(r'([^{}]*:focus-visible[^{}]*)\{([^}]*)\}', f.read())
+            for selector, body in rules:
+                with self.subTest(css=filename, selector=selector.strip()):
+                    self.assertNotIn('border-radius', body)
+
     def test_every_icon_used_in_templates_draws_something(self):
         """아이콘 이름을 잘못 쓰면 빈 <svg>가 조용히 그려진다. 템플릿이 쓰는 이름마다 그림이 있는지 확인한다."""
         from django.template.loader import render_to_string

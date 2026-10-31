@@ -44,7 +44,7 @@
   font-size: 19px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap;
   padding: 4px 0; border-bottom: 3px solid transparent;
 }
-.dg-brand:focus-visible, .dg-bar button:focus-visible, .dg-bar a:focus-visible { outline: none; box-shadow: var(--dg-focus); border-radius: var(--dg-radius-plate); }
+.dg-brand:focus-visible, .dg-bar button:focus-visible, .dg-bar a:focus-visible { outline: none; box-shadow: var(--dg-focus); }
 
 .dg-nav { flex: 1; display: flex; align-items: center; justify-content: space-between; min-width: 0; }
 .dg-nav__head, .dg-bar__menu { display: none; }
