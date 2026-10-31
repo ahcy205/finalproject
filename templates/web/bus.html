@@ -1,277 +1,173 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-   <head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>버스 시간표</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+셔틀버스 시간표 (docs/adr/0020). 시간표는 knowledge/data/bus.yaml에 있다(web/info_pages.bus_routes).
+노선 탭은 ?route= 링크라 자바스크립트 없이 동작한다. 학교 출발 다음 편만 황동색으로 표시한다(홈 안내판과 같은 계산).
+지도 키는 settings.KAKAO_MAP_KEY(환경변수). 없으면 지도 대신 안내 문구가 보인다.
+{% endcomment %}
+{% block title %}셔틀버스 시간표{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead">
+    <h1>셔틀버스 시간표</h1>
+    <p class="dg-pagehead__meta dg-num">{{ now|date:"H:i" }} 기준</p>
+  </header>
+  <nav class="dg-tabs" aria-label="노선">
+    {% for item in routes %}<a href="?route={{ item.key }}"{% if item.key == route.key %} aria-current="page"{% endif %}>{{ item.title }}</a>{% endfor %}
+  </nav>
 
+  <div id="table-{{ route.key }}">
+    <p class="dg-nextbus">
+      <span class="dg-nextbus__label">학교 출발 다음 편</span>
+      {% if route.next %}<span class="dg-plate dg-plate--now">{{ route.next }}</span>
+      {% else %}<span class="dg-muted">오늘 운행이 끝났어요 · 첫차 <span class="dg-num">{{ route.first }}</span></span>{% endif %}
+    </p>
 
-   {% include 'web/_theme_css.html' with bootstrap5=True %}
+    <section class="dg-section" aria-labelledby="inbound-title">
+      <div class="dg-section__head"><h2 id="inbound-title">학교에서 나가는 편</h2><span class="dg-muted dg-small">학교 출발 → {{ route.inbound.stops|last }}</span></div>
+      <p class="dg-scrollhint">표를 옆으로 밀면 정류장이 더 있어요.</p>
+      {% include 'web/_timetable.html' with direction=route.inbound caption=route.title|add:" 학교에서 나가는 편 시간표" %}
+    </section>
 
-<style>
-	#map { height: 65vh; width: 100%; }
+    <section class="dg-section" aria-labelledby="outbound-title">
+      <div class="dg-section__head"><h2 id="outbound-title">학교로 오는 편</h2><span class="dg-muted dg-small">{{ route.outbound.stops|first }} → 학교 도착</span></div>
+      {% include 'web/_timetable.html' with direction=route.outbound caption=route.title|add:" 학교로 오는 편 시간표" %}
+    </section>
+  </div>
 
-	.table {
-		margin-top: 70px !important;
-		margin-bottom: 70px !important;
-		max-width: 1480px;
-		width: 100%;
-		height: 100px;
-		color: white;
-		justify-content: center;
-		align-content: center;
-		align-items: center;
-		margin: 0 auto;
-		text-align: center;
-	}
+  <section class="dg-section dg-section--map" aria-labelledby="map-title">
+    <div class="dg-section__head"><h2 id="map-title">노선 지도</h2></div>
+    {% include 'web/_map.html' with label=route.title|add:" 노선 지도" fallback="위 시간표를 이용해 주세요." %}
+  </section>
+</div>
+{{ route.inbound.stops|json_script:"stops-data" }}
+{% endblock %}
+{% block scripts %}
+{% include 'web/_map_js.html' %}
+<script>
+  (function () {
+    // 노선 경로 [위도, 경도, 정류장이면 1]. 정류장 순서는 학교에서 나가는 편과 같다.
+    var paths = {
+        terminal: [
+          [36.8521, 127.0599, 1],
+          [36.8521, 127.0585, 0],
+          [36.8514, 127.0558, 0],
+          [36.8508, 127.0543, 0],
+          [36.8506, 127.0537, 0],
+          [36.8502, 127.0530, 0],
+          [36.8499, 127.0522, 0],
+          [36.8495, 127.0516, 0],
+          [36.8488, 127.0519, 0],
+          [36.8482, 127.0520, 0],
+          [36.8469, 127.0521, 0],
+          [36.8451, 127.0512, 1],
+          [36.8446, 127.0534, 0],
+          [36.8423, 127.0596, 0],
+          [36.8418, 127.0624, 0],
+          [36.8414, 127.0645, 0],
+          [36.8382, 127.0739, 0],
+          [36.8371, 127.0762, 0],
+          [36.8363, 127.0778, 0],
+          [36.8342, 127.0836, 0],
+          [36.8298, 127.0938, 0],
+          [36.8284, 127.0968, 0],
+          [36.8264, 127.0997, 1],
+          [36.8262, 127.1002, 0],
+          [36.8252, 127.1024, 0],
+          [36.8242, 127.1048, 0],
+          [36.8234, 127.1071, 0],
+          [36.8229, 127.1099, 0],
+          [36.8226, 127.1149, 0],
+          [36.8227, 127.1166, 0],
+          [36.8232, 127.1211, 1],
+          [36.8236, 127.1239, 0],
+          [36.8265, 127.1329, 0],
+          [36.8258, 127.1373, 0],
+          [36.8257, 127.1401, 1],
+          [36.8252, 127.1445, 0],
+          [36.8295, 127.1451, 0],
+          [36.8332, 127.1455, 0],
+          [36.8330, 127.1473, 1],
+          [36.8319, 127.1518, 0],
+          [36.8257, 127.1529, 0],
+          [36.8247, 127.1529, 0],
+          [36.8209, 127.1520, 0],
+          [36.8196, 127.1516, 0],
+          [36.8186, 127.1521, 0],
+          [36.8187, 127.1562, 1]
+        ],
+        asan: [
+          [36.8521, 127.0599, 1],
+          [36.8521, 127.0585, 0],
+          [36.8514, 127.0558, 0],
+          [36.8508, 127.0543, 0],
+          [36.8506, 127.0537, 0],
+          [36.8502, 127.0530, 0],
+          [36.8499, 127.0522, 0],
+          [36.8495, 127.0516, 0],
+          [36.8488, 127.0519, 0],
+          [36.8482, 127.0520, 0],
+          [36.8469, 127.0521, 0],
+          [36.8451, 127.0512, 1],
+          [36.8446, 127.0534, 0],
+          [36.8423, 127.0596, 0],
+          [36.8418, 127.0624, 0],
+          [36.8414, 127.0645, 0],
+          [36.8382, 127.0739, 0],
+          [36.8371, 127.0762, 0],
+          [36.8363, 127.0778, 0],
+          [36.8342, 127.0836, 0],
+          [36.8298, 127.0938, 0],
+          [36.8278, 127.0920, 0],
+          [36.8238, 127.0893, 0],
+          [36.8224, 127.0887, 1],
+          [36.8203, 127.0881, 0],
+          [36.8187, 127.0885, 0],
+          [36.8175, 127.0891, 0],
+          [36.8163, 127.0890, 0],
+          [36.8157, 127.0888, 0],
+          [36.8136, 127.0867, 0],
+          [36.8123, 127.0863, 0],
+          [36.8024, 127.0864, 0],
+          [36.7996, 127.0868, 0],
+          [36.7957, 127.0875, 0],
+          [36.7897, 127.0881, 0],
+          [36.7900, 127.0900, 1],
+          [36.7905, 127.0930, 0],
+          [36.7909, 127.0941, 0],
+          [36.7912, 127.0946, 0],
+          [36.7921, 127.0955, 0],
+          [36.7947, 127.0978, 0],
+          [36.7955, 127.0988, 0],
+          [36.7959, 127.0998, 0],
+          [36.7962, 127.1010, 0],
+          [36.7965, 127.1021, 1]
+        ]
+    };
+    var points = paths['{{ route.key|escapejs }}'] || [];
+    var stops = JSON.parse(document.getElementById('stops-data').textContent);
 
-	.table-responsive {
-   		overflow-x: auto;
-    	-webkit-overflow-scrolling: touch;
-  	}
-
-  	.table-responsive .table {
-    	width: max-content;
-    	min-width: 80%;
-  	}
-
-    @media (max-width: 768px) {
-        nav.fh5co-nav {
-          display: none !important;
-        }
-    }
-
-    .js-fh5co-nav-toggle {
-      display: none !important;
-    }
-</style>
-     </head>
-
-   <body>
-
-   <div class="fh5co-loader"></div>
-
-   <div id="page">
-    {% include 'web/_nav.html' %}
-
-   <!-- jQuery -->
-   {% include 'web/_theme_js.html' %}
-
-    <div class="container mt-5">
-      <h2 class="text-center mb-4">버스 정류장 위치 및 경로</h2>
-      <div id="map"></div>
-    </div>
-
-    <div class="container text-center mt-4 mb-3">
-      <button class="btn btn-secondary" onclick="showTable('terminal')">천안 터미널 방면</button>
-      <button class="btn btn-secondary" onclick="showTable('asan')">천안 아산역 방면</button>
-    </div>
-
-    {% comment %}시간표는 knowledge/data/bus.yaml에 있다.{% endcomment %}
-    {% for route in doc.routes %}
-    <div class="table-responsive" id="table-{{ route.key }}"{% if not forloop.first %} style="display: none;"{% endif %}>
-      <table class="table"{% if forloop.first %} id="dataset"{% endif %}>
-            <thead>
-            <tr>
-                <th class="text-center" scope="col">셔틀 버스</th>
-                {% for stop in route.outbound_stops %}<th class="text-center" scope="col">{{ stop }}</th>
-                {% endfor %}<th class="text-center" scope="col"></th>
-                {% for stop in route.inbound_stops %}<th class="text-center" scope="col">{{ stop }}</th>
-                {% endfor %}
-            </tr>
-            </thead>
-            <tbody>
-            {% for trip in route.trips %}<tr><td>{{ trip.bus }}</td>{% for time in trip.outbound %}<td>{{ time }}</td>{% endfor %}<td></td>{% for time in trip.inbound %}<td>{{ time }}</td>{% endfor %}</tr>
-            {% endfor %}
-            </tbody>
-      </table>
-    </div>
-    {% endfor %}
-
-    <script>
-      function showTable(type) {
-        const terminal = document.getElementById("table-terminal");
-        const asan = document.getElementById("table-asan");
-
-        if (type === "terminal") {
-          terminal.style.display = "block";
-          asan.style.display = "none";
-        } else {
-          terminal.style.display = "none";
-          asan.style.display = "block";
-        }
-      }
-    </script>
-
-    <script>
-      let map;
-      let polyline;
-      let markers = [];
-
-      const terminalPoints = [
-          { lat: 36.8521, lng: 127.0599, visible: true },   // 출발 (중앙)
-          { lat: 36.8521, lng: 127.0585, visible: false },
-          { lat: 36.8514, lng: 127.0558, visible: false },
-          { lat: 36.8508, lng: 127.0543, visible: false },
-          { lat: 36.8506, lng: 127.0537, visible: false },
-          { lat: 36.8502, lng: 127.0530, visible: false },
-          { lat: 36.8499, lng: 127.0522, visible: false },
-          { lat: 36.8495, lng: 127.0516, visible: false },
-          { lat: 36.8488, lng: 127.0519, visible: false },
-          { lat: 36.8482, lng: 127.0520, visible: false },
-          { lat: 36.8469, lng: 127.0521, visible: false },
-          { lat: 36.8451, lng: 127.0512, visible: true },
-          { lat: 36.8446, lng: 127.0534, visible: false },
-          { lat: 36.8423, lng: 127.0596, visible: false },
-          { lat: 36.8418, lng: 127.0624, visible: false },
-          { lat: 36.8414, lng: 127.0645, visible: false },
-          { lat: 36.8382, lng: 127.0739, visible: false },
-          { lat: 36.8371, lng: 127.0762, visible: false },
-          { lat: 36.8363, lng: 127.0778, visible: false },
-          { lat: 36.8342, lng: 127.0836, visible: false },
-          { lat: 36.8298, lng: 127.0938, visible: false },
-          { lat: 36.8284, lng: 127.0968, visible: false },
-          { lat: 36.8264, lng: 127.0997, visible: true },
-          { lat: 36.8262, lng: 127.1002, visible: false },
-          { lat: 36.8252, lng: 127.1024, visible: false },
-          { lat: 36.8242, lng: 127.1048, visible: false },
-          { lat: 36.8234, lng: 127.1071, visible: false },
-          { lat: 36.8229, lng: 127.1099, visible: false },
-          { lat: 36.8226, lng: 127.1149, visible: false },
-          { lat: 36.8227, lng: 127.1166, visible: false },
-          { lat: 36.8232, lng: 127.1211, visible: true },
-          { lat: 36.8236, lng: 127.1239, visible: false },
-          { lat: 36.8265, lng: 127.1329, visible: false },
-          { lat: 36.8258, lng: 127.1373, visible: false },
-          { lat: 36.8257, lng: 127.1401, visible: true },
-          { lat: 36.8252, lng: 127.1445, visible: false },
-          { lat: 36.8295, lng: 127.1451, visible: false },
-          { lat: 36.8332, lng: 127.1455, visible: false },
-          { lat: 36.8330, lng: 127.1473, visible: true },
-          { lat: 36.8319, lng: 127.1518, visible: false },
-          { lat: 36.8257, lng: 127.1529, visible: false },
-          { lat: 36.8247, lng: 127.1529, visible: false },
-          { lat: 36.8209, lng: 127.1520, visible: false },
-          { lat: 36.8196, lng: 127.1516, visible: false },
-          { lat: 36.8186, lng: 127.1521, visible: false },
-          { lat: 36.8187, lng: 127.1562, visible: true }    // 도착
-      ];
-
-      const asanPoints = [
-          { lat: 36.8521, lng: 127.0599, visible: true },   // 출발 (중앙)
-          { lat: 36.8521, lng: 127.0585, visible: false },
-          { lat: 36.8514, lng: 127.0558, visible: false },
-          { lat: 36.8508, lng: 127.0543, visible: false },
-          { lat: 36.8506, lng: 127.0537, visible: false },
-          { lat: 36.8502, lng: 127.0530, visible: false },
-          { lat: 36.8499, lng: 127.0522, visible: false },
-          { lat: 36.8495, lng: 127.0516, visible: false },
-          { lat: 36.8488, lng: 127.0519, visible: false },
-          { lat: 36.8482, lng: 127.0520, visible: false },
-          { lat: 36.8469, lng: 127.0521, visible: false },
-          { lat: 36.8451, lng: 127.0512, visible: true },
-          { lat: 36.8446, lng: 127.0534, visible: false },
-          { lat: 36.8423, lng: 127.0596, visible: false },
-          { lat: 36.8418, lng: 127.0624, visible: false },
-          { lat: 36.8414, lng: 127.0645, visible: false },
-          { lat: 36.8382, lng: 127.0739, visible: false },
-          { lat: 36.8371, lng: 127.0762, visible: false },
-          { lat: 36.8363, lng: 127.0778, visible: false },
-          { lat: 36.8342, lng: 127.0836, visible: false },
-          { lat: 36.8298, lng: 127.0938, visible: false },
-          { lat: 36.8278, lng: 127.0920, visible: false },
-          { lat: 36.8238, lng: 127.0893, visible: false },
-          { lat: 36.8224, lng: 127.0887, visible: true },
-          { lat: 36.8203, lng: 127.0881, visible: false },
-          { lat: 36.8187, lng: 127.0885, visible: false },
-          { lat: 36.8175, lng: 127.0891, visible: false },
-          { lat: 36.8163, lng: 127.0890, visible: false },
-          { lat: 36.8157, lng: 127.0888, visible: false },
-          { lat: 36.8136, lng: 127.0867, visible: false },
-          { lat: 36.8123, lng: 127.0863, visible: false },
-          { lat: 36.8024, lng: 127.0864, visible: false },
-          { lat: 36.7996, lng: 127.0868, visible: false },
-          { lat: 36.7957, lng: 127.0875, visible: false },
-          { lat: 36.7897, lng: 127.0881, visible: false },
-          { lat: 36.7900, lng: 127.0900, visible: true },
-          { lat: 36.7905, lng: 127.0930, visible: false },
-          { lat: 36.7909, lng: 127.0941, visible: false },
-          { lat: 36.7912, lng: 127.0946, visible: false },
-          { lat: 36.7921, lng: 127.0955, visible: false },
-          { lat: 36.7947, lng: 127.0978, visible: false },
-          { lat: 36.7955, lng: 127.0988, visible: false },
-          { lat: 36.7959, lng: 127.0998, visible: false },
-          { lat: 36.7962, lng: 127.1010, visible: false },
-          { lat: 36.7965, lng: 127.1021, visible: true }    // 도착
-      ];
-
-      function drawMap(points) {
-        markers.forEach(marker => marker.setMap(null));
-        markers = [];
-
-        if (polyline) {
-          polyline.setMap(null);
-        }
-
-        const path = [];
-
-        points.forEach((p, i) => {
-          const latlng = new kakao.maps.LatLng(p.lat, p.lng);
-          path.push(latlng);
-
-          if (p.visible) {
-            const marker = new kakao.maps.Marker({
-              map: map,
-              position: latlng,
-              title: `지점 ${i + 1}`
-            });
-            markers.push(marker);
-          }
+    window.dgMapReady(function (el) {
+      var path = points.map(function (p) { return new kakao.maps.LatLng(p[0], p[1]); });
+      var map = new kakao.maps.Map(el, { center: path[0], level: 7 });
+      var bounds = new kakao.maps.LatLngBounds();
+      path.forEach(function (latlng) { bounds.extend(latlng); });
+      map.setBounds(bounds, 24, 24, 24, 24);
+      new kakao.maps.Polyline({ map: map, path: path, strokeWeight: 5, strokeColor: '#1F5E4B', strokeOpacity: 0.85 });
+      var info = new kakao.maps.InfoWindow({ removable: true });
+      var stop = 0;
+      points.forEach(function (p, i) {
+        if (!p[2]) return;
+        var name = stops[stop++] || '';
+        var marker = new kakao.maps.Marker({ map: map, position: path[i], title: name });
+        kakao.maps.event.addListener(marker, 'click', function () {
+          var label = document.createElement('div');
+          label.className = 'dg-mapinfo';
+          label.textContent = name;
+          info.setContent(label);
+          info.open(map, marker);
         });
-
-        polyline = new kakao.maps.Polyline({
-          path: path,
-          strokeWeight: 5,
-          strokeColor: '#FF0000',
-          strokeOpacity: 0.8,
-          strokeStyle: 'solid'
-        });
-
-        polyline.setMap(map);
-      }
-
-      function showTable(type) {
-        const terminal = document.getElementById("table-terminal");
-        const asan = document.getElementById("table-asan");
-
-        if (type === "terminal") {
-          terminal.style.display = "block";
-          asan.style.display = "none";
-          drawMap(terminalPoints);
-        } else {
-          terminal.style.display = "none";
-          asan.style.display = "block";
-          drawMap(asanPoints);
-        }
-      }
-
-      window.onload = function () {
-        map = new kakao.maps.Map(document.getElementById("map"), {
-          center: new kakao.maps.LatLng(36.8251, 127.0981),
-          level: 7
-        });
-
-        drawMap(terminalPoints);
-      };
-    </script>
-   </div>
-
- <!--  Kakao 지도 API -->
-<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=aca3f50bafe4f955bd781786417506fb&libraries=services,geometry"></script>
-
-   </body>
-</html>
-
+      });
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,46 +1,46 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-	<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>돔고돔락</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+생활관 안내 (docs/adr/0020). 장·조항 문구는 knowledge/data/info.yaml에 있고 RAG 검색도 같은 파일을 쓴다.
+앵커: 장은 #chapter-1, 조항은 #article-8 (조 번호라 문구를 고쳐도 유지된다).
+{% endcomment %}
+{% block title %}생활관 안내{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead"><h1>{{ doc.title }}</h1></header>
+  <div class="dg-doc">
+    <details class="dg-toc">
+      <summary>목차</summary>
+      <nav aria-label="생활관 안내 목차">
+        <ol class="dg-toc__list">
+          {% for section in sections %}
+          <li class="dg-toc__chapter">
+            <a href="#{{ section.id }}"><span class="dg-toc__no">{{ section.label }}</span> {{ section.name }}</a>
+            <ol>
+              {% for article in section.articles %}
+              <li><a href="#{{ article.id }}"><span class="dg-toc__no">{{ article.label }}</span>{% if article.name %} {{ article.name }}{% endif %}</a></li>
+              {% endfor %}
+            </ol>
+          </li>
+          {% endfor %}
+        </ol>
+      </nav>
+    </details>
 
-
-	{% include 'web/_theme_css.html' %}
-
-	</head>
-	<body>
-
-	<div class="fh5co-loader" ></div>
-
-	<div id="page">
-	{% include 'web/_nav.html' %}
-
-    <div class="container" style="margin-top: 80px; min-height: 80vh;">
-      <div class="row">
-        <div class="col-md-8 col-md-offset-2" style="background-color: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 6px;">
-			<h4 class="text-center mb-4">생활관 안내</h4>
-				{% comment %}장·조항 문구는 knowledge/data/info.yaml에 있다.{% endcomment %}
-				{% for section in doc.sections %}
-				<strong>{{ section.title }}</strong><br>
-				{% for article in section.articles %}
-				<strong>{{ article.title }}</strong><br>
-				{% for line in article.lines %}{{ line }}<br>{% endfor %}<br>
-				{% endfor %}
-				{% endfor %}
-				</div>
-			</div>
-        </div>
-      </div>
+    <div class="dg-doc__body">
+      <p class="dg-doc__lead">생활관의 조직, 입관·퇴관, 시설 관리, 생활관비, 자치위원회에 관한 규정이에요.</p>
+      {% for section in sections %}
+      <section class="dg-chapter" aria-labelledby="{{ section.id }}">
+        <h2 id="{{ section.id }}" class="dg-chapter__title"><span class="dg-chapter__no">{{ section.label }}</span>{{ section.name }}</h2>
+        {% for article in section.articles %}
+        <section class="dg-clause">
+          <h3 id="{{ article.id }}" class="dg-clause__title"><span class="dg-clause__no">{{ article.label }}</span>{% if article.name %}<span>{{ article.name }}</span>{% endif %}</h3>
+          {% include 'web/_clause_blocks.html' with blocks=article.blocks %}
+        </section>
+        {% endfor %}
+      </section>
+      {% endfor %}
     </div>
-
-
-	<!-- jQuery -->
-	{% include 'web/_theme_js.html' %}
-    </div>
-	</body>
-</html>
-
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}{% include 'web/_toc_js.html' %}{% endblock %}

@@ -1,0 +1,6 @@
+{% comment %}조항 본문: 문단·점 목록·번호 목록 (web/info_pages._blocks). 사용: {% include 'web/_clause_blocks.html' with blocks=article.blocks %}{% endcomment %}
+{% for block in blocks %}{% if block.type == 'ul' %}<ul class="dg-clause__list">{% for item in block.items %}<li>{{ item }}</li>{% endfor %}</ul>
+{% elif block.type == 'ol' %}<ol class="dg-clause__list dg-clause__list--num">{% for item in block.items %}<li>{{ item }}</li>{% endfor %}</ol>
+{% elif block.lead %}<p class="dg-clause__lead">{{ block.text }}</p>
+{% else %}<p>{{ block.text }}</p>
+{% endif %}{% endfor %}

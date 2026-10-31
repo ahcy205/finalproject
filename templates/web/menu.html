@@ -1,99 +1,70 @@
-<!DOCTYPE HTML>
-<html>
-{% load static %}
-<head>
-   <meta charset="utf-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>돔고돔락</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템" />
+{% extends 'web/layout.html' %}
+{% comment %}
+주간 식단표 (docs/adr/0020). 식단은 knowledge/data/menu.yaml(예시 한 주)에 있고, 오늘은 요일로 찾는다(web/info_pages.week_menu).
+넓은 화면은 요일 × 끼니 표, 휴대폰은 요일별 접기 목록(오늘만 펼침). 황동색은 오늘에만 쓴다.
+{% endcomment %}
+{% block title %}주간 식단표{% endblock %}
+{% block content %}
+<div class="dg-wrap">
+  <header class="dg-pagehead">
+    <h1>주간 식단표</h1>
+    <p class="dg-pagehead__meta">{% for meal in week.meals %}{{ meal.name }} <span class="dg-num">{{ meal.time }}</span>{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+  </header>
+  {% if week.weekend %}<p class="dg-menu__weekend">오늘은 {{ week.today }}요일이라 식단이 없어요. 평일 식단을 미리 확인해 보세요.</p>{% endif %}
 
-
-   {% include 'web/_theme_css.html' %}
-    <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .table-container {
-      overflow-x: auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-       max-width: 1200px;
-       margin: 0 auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 720px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px 12px;
-      text-align: center;
-      font-size: 14px;
-    }
-    th {
-      background-color: #e9ecef;
-    }
-    .time-col {
-      background-color: #f1f3f5;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 768px) {
-      body {
-        padding: 10px;
-      }
-      th, td {
-        font-size: 13px;
-        padding: 8px;
-      }
-      h2 {
-        font-size: 20px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-   <div id="page">
-    {% include 'web/_nav.html' %}
-
-       <h2> 주간식단표 </h2>
-  <div class="table-container">
-    {% comment %}식단은 knowledge/data/menu.yaml에 있다.{% endcomment %}
-    <table>
-      <thead>
-        <tr>
-          <th rowspan="2">구분</th>
-          <th rowspan="2">시간</th>
-          {% for day in doc.days %}<th>{{ day.date }}<br>{{ day.weekday }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
+  <div class="dg-tablewrap dg-menu__wide">
+    <table class="dg-table dg-menu">
+      <caption class="dg-sr">주간 식단표: 요일별 중식·석식</caption>
+      <thead><tr>
+        <th scope="col" class="dg-menu__corner">끼니</th>
+        {% for day in week.days %}
+        <th scope="col" class="dg-menu__day{% if day.is_today %} is-today{% endif %}"{% if day.is_today %} aria-current="date"{% endif %}>
+          <span class="dg-menu__weekday">{{ day.weekday }}요일</span>{% if day.is_today %}<span class="dg-today">오늘</span>{% endif %}
+          <span class="dg-menu__date dg-num">{{ day.date }}</span>
+        </th>
+        {% endfor %}
+      </tr></thead>
       <tbody>
-        {% for meal in doc.meals %}{% for row in meal.rows %}
+        {% for meal in week.meals %}
         <tr>
-          {% if forloop.first %}<td class="time-col" rowspan="{{ meal.rows|length }}">{{ meal.name }}<br>({{ meal.price }})</td>{% endif %}
-          <td>{{ row.time }}</td>
-          {% for dish in row.dishes %}<td>{{ dish }}</td>
+          <th scope="row" class="dg-menu__meal">
+            <span class="dg-menu__mealname">{{ meal.name }}</span>
+            <span class="dg-num">{{ meal.time }}</span>
+            <span class="dg-muted">{{ meal.price }}</span>
+          </th>
+          {% for cell in meal.cells %}
+          <td{% if cell.is_today %} class="is-today"{% endif %}>
+            <ul class="dg-menu__dishes">{% for dish in cell.dishes %}<li>{{ dish }}</li>{% endfor %}</ul>
+          </td>
           {% endfor %}
         </tr>
-        {% endfor %}{% endfor %}
+        {% endfor %}
       </tbody>
     </table>
   </div>
-    </div>
 
-   <!-- jQuery -->
-   {% include 'web/_theme_js.html' %}
-</body>
-</html>
+  <div class="dg-menu__narrow">
+    {% for day in week.days %}
+    <details class="dg-menuday{% if day.is_today %} is-today{% endif %}"{% if day.is_today or week.weekend %} open{% endif %}>
+      <summary>
+        <span class="dg-menu__weekday">{{ day.weekday }}요일</span>
+        <span class="dg-menu__date dg-num">{{ day.date }}</span>
+        {% if day.is_today %}<span class="dg-today">오늘</span>{% endif %}
+      </summary>
+      <ul class="dg-rows">
+        {% for meal in day.meals %}
+        <li>
+          <div class="dg-rows__key"><span class="dg-rows__title">{{ meal.name }}</span><br><span class="dg-small dg-num">{{ meal.time }}</span></div>
+          <div class="dg-rows__main"><p>{{ meal.dishes|join:" · " }}</p><p class="dg-small dg-muted">{{ meal.price }}</p></div>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
+  </div>
+
+  {% if week.notes %}
+  <ul class="dg-menu__notes">{% for line in week.notes %}<li>{{ line }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>
+{% endblock %}

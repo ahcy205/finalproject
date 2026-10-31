@@ -179,6 +179,10 @@ KNOWLEDGE_VERIFIER = {
     'MODEL': os.environ.get('KNOWLEDGE_ROUTER_MODEL', 'jev-1.14.0'),
 }
 
+# 카카오 지도 JavaScript 키 (셔틀버스·주변 편의시설 지도). 키는 저장소에 두지 않고 환경변수로만 읽는다.
+# 없으면 지도 대신 안내 문구가 보이고, 시간표·목록은 그대로 쓸 수 있다.
+KAKAO_MAP_KEY = os.environ.get('KAKAO_MAP_KEY', '')
+
 # API 문서 (/api/docs/)
 SPECTACULAR_SETTINGS = {
     'TITLE': '돔고돔락 API',

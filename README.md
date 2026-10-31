@@ -173,6 +173,7 @@ python manage.py runserver
 - 이 저장소는 로컬 실행 기준입니다. 배포용 설정(`DEBUG=False`, 허용 호스트·CORS 제한)은 적용하지 않았습니다.
 - 비밀 키: 환경변수 `DJANGO_SECRET_KEY`에서 읽습니다. 로컬 개발(`DEBUG=True`)에서는 없어도 실행되지만, 배포할 때는 반드시 설정해야 합니다.
   키 생성: `python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`
+- 카카오 지도 키: 셔틀버스·주변 편의시설 화면의 지도는 환경변수 `KAKAO_MAP_KEY`(카카오 개발자 콘솔의 JavaScript 키, 사이트 도메인에 `http://127.0.0.1:8000` 등록)에서 읽습니다. 없으면 지도 대신 안내 문구가 나오고 시간표·장소 목록은 그대로 쓸 수 있습니다.
 
 ---
 

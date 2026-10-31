@@ -1,0 +1,2 @@
+{% load static %}<script src="{% static 'js/dorm-map.js' %}"></script>
+{% if kakao_map_key %}<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_map_key|urlencode }}&amp;autoload=false" onerror="dgMapFailed()"></script>{% endif %}

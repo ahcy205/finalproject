@@ -1,0 +1,7 @@
+{% comment %}목차: 넓은 화면에서는 펼쳐 둔다(휴대폰은 접힌 채로 시작). 자바스크립트가 없어도 눌러서 열 수 있다.{% endcomment %}
+<script>
+  (function () {
+    var toc = document.querySelector('.dg-toc');
+    if (toc && window.matchMedia('(min-width: 960px)').matches) toc.open = true;
+  })();
+</script>
