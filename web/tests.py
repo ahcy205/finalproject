@@ -212,13 +212,28 @@ class AuthPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
         self.assertIn('aria-invalid="true" aria-describedby="username_help username_err"', html)
-        self.assertIn('id="username_err">이미 사용 중인 학번입니다.', html)
+        self.assertIn('id="username_err">이미 가입한 학번이에요. 로그인해 주세요.', html)
         self.assertIn('aria-describedby="password2_err"', html)
         self.assertIn('id="password2_err"', html)
         self.assertNotIn('id="email_err"', html)
         # 입력한 값은 남기고 비밀번호는 다시 쓰게 한다
         self.assertIn('value="홍길동"', html)
         self.assertNotIn('dorm-Life-2026!', html)
+
+    def test_signup_password_rule_errors_sit_on_the_password_field(self):
+        """규칙에 안 맞는 비밀번호는 '비밀번호' 칸에, 두 칸이 다른 것만 '비밀번호 확인' 칸에 표시한다."""
+        html = self.client.post(reverse('web:signup'), self.signup_data(password1='12345678', password2='12345678')).content.decode()
+        self.assertIn('id="password1_err"', html)
+        self.assertNotIn('id="password2_err"', html)
+        html = self.client.post(reverse('web:signup'), self.signup_data(password2='different-2026!')).content.decode()
+        self.assertIn('id="password2_err"', html)
+
+    def test_signup_errors_speak_in_the_page_voice(self):
+        """빈 칸·이메일 형식 오류도 화면의 다른 문장처럼 '~해 주세요'로 말한다."""
+        html = self.client.post(reverse('web:signup'), self.signup_data(department='', email='hong@')).content.decode()
+        self.assertIn('id="department_err">학과를 입력해 주세요.', html)
+        self.assertIn('id="email_err">이메일 주소 형식을 확인해 주세요.', html)
+        self.assertNotIn('필수 항목입니다', html)
 
     def test_signup_still_creates_account(self):
         response = self.client.post(reverse('web:signup'), self.signup_data())
