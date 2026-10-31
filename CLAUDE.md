@@ -54,7 +54,7 @@ python manage.py purge_chat_logs                        # 180일 지난 챗봇 �
 - 사용자 입력은 폼이나 시리얼라이저로 검증한다(숫자 변환, 길이, 중복, 이미지 파일 여부). 잘못된 입력에 500이 나면 안 된다.
 - 목록 쿼리는 N+1을 피하고(`select_related`, `prefetch_related`, `annotate`), 쿼리 수 테스트로 고정한다.
 - API는 필드를 추가만 하고 바꾸거나 지우지 않는다(앱 호환) → [ADR 0003](docs/adr/0003-api-backward-compatibility.md). API를 바꾸면 `dorm/schema.py` 설명도 같이 고친다.
-- 상단 메뉴와 테마 CSS·JS는 공통 템플릿(`_nav.html`, `_theme_css.html`, `_theme_js.html`)을 쓰고 복사하지 않는다 → [ADR 0004](docs/adr/0004-template-partials.md).
+- 화면은 `web/layout.html`을 상속하고, 상단 메뉴·알림은 공통 템플릿(`_nav.html`, `_messages.html`)을 쓰며 복사하지 않는다. 색·글꼴·부품은 `static/css/dorm-shell.css`, `dorm.css`의 것을 쓴다 → [ADR 0004](docs/adr/0004-template-partials.md), [ADR 0020](docs/adr/0020-ui-design-system.md)
 - 템플릿의 `{% static %}` 경로는 실제 파일이어야 한다(테스트가 검사함).
 
 ## 하지 말 것
