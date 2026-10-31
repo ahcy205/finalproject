@@ -3,11 +3,11 @@
 {% block title %}{{ notice.title }}{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <a class="dg-backlink" href="{% url 'web:notice' %}">공지 사항</a>
-  <article class="dg-article">
+  <a class="dg-backlink" href="{% url 'web:notice' %}">{% include 'web/_icon.html' with name='back' %}공지 사항</a>
+  <article class="dg-article dg-card dg-card--lg">
     <header class="dg-article__head">
       <h1>{{ notice.title }}</h1>
-      <p class="dg-article__meta"><span>관리실</span> · <span class="dg-num">{{ notice.date|date:"Y.m.d" }}</span></p>
+      <p class="dg-article__meta"><span class="dg-article__avatar dg-tint--sky">{% include 'web/_icon.html' with name='bell' %}</span><span>관리실</span> · <span class="dg-num">{{ notice.date|date:"Y.m.d" }}</span></p>
     </header>
     <div class="dg-article__body">{{ notice.content|linebreaks }}</div>
     {% if notice.image %}

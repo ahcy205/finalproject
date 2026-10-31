@@ -3,9 +3,15 @@
 {% block title %}공지 쓰기{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <a class="dg-backlink" href="{% url 'web:notice' %}">공지 사항</a>
-  <header class="dg-pagehead"><h1>공지 쓰기</h1></header>
-  <form class="dg-form" method="post" enctype="multipart/form-data" novalidate>
+  <a class="dg-backlink" href="{% url 'web:notice' %}">{% include 'web/_icon.html' with name='back' %}공지 사항</a>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--peach">{% include 'web/_icon.html' with name='bell' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>공지 쓰기</h1>
+      <p class="dg-pagehead__sub">올리면 학생들의 홈 화면에도 보여요</p>
+    </div>
+  </header>
+  <form class="dg-form dg-card dg-card--lg" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="dg-field">
       <label class="dg-field__label" for="title">제목</label>

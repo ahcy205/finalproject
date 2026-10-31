@@ -1597,3 +1597,49 @@ class StaffPageTests(TestCase):
         self.assertIn('class="dg-choice"', html)
         self.assertRegex(html, r'name="point_type"[^>]*value="reward"[^>]*checked')
         self.assertIn('점수 주기', html)
+
+
+class SoftAppShellTests(TestCase):
+    """부드러운 앱 모양 (docs/adr/0021): 휴대폰 아래 탭 막대와 선 아이콘."""
+    TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'web')
+
+    def tabbar(self, url):
+        html = self.client.get(url).content.decode()
+        match = re.search(r'<nav class="dg-tabbar"[^>]*>(.*?)</nav>', html, re.S)
+        self.assertIsNotNone(match, url)
+        return match.group(1)
+
+    def current_tabs(self, url):
+        return re.findall(r'aria-current="page">.*?<span>([^<]+)</span>', self.tabbar(url), re.S)
+
+    def test_student_tabbar_marks_the_current_section(self):
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        self.assertEqual(self.current_tabs(reverse('web:home')), ['홈'])
+        self.assertEqual(self.current_tabs(reverse('web:outside')), ['신청'])
+        self.assertEqual(self.current_tabs(reverse('web:community_home')), ['게시판'])
+        self.assertEqual(self.current_tabs(reverse('web:mypage')), ['마이'])
+        with mock.patch('web.views.start_warm_up'):
+            self.assertEqual(self.current_tabs(reverse('web:chatbot')), ['챗봇'])
+        self.assertNotIn('관리', self.tabbar(reverse('web:home')))
+
+    def test_staff_tabbar_has_the_staff_section_instead_of_requests(self):
+        self.client.force_login(User.objects.create_user('admin', password='pw12345!', is_staff=True))
+        bar = self.tabbar(reverse('web:dorminfo'))
+        self.assertIn(f'href="{reverse("web:outside_manage")}"', bar)
+        self.assertNotIn(f'href="{reverse("web:outside")}"', bar)
+        self.assertEqual(self.current_tabs(reverse('web:dorminfo')), ['관리'])
+        self.assertEqual(self.current_tabs(reverse('web:reward_penalty')), ['관리'])
+
+    def test_every_icon_used_in_templates_draws_something(self):
+        """아이콘 이름을 잘못 쓰면 빈 <svg>가 조용히 그려진다. 템플릿이 쓰는 이름마다 그림이 있는지 확인한다."""
+        from django.template.loader import render_to_string
+        names = set()
+        for filename in os.listdir(self.TEMPLATE_DIR):
+            with open(os.path.join(self.TEMPLATE_DIR, filename), encoding='utf-8') as f:
+                names.update(re.findall(r"_icon\.html' with name='([a-z]+)'", f.read()))
+        self.assertGreater(len(names), 20)
+        for name in sorted(names):
+            with self.subTest(icon=name):
+                svg = render_to_string('web/_icon.html', {'name': name})
+                self.assertRegex(svg, r'<svg class="dg-icon"[^>]*>.*<path d="[^"]+"', name)
+        self.assertNotIn('<path', render_to_string('web/_icon.html', {'name': 'no-such-icon'}))

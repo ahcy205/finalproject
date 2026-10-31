@@ -8,34 +8,41 @@
 {% block content %}
 <div class="dg-wrap">
   <header class="dg-pagehead">
-    <h1>셔틀버스 시간표</h1>
-    <p class="dg-pagehead__meta dg-num">{{ now|date:"H:i" }} 기준</p>
+    <span class="dg-pagehead__icon dg-tint--sky">{% include 'web/_icon.html' with name='bus' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>셔틀버스 시간표</h1>
+      <p class="dg-pagehead__meta"><span class="dg-num">{{ now|date:"H:i" }}</span> 기준 · 노선을 골라 시간표를 봐요</p>
+    </div>
   </header>
   <nav class="dg-tabs" aria-label="노선">
     {% for item in routes %}<a href="?route={{ item.key }}"{% if item.key == route.key %} aria-current="page"{% endif %}>{{ item.title }}</a>{% endfor %}
   </nav>
 
   <div id="table-{{ route.key }}">
-    <p class="dg-nextbus">
-      <span class="dg-nextbus__label">학교 출발 다음 편</span>
-      {% if route.next %}<span class="dg-plate dg-plate--now">{{ route.next }}</span>
-      {% else %}<span class="dg-muted">오늘 운행이 끝났어요 · 첫차 <span class="dg-num">{{ route.first }}</span></span>{% endif %}
-    </p>
+    <div class="dg-nextbus{% if route.next %} is-running{% endif %}">
+      <span class="dg-nextbus__icon">{% include 'web/_icon.html' with name='clock' %}</span>
+      <p class="dg-nextbus__main">
+        <span class="dg-nextbus__label">학교 출발 다음 편</span>
+        {% if route.next %}<span class="dg-nextbus__time dg-num">{{ route.next }}</span>
+        {% else %}<span class="dg-nextbus__off">오늘 운행이 끝났어요 · 첫차 <span class="dg-num">{{ route.first }}</span></span>{% endif %}
+      </p>
+    </div>
 
-    <section class="dg-section" aria-labelledby="inbound-title">
-      <div class="dg-section__head"><h2 id="inbound-title">학교에서 나가는 편</h2><span class="dg-muted dg-small">학교 출발 → {{ route.inbound.stops|last }}</span></div>
+    <section class="dg-card dg-card--table dg-busdir" aria-labelledby="inbound-title">
+      <div class="dg-card__head"><h2 id="inbound-title">학교에서 나가는 편</h2><span class="dg-muted dg-small">학교 출발 → {{ route.inbound.stops|last }}</span></div>
       <p class="dg-scrollhint">표를 옆으로 밀면 정류장이 더 있어요.</p>
       {% include 'web/_timetable.html' with direction=route.inbound caption=route.title|add:" 학교에서 나가는 편 시간표" %}
     </section>
 
-    <section class="dg-section" aria-labelledby="outbound-title">
-      <div class="dg-section__head"><h2 id="outbound-title">학교로 오는 편</h2><span class="dg-muted dg-small">{{ route.outbound.stops|first }} → 학교 도착</span></div>
+    <section class="dg-card dg-card--table dg-busdir" aria-labelledby="outbound-title">
+      <div class="dg-card__head"><h2 id="outbound-title">학교로 오는 편</h2><span class="dg-muted dg-small">{{ route.outbound.stops|first }} → 학교 도착</span></div>
+      <p class="dg-scrollhint">표를 옆으로 밀면 정류장이 더 있어요.</p>
       {% include 'web/_timetable.html' with direction=route.outbound caption=route.title|add:" 학교로 오는 편 시간표" %}
     </section>
   </div>
 
-  <section class="dg-section dg-section--map" aria-labelledby="map-title">
-    <div class="dg-section__head"><h2 id="map-title">노선 지도</h2></div>
+  <section class="dg-card dg-section--map" aria-labelledby="map-title">
+    <div class="dg-card__head"><h2 id="map-title">노선 지도</h2></div>
     {% include 'web/_map.html' with label=route.title|add:" 노선 지도" fallback="위 시간표를 이용해 주세요." %}
   </section>
 </div>

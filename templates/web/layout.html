@@ -14,6 +14,7 @@
   <meta name="description" content="돔고돔락 - 기숙사 통합 관리 시스템">
   {% include 'web/_shell_head.html' %}
   <link rel="stylesheet" href="{% static 'css/dorm.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dorm-soft.css' %}">
   {% block head %}{% endblock %}
 </head>
 <body class="dg-page">
@@ -22,6 +23,19 @@
   <main id="main" class="dg-main" tabindex="-1">
     {% block content %}{% endblock %}
   </main>
+  {% with here=request.resolver_match.url_name %}
+  <nav class="dg-tabbar" aria-label="빠른 이동">
+    <a href="{% url 'web:home' %}"{% if here == 'home' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='home' %}<span>홈</span></a>
+    {% if user.is_staff %}
+    <a href="{% url 'web:outside_manage' %}"{% if nav_section == 'staff' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='settings' %}<span>관리</span></a>
+    {% else %}
+    <a href="{% url 'web:outside' %}"{% if nav_section == 'life' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='moon' %}<span>신청</span></a>
+    {% endif %}
+    <a href="{% url 'web:chatbot' %}"{% if here == 'chatbot' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='spark' %}<span>챗봇</span></a>
+    <a href="{% url 'web:community_home' %}"{% if nav_section == 'community' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='board' %}<span>게시판</span></a>
+    <a href="{% url 'web:mypage' %}"{% if nav_section == 'mypage' %} aria-current="page"{% endif %}>{% include 'web/_icon.html' with name='user' %}<span>마이</span></a>
+  </nav>
+  {% endwith %}
   <footer class="dg-footer">
     <div class="dg-wrap dg-footer__inner">
       <span class="dg-footer__brand">돔고돔락</span>

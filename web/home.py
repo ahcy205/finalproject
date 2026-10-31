@@ -4,7 +4,7 @@
 """
 import re
 
-from dorm.models import Notice, OutingApply
+from dorm.models import Dorm, Notice, OutingApply
 from knowledge import sources
 
 RANGE = re.compile(r'(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})')
@@ -72,10 +72,13 @@ def today_board(now, user=None):
         'notices': list(Notice.objects.order_by('-date', '-id')[:3]),
         'outing': None,
         'pending_outings': None,
+        'room': None,
     }
     if user is not None and user.is_authenticated:
         if user.is_staff:
             board['pending_outings'] = OutingApply.objects.filter(status='pending').count()
         else:
             board['outing'] = OutingApply.objects.filter(user=user).order_by('-applied_at', '-id').first()
+            # 인사말 아래에 보여 줄 내 방 (배정 전이면 None)
+            board['room'] = Dorm.objects.filter(user=user, position__gt=0).first()
     return board

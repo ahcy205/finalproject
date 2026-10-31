@@ -7,10 +7,13 @@
 {% block content %}
 <div class="dg-wrap">
   <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--mint">{% include 'web/_icon.html' with name='meal' %}</span>
+    <div class="dg-pagehead__text">
     <h1>주간 식단표</h1>
     <p class="dg-pagehead__meta">{% for meal in week.meals %}{{ meal.name }} <span class="dg-num">{{ meal.time }}</span>{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+    </div>
   </header>
-  {% if week.weekend %}<p class="dg-menu__weekend">오늘은 {{ week.today }}요일이라 식단이 없어요. 평일 식단을 미리 확인해 보세요.</p>{% endif %}
+  {% if week.weekend %}<p class="dg-note dg-menu__weekend">오늘은 {{ week.today }}요일이라 식단이 없어요. 평일 식단을 미리 확인해 보세요.</p>{% endif %}
 
   <div class="dg-tablewrap dg-menu__wide">
     <table class="dg-table dg-menu">
@@ -19,7 +22,7 @@
         <th scope="col" class="dg-menu__corner">끼니</th>
         {% for day in week.days %}
         <th scope="col" class="dg-menu__day{% if day.is_today %} is-today{% endif %}"{% if day.is_today %} aria-current="date"{% endif %}>
-          <span class="dg-menu__weekday">{{ day.weekday }}요일</span>{% if day.is_today %}<span class="dg-today">오늘</span>{% endif %}
+          <span class="dg-menu__weekday">{{ day.weekday }}요일</span>{% if day.is_today %}<span class="dg-pill dg-pill--now">오늘</span>{% endif %}
           <span class="dg-menu__date dg-num">{{ day.date }}</span>
         </th>
         {% endfor %}
@@ -49,9 +52,9 @@
       <summary>
         <span class="dg-menu__weekday">{{ day.weekday }}요일</span>
         <span class="dg-menu__date dg-num">{{ day.date }}</span>
-        {% if day.is_today %}<span class="dg-today">오늘</span>{% endif %}
+        {% if day.is_today %}<span class="dg-pill dg-pill--now">오늘</span>{% endif %}
       </summary>
-      <ul class="dg-rows">
+      <ul class="dg-rows dg-menuday__meals">
         {% for meal in day.meals %}
         <li>
           <div class="dg-rows__key"><span class="dg-rows__title">{{ meal.name }}</span><br><span class="dg-small dg-num">{{ meal.time }}</span></div>

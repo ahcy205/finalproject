@@ -6,8 +6,9 @@ next(로그인 뒤 갈 주소)는 숨은 칸으로 그대로 보내고, 같은 �
 {% block title %}로그인{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <div class="dg-auth">
-    <header class="dg-pagehead dg-auth__head">
+  <div class="dg-auth dg-card dg-card--lg">
+    <header class="dg-auth__head">
+      <span class="dg-auth__icon">{% include 'web/_icon.html' with name='lock' %}</span>
       <h1>로그인</h1>
       <p class="dg-pagehead__meta">생활관 계정으로 로그인해요</p>
     </header>

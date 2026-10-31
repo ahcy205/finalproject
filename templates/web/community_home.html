@@ -10,19 +10,27 @@
 {% now "Y-m-d" as today %}
 <div class="dg-wrap">
   <header class="dg-pagehead">
-    <h1>자유 게시판</h1>
-    <a class="dg-btn" href="{% url 'web:community_create' %}">글 쓰기</a>
+    <span class="dg-pagehead__icon dg-tint--peach">{% include 'web/_icon.html' with name='board' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>자유 게시판</h1>
+      <p class="dg-pagehead__sub">익명으로 편하게 이야기해요</p>
+    </div>
+    <a class="dg-btn" href="{% url 'web:community_create' %}">{% include 'web/_icon.html' with name='edit' %}글 쓰기</a>
   </header>
+
+  <section class="dg-card dg-card--table dg-boardcard" aria-label="글 목록">
+  <div class="dg-boardcard__tools">
 
   <form class="dg-searchbar dg-searchbar--simple" method="get" role="search">
     <label class="dg-sr" for="kw">제목 검색</label>
-    <input class="dg-input" type="search" name="kw" id="kw" value="{{ kw }}" placeholder="제목으로 찾기">
+    <span class="dg-search">{% include 'web/_icon.html' with name='search' %}<input class="dg-input" type="search" name="kw" id="kw" value="{{ kw }}" placeholder="제목으로 찾기"></span>
     <button class="dg-btn dg-btn--quiet" type="submit">검색</button>
   </form>
   <p class="dg-listinfo">
     {% if kw %}<span>‘{{ kw }}’ 검색 결과 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span> <a href="{% url 'web:community_home' %}">검색 지우기</a>
     {% else %}<span>글 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span>{% endif %}
   </p>
+  </div>
 
   <div class="dg-tablewrap">
     <table class="dg-table dg-boardlist">
@@ -49,6 +57,7 @@
       </tbody>
     </table>
   </div>
+  </section>
 
   {% include 'web/_pager.html' %}
 </div>

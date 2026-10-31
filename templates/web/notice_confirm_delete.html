@@ -3,8 +3,9 @@
 {% block title %}공지 삭제 확인{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <div class="dg-confirm">
-    <header class="dg-pagehead"><h1>이 공지를 삭제할까요?</h1></header>
+  <div class="dg-confirm dg-card dg-card--lg">
+    <span class="dg-confirm__icon dg-tint--danger">{% include 'web/_icon.html' with name='trash' %}</span>
+    <header class="dg-confirm__head"><h1>이 공지를 삭제할까요?</h1></header>
     <dl class="dg-facts">
       <div><dt>제목</dt><dd>{{ notice.title }}</dd></div>
       <div><dt>게시일</dt><dd class="dg-num">{{ notice.date|date:"Y.m.d" }}</dd></div>

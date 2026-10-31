@@ -7,8 +7,9 @@
 {% block title %}회원가입{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <div class="dg-auth">
-    <header class="dg-pagehead dg-auth__head">
+  <div class="dg-auth dg-card dg-card--lg">
+    <header class="dg-auth__head">
+      <span class="dg-auth__icon">{% include 'web/_icon.html' with name='users' %}</span>
       <h1>회원가입</h1>
       <p class="dg-pagehead__meta">학번으로 계정을 만들어요</p>
     </header>

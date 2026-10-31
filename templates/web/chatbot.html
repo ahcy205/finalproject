@@ -16,11 +16,15 @@
   </header>
 
   <section class="dg-chat__empty" id="chat-empty" aria-labelledby="chat-empty-title">
-    <p class="dg-chat__intro" id="chat-empty-title">생활관 규칙·셔틀버스·식단·생활관 안내를 찾아 답해 드려요.</p>
-    <p class="dg-small dg-muted">자주 묻는 질문</p>
-    <ul class="dg-chat__suggest">
+    <span class="dg-chat__avatar">{% include 'web/_icon.html' with name='spark' %}</span>
+    <h2 class="dg-chat__hello" id="chat-empty-title">
+      <span>{% if user.userprofile.full_name %}{{ user.userprofile.full_name }}님, {% endif %}안녕하세요</span>
+      무엇을 도와드릴까요?
+    </h2>
+    <p class="dg-chat__intro">생활관 규칙·셔틀버스·식단·생활관 안내를 찾아 답해 드려요.</p>
+    <ul class="dg-chat__suggest" aria-label="자주 묻는 질문">
       {% for item in suggestions %}
-      <li><button type="button" class="dg-chat__chip" data-question="{{ item.question }}">{{ item.label }}</button></li>
+      <li><button type="button" class="dg-chat__chip" data-question="{{ item.question }}"><span>{{ item.label }}</span>{% include 'web/_icon.html' with name='plus' %}</button></li>
       {% endfor %}
     </ul>
   </section>

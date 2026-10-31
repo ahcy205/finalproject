@@ -8,19 +8,27 @@
 {% now "Y-m-d" as today %}
 <div class="dg-wrap">
   <header class="dg-pagehead">
-    <h1>공지 사항</h1>
-    {% if user.is_staff %}<a class="dg-btn" href="{% url 'web:notice_create' %}">공지 쓰기</a>{% endif %}
+    <span class="dg-pagehead__icon dg-tint--peach">{% include 'web/_icon.html' with name='bell' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>공지 사항</h1>
+      <p class="dg-pagehead__sub">생활관에서 알리는 소식이에요</p>
+    </div>
+    {% if user.is_staff %}<a class="dg-btn" href="{% url 'web:notice_create' %}">{% include 'web/_icon.html' with name='edit' %}공지 쓰기</a>{% endif %}
   </header>
+
+  <section class="dg-card dg-card--table dg-boardcard" aria-label="공지 목록">
+  <div class="dg-boardcard__tools">
 
   <form class="dg-searchbar dg-searchbar--simple" method="get" role="search">
     <label class="dg-sr" for="kw">제목 검색</label>
-    <input class="dg-input" type="search" name="kw" id="kw" value="{{ kw }}" placeholder="제목으로 찾기">
+    <span class="dg-search">{% include 'web/_icon.html' with name='search' %}<input class="dg-input" type="search" name="kw" id="kw" value="{{ kw }}" placeholder="제목으로 찾기"></span>
     <button class="dg-btn dg-btn--quiet" type="submit">검색</button>
   </form>
   <p class="dg-listinfo">
     {% if kw %}<span>‘{{ kw }}’ 검색 결과 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span> <a href="{% url 'web:notice' %}">검색 지우기</a>
     {% else %}<span>공지 <span class="dg-num">{{ page_obj.paginator.count }}</span>개</span>{% endif %}
   </p>
+  </div>
 
   <div class="dg-tablewrap">
     <table class="dg-table dg-boardlist">
@@ -41,6 +49,7 @@
       </tbody>
     </table>
   </div>
+  </section>
 
   {% include 'web/_pager.html' %}
 </div>

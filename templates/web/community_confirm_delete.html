@@ -7,8 +7,9 @@
 {% block title_suffix %}{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <div class="dg-confirm">
-    <header class="dg-pagehead"><h1>이 글을 삭제할까요?</h1></header>
+  <div class="dg-confirm dg-card dg-card--lg">
+    <span class="dg-confirm__icon dg-tint--danger">{% include 'web/_icon.html' with name='trash' %}</span>
+    <header class="dg-confirm__head"><h1>이 글을 삭제할까요?</h1></header>
     <dl class="dg-facts">
       <div><dt>제목</dt><dd>{{ post.title }}</dd></div>
       <div><dt>작성일</dt><dd class="dg-num">{{ post.created_at|date:"Y.m.d H:i" }}</dd></div>
