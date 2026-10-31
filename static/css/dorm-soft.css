@@ -215,6 +215,9 @@ body.dg-page:has(.dg-chat) {
 .dg-chat__send { min-height: 44px !important; border-radius: 18px !important; padding: 0 18px !important; }
 @media (max-width: 959.98px) {
   .dg-chat__dock { bottom: calc(var(--dg-kb, 0px) + 68px + env(safe-area-inset-bottom)) !important; }
+  /* 키보드가 열리면 탭 막대는 키보드 뒤로 간다. 입력창을 키보드 바로 위에 붙인다. */
+  .is-keyboard .dg-tabbar { display: none; }
+  .is-keyboard .dg-chat__dock { bottom: var(--dg-kb, 0px) !important; }
 }
 @media (max-width: 599.98px) {
   .dg-chat__hello { font-size: 21px; }

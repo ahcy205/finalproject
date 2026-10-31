@@ -297,6 +297,7 @@
       var vv = window.visualViewport;
       var inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       root.style.setProperty('--dg-kb', inset + 'px');
+      root.classList.toggle('is-keyboard', inset > 80);  // 화면 키보드가 열림 (주소 막대가 접히는 작은 변화는 무시)
     };
     window.visualViewport.addEventListener('resize', keyboard);
     window.visualViewport.addEventListener('scroll', keyboard);
