@@ -163,6 +163,69 @@ class LoginNextTests(TestCase):
         self.assertContains(response, 'name="next" value="/mypage/"')
 
 
+class AuthPageTests(TestCase):
+    """로그인·회원가입 화면: 라벨·자동 완성·필드 오류 표시 (docs/adr/0020, 8단계)."""
+
+    def signup_data(self, **changes):
+        data = {'full_name': '홍길동', 'username': '20250009', 'department': '컴퓨터공학과',
+                'password1': 'dorm-Life-2026!', 'password2': 'dorm-Life-2026!',
+                'phone_number': '010-1234-5678', 'email': 'hong@example.com'}
+        data.update(changes)
+        return data
+
+    def assert_label_for(self, html, field_id):
+        self.assertIn(f'for="{field_id}"', html)
+        self.assertIn(f'id="{field_id}"', html)
+
+    def test_login_labels_and_autocomplete(self):
+        html = self.client.get(reverse('web:login')).content.decode()
+        for field_id in ('username', 'password'):
+            self.assert_label_for(html, field_id)
+        self.assertIn('autocomplete="username"', html)
+        self.assertIn('autocomplete="current-password"', html)
+        self.assertIn('inputmode="numeric"', html)
+        self.assertIn('aria-pressed="false"', html)
+        self.assertIn(f'href="{reverse("web:signup")}"', html)
+
+    def test_failed_login_keeps_username_and_marks_fields(self):
+        User.objects.create_user('20250001', password='pw12345!')
+        response = self.client.post(reverse('web:login'), {'username': '20250001', 'password': 'wrong'})
+        self.assertContains(response, 'value="20250001"')
+        self.assertContains(response, 'aria-invalid="true"', count=2)
+        self.assertContains(response, 'class="dg-toast dg-toast--error')
+
+    def test_signup_labels_and_autocomplete(self):
+        html = self.client.get(reverse('web:signup')).content.decode()
+        for field_id in ('full_name', 'username', 'department', 'password1', 'password2', 'phone_number', 'email'):
+            self.assert_label_for(html, field_id)
+        for value in ('name', 'username', 'new-password', 'tel', 'email'):
+            self.assertIn(f'autocomplete="{value}"', html)
+        self.assertIn('inputmode="numeric"', html)
+        self.assertIn('8자 이상', html)  # MinimumLengthValidator 기본값
+        self.assertIn('010-1234-5678', html)
+        self.assertIn(f'href="{reverse("web:login")}"', html)
+        self.assertNotIn('aria-invalid', html)
+
+    def test_signup_field_errors_render_next_to_field(self):
+        User.objects.create_user('20250009', password='pw12345!')
+        response = self.client.post(reverse('web:signup'), self.signup_data(password2='different-2026!'))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('aria-invalid="true" aria-describedby="username_help username_err"', html)
+        self.assertIn('id="username_err">이미 사용 중인 학번입니다.', html)
+        self.assertIn('aria-describedby="password2_err"', html)
+        self.assertIn('id="password2_err"', html)
+        self.assertNotIn('id="email_err"', html)
+        # 입력한 값은 남기고 비밀번호는 다시 쓰게 한다
+        self.assertIn('value="홍길동"', html)
+        self.assertNotIn('dorm-Life-2026!', html)
+
+    def test_signup_still_creates_account(self):
+        response = self.client.post(reverse('web:signup'), self.signup_data())
+        self.assertRedirects(response, reverse('web:login'))
+        self.assertEqual(User.objects.get(username='20250009').userprofile.full_name, '홍길동')
+
+
 TEMP_MEDIA = tempfile.mkdtemp()
 
 
@@ -510,7 +573,6 @@ class SharedThemeAssetTests(TestCase):
 
     def test_no_template_includes_the_old_theme_partials(self):
         # 챗봇(7단계)을 끝으로 _theme_css.html / _theme_js.html 을 쓰는 화면이 없다.
-        # 남은 예전 화면(로그인·회원가입 등)은 base.html을 쓰며 8단계에서 옮긴다.
         from django.conf import settings
         pattern = re.compile(r"{%\s*include\s+['\"]web/_theme_(css|js)\.html")
         users = []
@@ -528,6 +590,8 @@ class SharedThemeAssetTests(TestCase):
         self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
         with mock.patch('web.views.start_warm_up'):
             self.check_new_css_only(('web:home', 'web:guide', 'web:community', 'web:chatbot'))
+        self.client.logout()
+        self.check_new_css_only(('web:login', 'web:signup'))
 
     def check_new_css_only(self, names):
         for name in names:

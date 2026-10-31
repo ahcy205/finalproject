@@ -1,148 +1,95 @@
-{% extends 'base.html' %}
+{% extends 'web/layout.html' %}
+{% comment %}
+회원가입 (docs/adr/0020). CustomSignupForm으로 검사하고, 오류로 돌아오면 칸마다 오류를 바로 아래에 보여 준다.
+비밀번호 규칙은 settings.AUTH_PASSWORD_VALIDATORS(8자 이상, 숫자만은 안 됨, 흔한 비밀번호 안 됨, 학번·이메일과 비슷하면 안 됨)를 그대로 적었다.
+비밀번호 규칙 오류와 불일치 오류는 Django가 "비밀번호 확인"(password2) 칸에 붙인다.
+{% endcomment %}
+{% block title %}회원가입{% endblock %}
 {% block content %}
-
-<style>
-  body {
-    font-family: 'Arial', sans-serif;
-    background-color: #F2DCDC;
-  }
-
-  .container {
-    max-width: 500px;
-    margin: 80px auto;
-    background-color: white;
-    padding: 40px 30px;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.05);
-  }
-
-  .logo {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 20px;
-    font-weight: bold;
-  }
-
-  .logo a {
-    text-decoration: none;
-    color: #333;
-  }
-
-  h4 {
-    font-weight: bold;
-    margin-bottom: 30px;
-    text-align: center;
-  }
-
-  .form-group {
-    margin-bottom: 1.2rem;
-    text-align: left;
-  }
-
-  .form-group label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-
-  .form-control {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-  }
-
-  .btn-join {
-    width: 100%;
-    padding: 12px;
-    background-color: #4A90E2;
-    color: white;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    transition: background-color 0.3s ease;
-  }
-
-  .btn-join:hover {
-    background-color: #357ABD;
-  }
-
-  .text-right {
-    text-align: right;
-    font-size: 14px;
-    margin-bottom: 20px;
-  }
-
-  .alert {
-    color: #e74c3c;
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-</style>
-
-<div class="logo">
-  <a href="{% url 'web:home' %}">돔고돔락 홈으로</a>
-</div>
-
-<div class="container">
-  <h4>회원가입</h4>
-
-  <div class="text-right">
-    <span>또는 <a href="{% url 'web:login' %}">로그인 하세요.</a></span>
+<div class="dg-wrap">
+  <div class="dg-auth">
+    <header class="dg-pagehead dg-auth__head">
+      <h1>회원가입</h1>
+      <p class="dg-pagehead__meta">학번으로 계정을 만들어요</p>
+    </header>
+    {% if form.errors %}
+    <div class="dg-formerror" role="alert">
+      <p>입력한 내용을 확인해 주세요. 표시한 칸을 고치면 돼요.</p>
+      {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}
+    <form class="dg-form" method="post" action="{% url 'web:signup' %}" novalidate>
+      {% csrf_token %}
+      <fieldset class="dg-auth__group">
+        <legend class="dg-auth__legend">학생 정보</legend>
+        <div class="dg-field">
+          <label class="dg-field__label" for="full_name">이름</label>
+          <input class="dg-input" type="text" id="full_name" name="full_name" required autocomplete="name"
+                 value="{{ form.full_name.value|default_if_none:'' }}"{% if form.full_name.errors %} aria-invalid="true" aria-describedby="full_name_err"{% endif %}>
+          {% if form.full_name.errors %}<span class="dg-field__error" id="full_name_err">{{ form.full_name.errors|join:' ' }}</span>{% endif %}
+        </div>
+        <div class="dg-field">
+          <label class="dg-field__label" for="username">학번</label>
+          <input class="dg-input dg-num" type="text" id="username" name="username" required maxlength="150"
+                 inputmode="numeric" autocomplete="username" autocapitalize="off" spellcheck="false"
+                 value="{{ form.username.value|default_if_none:'' }}"{% if form.username.errors %} aria-invalid="true" aria-describedby="username_help username_err"{% else %} aria-describedby="username_help"{% endif %}>
+          {% if form.username.errors %}<span class="dg-field__error" id="username_err">{{ form.username.errors|join:' ' }}</span>{% endif %}
+          <span class="dg-field__help" id="username_help">로그인할 때 아이디로 써요.</span>
+        </div>
+        <div class="dg-field">
+          <label class="dg-field__label" for="department">학과</label>
+          <input class="dg-input" type="text" id="department" name="department" required
+                 value="{{ form.department.value|default_if_none:'' }}"{% if form.department.errors %} aria-invalid="true" aria-describedby="department_err"{% endif %}>
+          {% if form.department.errors %}<span class="dg-field__error" id="department_err">{{ form.department.errors|join:' ' }}</span>{% endif %}
+        </div>
+        <div class="dg-field">
+          <label class="dg-field__label" for="phone_number">전화번호</label>
+          <input class="dg-input dg-num" type="tel" id="phone_number" name="phone_number" required
+                 inputmode="tel" autocomplete="tel"
+                 value="{{ form.phone_number.value|default_if_none:'' }}"{% if form.phone_number.errors %} aria-invalid="true" aria-describedby="phone_number_help phone_number_err"{% else %} aria-describedby="phone_number_help"{% endif %}>
+          {% if form.phone_number.errors %}<span class="dg-field__error" id="phone_number_err">{{ form.phone_number.errors|join:' ' }}</span>{% endif %}
+          <span class="dg-field__help" id="phone_number_help">예: <span class="dg-num">010-1234-5678</span></span>
+        </div>
+        <div class="dg-field">
+          <label class="dg-field__label" for="email">이메일</label>
+          <input class="dg-input" type="email" id="email" name="email" required
+                 autocomplete="email" autocapitalize="off" spellcheck="false"
+                 value="{{ form.email.value|default_if_none:'' }}"{% if form.email.errors %} aria-invalid="true" aria-describedby="email_err"{% endif %}>
+          {% if form.email.errors %}<span class="dg-field__error" id="email_err">{{ form.email.errors|join:' ' }}</span>{% endif %}
+        </div>
+      </fieldset>
+      <fieldset class="dg-auth__group">
+        <legend class="dg-auth__legend">비밀번호</legend>
+        <div class="dg-field">
+          <label class="dg-field__label" for="password1">비밀번호</label>
+          <div class="dg-pw">
+            <input class="dg-input" type="password" id="password1" name="password1" required autocomplete="new-password"
+                   {% if form.password1.errors %} aria-invalid="true" aria-describedby="password1_help password1_err"{% else %} aria-describedby="password1_help"{% endif %}>
+            {% include 'web/_password_toggle.html' with target='password1' %}
+          </div>
+          {% if form.password1.errors %}<span class="dg-field__error" id="password1_err">{{ form.password1.errors|join:' ' }}</span>{% endif %}
+          <ul class="dg-field__help dg-auth__rules" id="password1_help">
+            <li>8자 이상</li>
+            <li>숫자로만 만들 수 없어요</li>
+            <li>흔한 비밀번호, 학번·이메일과 비슷한 비밀번호는 쓸 수 없어요</li>
+          </ul>
+        </div>
+        <div class="dg-field">
+          <label class="dg-field__label" for="password2">비밀번호 확인</label>
+          <div class="dg-pw">
+            <input class="dg-input" type="password" id="password2" name="password2" required autocomplete="new-password"
+                   {% if form.password2.errors %} aria-invalid="true" aria-describedby="password2_err"{% endif %}>
+            {% include 'web/_password_toggle.html' with target='password2' %}
+          </div>
+          {% if form.password2.errors %}<span class="dg-field__error" id="password2_err">{{ form.password2.errors|join:' ' }}</span>{% endif %}
+        </div>
+      </fieldset>
+      <div class="dg-form__submit">
+        <button class="dg-btn" type="submit">계정 만들기</button>
+      </div>
+    </form>
+    <p class="dg-auth__switch">이미 계정이 있나요? <a href="{% url 'web:login' %}">로그인</a></p>
   </div>
-
-  {% include "form_errors.html" %}
-
-  <form method="POST" class="post-form">
-  {% csrf_token %}
-
-    <div class="form-group mb-3">
-      <label for="full_name">이름</label>
-      <input class="form-control" name="full_name" id="full_name"
-             value="{{ form.full_name.value|default_if_none:'' }}" required>
-    </div>
-
-    <div class="form-group mb-3">
-      <label for="username">학번</label>
-      <input class="form-control" name="username" id="username"
-             value="{{ form.username.value|default_if_none:'' }}" required>
-    </div>
-
-    <div class="form-group mb-3">
-          <label for="department">학과</label>
-          <input type="text" class="form-control" name="department" id="department"
-                 value="{{ form.department.value|default_if_none:'' }}" required>
-    </div>
-
-    <div class="form-group mb-3">
-      <label for="password1">비밀번호</label>
-      <input type="password" class="form-control" name="password1" id="password1" required>
-    </div>
-
-    <div class="form-group mb-3">
-      <label for="password2">비밀번호 확인</label>
-      <input type="password" class="form-control" name="password2" id="password2" required>
-    </div>
-
-    <div class="form-group mb-3">
-          <label for="phone_number">전화번호</label>
-          <input type="text" class="form-control" name="phone_number" id="phone_number"
-                 value="{{ form.phone_number.value|default_if_none:'' }}" required>
-    </div>
-
-    <div class="form-group mb-3">
-      <label for="email">이메일</label>
-      <input type="email" class="form-control" name="email" id="email"
-             value="{{ form.email.value|default_if_none:'' }}" required>
-    </div>
-
-    <button type="submit" class="btn btn-join">생성하기</button>
-  </form>
-
-
 </div>
-
 {% endblock %}
+{% block scripts %}{% include 'web/_password_toggle_js.html' %}{% endblock %}
