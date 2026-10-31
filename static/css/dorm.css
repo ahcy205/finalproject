@@ -654,3 +654,38 @@ textarea.dg-input.dg-chat__input {
   .dg-chat__answer { padding: 14px 16px; }
   .dg-chat__mine { max-width: 90%; }
 }
+
+/* ---------- 로그인·회원가입 ---------- */
+.dg-auth { max-width: 440px; }
+.dg-auth__head { flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 24px; }
+.dg-auth .dg-note, .dg-auth .dg-formerror { margin-bottom: 24px; }
+.dg-formerror p + p { margin-top: 4px; }
+.dg-auth__group { border: 0; padding: 0; margin: 0; min-width: 0; }
+.dg-auth__group > .dg-field + .dg-field { margin-top: 20px; }
+.dg-auth__legend { display: block; width: 100%; padding: 0 0 8px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--dg-line); font-size: 13px; font-weight: 700; color: var(--dg-ink-2); }
+.dg-auth .dg-form > .dg-auth__group + .dg-auth__group { margin-top: 32px; }
+.dg-auth__rules { display: grid; gap: 2px; }
+.dg-auth__rules li { position: relative; padding-left: 12px; }
+.dg-auth__rules li::before { content: ""; position: absolute; left: 2px; top: .7em; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--dg-ink-3); }
+.dg-auth__switch { margin-top: 24px !important; padding-top: 20px; border-top: 1px solid var(--dg-line);
+  font-size: 15px; color: var(--dg-ink-2); }
+.dg-auth__switch a { font-weight: 700; }
+
+/* 비밀번호 칸 안의 보기/숨기기 버튼 (JS가 있을 때만 보인다) */
+.dg-pw { position: relative; }
+.dg-page .dg-pw__toggle {
+  position: absolute; top: 4px; right: 4px; bottom: 4px; min-width: 64px; padding: 0 12px;
+  border: 0; border-radius: 4px; background: transparent; color: var(--dg-pine);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.dg-page .dg-pw__toggle:hover { background: var(--dg-pine-50); }
+.dg-page .dg-pw__toggle[aria-pressed="true"] { color: var(--dg-ink-2); }
+.dg-pw__toggle[hidden] { display: none; }
+.dg-pw.has-toggle .dg-input { padding-right: 80px; }
+
+@media (max-width: 599.98px) {
+  .dg-auth { max-width: none; }
+  .dg-auth .dg-form__submit .dg-btn { width: 100%; }
+}

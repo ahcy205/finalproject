@@ -1,133 +1,42 @@
-{% extends "base.html" %}
-
+{% extends 'web/layout.html' %}
+{% comment %}
+로그인 (docs/adr/0020). 학번·비밀번호가 틀리면 login_views가 오류 알림(messages)을 띄우고 입력한 학번을 돌려준다.
+next(로그인 뒤 갈 주소)는 숨은 칸으로 그대로 보내고, 같은 사이트 주소인지는 서버가 확인한다.
+{% endcomment %}
+{% block title %}로그인{% endblock %}
 {% block content %}
-<style>
-  body {
-    font-family: 'Arial', sans-serif;
-    background-color: #F2DCDC;
-  }
-
-  .container {
-    max-width: 500px;
-    margin: 80px auto;
-    background-color: white;
-    padding: 40px 30px;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.05);
-  }
-
-  .logo {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 20px;
-    font-weight: bold;
-  }
-
-  .logo a {
-    text-decoration: none;
-    color: #333;
-  }
-
-  h4 {
-    font-weight: bold;
-    margin-bottom: 30px;
-    text-align: center;
-  }
-
-  .form-group {
-    margin-bottom: 1.2rem;
-    text-align: left;
-  }
-
-  .form-group label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-
-  .form-control {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-  }
-
-  .btn-join {
-    width: 100%;
-    padding: 12px;
-    background-color: #4A90E2;
-    color: white;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    transition: background-color 0.3s ease;
-  }
-
-  .btn-join:hover {
-    background-color: #357ABD;
-  }
-
-  .text-right {
-    text-align: right;
-    font-size: 14px;
-    margin-bottom: 20px;
-  }
-
-  .alert {
-    color: #e74c3c;
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-
-  .mt-4 {
-    margin-top: 1.5rem;
-    text-align: center;
-  }
-</style>
-
-<div class="logo">
-  <a href="{% url 'web:home' %}">돔고돔락 홈으로</a>
-</div>
-
-<div class="container">
-  <h4>로그인</h4>
-
-  <div class="text-right">
-    <span>회원이 아니신가요? <a href="{% url 'web:signup' %}">회원가입 하세요.</a></span>
+<div class="dg-wrap">
+  <div class="dg-auth">
+    <header class="dg-pagehead dg-auth__head">
+      <h1>로그인</h1>
+      <p class="dg-pagehead__meta">생활관 계정으로 로그인해요</p>
+    </header>
+    {% if next %}
+    <p class="dg-note">로그인이 필요한 페이지입니다. 로그인하면 요청한 페이지로 이동합니다.</p>
+    {% endif %}
+    <form class="dg-form" method="post" action="{% url 'web:login' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="dg-field">
+        <label class="dg-field__label" for="username">학번</label>
+        <input class="dg-input dg-num" type="text" id="username" name="username" required
+               inputmode="numeric" autocomplete="username" autocapitalize="off" spellcheck="false"
+               value="{{ username|default_if_none:'' }}"{% if request.method == 'POST' %} aria-invalid="true"{% endif %}>
+      </div>
+      <div class="dg-field">
+        <label class="dg-field__label" for="password">비밀번호</label>
+        <div class="dg-pw">
+          <input class="dg-input" type="password" id="password" name="password" required
+                 autocomplete="current-password"{% if request.method == 'POST' %} aria-invalid="true"{% if username %} autofocus{% endif %}{% endif %}>
+          {% include 'web/_password_toggle.html' with target='password' %}
+        </div>
+      </div>
+      <div class="dg-form__submit">
+        <button class="dg-btn" type="submit">로그인</button>
+      </div>
+    </form>
+    <p class="dg-auth__switch">계정이 없나요? <a href="{% url 'web:signup' %}">회원가입</a></p>
   </div>
-
-  {% if next %}
-    <div class="alert">로그인이 필요한 페이지입니다. 로그인하면 요청한 페이지로 이동합니다.</div>
-  {% endif %}
-
-  {% if form_errors %}
-    {% for error in form_errors %}
-      <div class="alert">{{ error }}</div>
-    {% endfor %}
-  {% endif %}
-
-  <form method="post" action="{% url 'web:login' %}">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{{ next }}">
-
-    <div class="form-group">
-      <label for="username">학번</label>
-      <input type="text" id="username" name="username"
-             value="{{ username|default_if_none:'' }}"
-             class="form-control" required>
-    </div>
-
-    <div class="form-group">
-      <label for="password">비밀번호</label>
-      <input type="password" id="password" name="password"
-             class="form-control" required>
-    </div>
-
-    <button type="submit" class="btn-join">로그인</button>
-  </form>
 </div>
-
 {% endblock %}
+{% block scripts %}{% include 'web/_password_toggle_js.html' %}{% endblock %}
