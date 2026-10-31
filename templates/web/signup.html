@@ -2,7 +2,7 @@
 {% comment %}
 회원가입 (docs/adr/0020). CustomSignupForm으로 검사하고, 오류로 돌아오면 칸마다 오류를 바로 아래에 보여 준다.
 비밀번호 규칙은 settings.AUTH_PASSWORD_VALIDATORS(8자 이상, 숫자만은 안 됨, 흔한 비밀번호 안 됨, 학번·이메일과 비슷하면 안 됨)를 그대로 적었다.
-비밀번호 규칙 오류와 불일치 오류는 Django가 "비밀번호 확인"(password2) 칸에 붙인다.
+비밀번호 규칙 오류는 "비밀번호"(password1) 칸에, 두 칸이 다른 오류만 "비밀번호 확인"(password2) 칸에 붙는다 (CustomSignupForm.validate_password_for_user).
 {% endcomment %}
 {% block title %}회원가입{% endblock %}
 {% block content %}

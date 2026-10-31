@@ -6,20 +6,34 @@ from dorm.models import Comment, Post, Inquiry, InquiryAnswer, OutingApply, Noti
 
 
 class CustomSignupForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-    full_name = forms.CharField(required=True)
-    department = forms.CharField(required=True)
-    phone_number = forms.CharField(required=True)
+    email = forms.EmailField(required=True, error_messages={
+        'required': '이메일을 입력해 주세요.', 'invalid': '이메일 주소 형식을 확인해 주세요.'})
+    full_name = forms.CharField(required=True, error_messages={'required': '이름을 입력해 주세요.'})
+    department = forms.CharField(required=True, error_messages={'required': '학과를 입력해 주세요.'})
+    phone_number = forms.CharField(required=True, error_messages={'required': '전화번호를 입력해 주세요.'})
+    error_messages = {**UserCreationForm.error_messages,
+                      'password_mismatch': '두 비밀번호가 달라요. 같게 입력해 주세요.'}
 
     class Meta:
         model = User
         fields = ('username', 'email', 'full_name', 'department', 'phone_number', 'password1', 'password2')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].error_messages['required'] = '학번을 입력해 주세요.'
+        self.fields['password1'].error_messages['required'] = '비밀번호를 입력해 주세요.'
+        self.fields['password2'].error_messages['required'] = '비밀번호를 한 번 더 입력해 주세요.'
+
+    def validate_password_for_user(self, user, **kwargs):
+        # Django는 비밀번호 규칙 오류를 '비밀번호 확인' 칸에 붙인다. 규칙은 '비밀번호' 칸의 일이라 그쪽에 표시한다.
+        super().validate_password_for_user(user, password_field_name='password1')
+
     def clean_username(self):
         username = self.cleaned_data.get('username')
         if User.objects.filter(username=username).exists():
-            raise forms.ValidationError("이미 사용 중인 학번입니다.")
+            raise forms.ValidationError("이미 가입한 학번이에요. 로그인해 주세요.")
         return username
+
 
 class CommentForm(forms.ModelForm):
     class Meta:
