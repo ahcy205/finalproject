@@ -1650,6 +1650,18 @@ class SoftAppShellTests(TestCase):
                 with self.subTest(css=filename, selector=selector.strip()):
                     self.assertNotIn('border-radius', body)
 
+    def test_chat_input_sits_on_the_keyboard_without_the_tab_bar_gap(self):
+        """휴대폰 키보드가 열리면 탭 막대는 키보드 뒤로 가므로, 입력창도 탭 막대 높이만큼 띄우지 않는다."""
+        self.client.force_login(User.objects.create_user('20250001', password='pw12345!'))
+        with mock.patch('web.views.start_warm_up'):
+            html = self.client.get(reverse('web:chatbot')).content.decode()
+        self.assertIn("root.classList.toggle('is-keyboard'", html)
+        css_path = os.path.join(os.path.dirname(self.TEMPLATE_DIR), '..', 'static', 'css', 'dorm-soft.css')
+        with open(css_path, encoding='utf-8') as f:
+            css = f.read()
+        self.assertRegex(css, r'\.is-keyboard \.dg-tabbar\s*\{\s*display:\s*none')
+        self.assertRegex(css, r'\.is-keyboard \.dg-chat__dock\s*\{\s*bottom:\s*var\(--dg-kb')
+
     def test_every_icon_used_in_templates_draws_something(self):
         """아이콘 이름을 잘못 쓰면 빈 <svg>가 조용히 그려진다. 템플릿이 쓰는 이름마다 그림이 있는지 확인한다."""
         from django.template.loader import render_to_string
