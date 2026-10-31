@@ -6,15 +6,15 @@ AI 초안은 POST /inquiry/<id>/draft/ 가 답변 칸에 채워 다시 그린다
 {% block title %}{{ inquiry.title }}{% endblock %}
 {% block content %}
 <div class="dg-wrap{% if not is_admin %} dg-narrow{% endif %}">
-  <a class="dg-backlink" href="{% url 'web:mypage' %}?tab=inquiry">{% if is_admin %}모든 문의{% else %}내 문의{% endif %}</a>
+  <a class="dg-backlink" href="{% url 'web:mypage' %}?tab=inquiry">{% include 'web/_icon.html' with name='back' %}{% if is_admin %}모든 문의{% else %}내 문의{% endif %}</a>
 
   <div class="{% if is_admin %}dg-reply{% endif %}">
     <div class="dg-reply__read">
-      <article class="dg-article">
+      <article class="dg-article dg-card dg-card--lg">
         <header class="dg-article__head">
           <h1>{{ inquiry.title }}</h1>
           <p class="dg-article__meta">
-            <span>{{ inquiry.user.userprofile.full_name|default:inquiry.user.username }}</span>{% if inquiry.user.userprofile.full_name %} <span class="dg-num">{{ inquiry.user.username }}</span>{% endif %}
+            <span class="dg-article__avatar dg-tint--sky">{% include 'web/_icon.html' with name='user' %}</span><span>{{ inquiry.user.userprofile.full_name|default:inquiry.user.username }}</span>{% if inquiry.user.userprofile.full_name %} <span class="dg-num">{{ inquiry.user.username }}</span>{% endif %}
             · <span class="dg-num">{{ inquiry.created_at|date:"Y.m.d H:i" }}</span>
             {% if inquiry.inquiryanswer %}<span class="dg-status dg-status--approved">답변 완료</span>{% else %}<span class="dg-status dg-status--pending">답변 대기</span>{% endif %}
           </p>
@@ -22,8 +22,8 @@ AI 초안은 POST /inquiry/<id>/draft/ 가 답변 칸에 채워 다시 그린다
         <div class="dg-article__body">{{ inquiry.content|linebreaks }}</div>
       </article>
 
-      <section class="dg-answer" aria-labelledby="answer-title">
-        <h2 class="dg-answer__title" id="answer-title">관리실 답변</h2>
+      <section class="dg-answer{% if inquiry.inquiryanswer %} is-answered{% endif %}" aria-labelledby="answer-title">
+        <h2 class="dg-answer__title" id="answer-title"><span class="dg-answer__icon">{% include 'web/_icon.html' with name='inquiry' %}</span>관리실 답변</h2>
         {% if inquiry.inquiryanswer %}
         <div class="dg-answer__text">{{ inquiry.inquiryanswer.answer|linebreaks }}</div>
         <p class="dg-answer__meta">{{ inquiry.inquiryanswer.admin.username }} · <span class="dg-num">{{ inquiry.inquiryanswer.answered_at|date:"Y.m.d H:i" }}</span></p>
@@ -35,7 +35,7 @@ AI 초안은 POST /inquiry/<id>/draft/ 가 답변 칸에 채워 다시 그린다
 
     {% if is_admin %}
     <div class="dg-reply__work">
-      <form class="dg-form dg-reply__form" method="post" action="{% url 'web:inquiry_detail' inquiry.pk %}" novalidate>
+      <form class="dg-form dg-card dg-reply__form" method="post" action="{% url 'web:inquiry_detail' inquiry.pk %}" novalidate>
         {% csrf_token %}
         <div class="dg-field">
           <label class="dg-field__label" for="id_answer">{% if inquiry.inquiryanswer %}답변 고치기{% else %}답변 쓰기{% endif %}</label>
@@ -50,7 +50,7 @@ AI 초안은 POST /inquiry/<id>/draft/ 가 답변 칸에 채워 다시 그린다
       </form>
 
       <section class="dg-panel dg-draft" aria-labelledby="draft-title">
-        <h2 class="dg-panel__title" id="draft-title">AI 답변 초안</h2>
+        <h2 class="dg-panel__title dg-draft__head" id="draft-title"><span class="dg-draft__icon">{% include 'web/_icon.html' with name='spark' %}</span>AI 답변 초안</h2>
         <p class="dg-small dg-muted">규칙·안내·공지·이전 답변을 근거로 초안을 만들어 답변 칸에 채워요. 학생에게 자동으로 보내지 않아요.</p>
         <form method="post" action="{% url 'web:inquiry_draft' inquiry.pk %}" data-draft-form>
           {% csrf_token %}

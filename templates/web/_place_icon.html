@@ -1,0 +1,7 @@
+{% comment %}주변 편의시설 목록의 분류 아이콘 (acc.html). place.category에 따라 색 동그라미 아이콘을 고른다.{% endcomment %}
+{% if place.category == '식당' %}<span class="dg-place__icon dg-tint--peach">{% include 'web/_icon.html' with name='meal' %}</span>
+{% elif place.category == '카페' %}<span class="dg-place__icon dg-tint--lilac">{% include 'web/_icon.html' with name='cafe' %}</span>
+{% elif place.category == '편의점' %}<span class="dg-place__icon dg-tint--sky">{% include 'web/_icon.html' with name='cart' %}</span>
+{% elif place.category == '정류장' %}<span class="dg-place__icon dg-tint--mint">{% include 'web/_icon.html' with name='bus' %}</span>
+{% elif place.category == '주유소' %}<span class="dg-place__icon dg-tint--soft">{% include 'web/_icon.html' with name='fuel' %}</span>
+{% else %}<span class="dg-place__icon dg-tint--soft">{% include 'web/_icon.html' with name='pin' %}</span>{% endif %}

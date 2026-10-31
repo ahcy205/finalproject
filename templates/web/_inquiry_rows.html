@@ -1,14 +1,21 @@
 {% comment %}문의 목록 (마이페이지). 줄 전체가 링크라 키보드로도 연다. show_author: 직원용 작성자 칸{% endcomment %}
 {% if inquiries %}
-<ul class="dg-inquiries">
+<ul class="dg-feed dg-inquiries">
   {% for inquiry in inquiries %}
   <li><a href="{% url 'web:inquiry_detail' inquiry.pk %}">
-    <span class="dg-inquiries__title">{{ inquiry.title }}</span>
-    <span class="dg-inquiries__meta dg-num">{% if show_author %}{{ inquiry.user.username }} · {% endif %}{{ inquiry.created_at|date:"Y.m.d H:i" }}</span>
-    {% if inquiry.inquiryanswer %}<span class="dg-status dg-status--approved">답변 완료</span>{% else %}<span class="dg-status dg-status--pending">답변 대기</span>{% endif %}
+    <span class="dg-feed__icon{% if inquiry.inquiryanswer %} dg-tint--mint{% endif %}">{% include 'web/_icon.html' with name='inquiry' %}</span>
+    <span class="dg-feed__main">
+      <span class="dg-feed__title dg-inquiries__title">{{ inquiry.title }}</span>
+      <span class="dg-feed__meta dg-inquiries__meta dg-num">{% if show_author %}{{ inquiry.user.username }} · {% endif %}{{ inquiry.created_at|date:"Y.m.d H:i" }}</span>
+    </span>
+    <span class="dg-feed__end">{% if inquiry.inquiryanswer %}<span class="dg-status dg-status--approved">답변 완료</span>{% else %}<span class="dg-status dg-status--pending">답변 대기</span>{% endif %}</span>
+    {% include 'web/_icon.html' with name='chevron' %}
   </a></li>
   {% endfor %}
 </ul>
 {% else %}
-<p class="dg-empty">아직 문의가 없어요.</p>
+<div class="dg-emptystate">
+  <span class="dg-emptystate__icon dg-tint--sky">{% include 'web/_icon.html' with name='inquiry' %}</span>
+  <p>아직 문의가 없어요.</p>
+</div>
 {% endif %}

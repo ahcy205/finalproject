@@ -7,7 +7,13 @@
 {% block title %}주변 편의시설{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <header class="dg-pagehead"><h1>주변 편의시설</h1></header>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--mint">{% include 'web/_icon.html' with name='pin' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>주변 편의시설</h1>
+      <p class="dg-pagehead__sub">학교 근처 식당·편의점·카페를 지도와 함께 찾아요</p>
+    </div>
+  </header>
 
   <div class="dg-seg" role="group" aria-label="분류로 걸러 보기" data-filter hidden>
     <button type="button" class="dg-seg__btn" data-category="" aria-pressed="true">전체</button>
@@ -18,7 +24,7 @@
     <div class="dg-places__map">
       {% include 'web/_map.html' with label="주변 편의시설 지도" fallback="아래 목록을 이용해 주세요." %}
     </div>
-    <section class="dg-places__list" aria-labelledby="places-title">
+    <section class="dg-places__list dg-card" aria-labelledby="places-title">
       <h2 id="places-title" class="dg-sr">장소 목록</h2>
       <p class="dg-places__count dg-small dg-muted" aria-live="polite" data-count>학교 주변 <span class="dg-num">{{ places|length }}</span>곳</p>
       <ul class="dg-placelist">
@@ -26,10 +32,10 @@
         <li data-category="{{ place.category }}">
           {% if kakao_map_key %}
           <button type="button" class="dg-place" data-place="{{ place.id }}">
-            <span class="dg-place__name">{{ place.title }}</span><span class="dg-place__cat">{{ place.category }}</span>
+            {% include 'web/_place_icon.html' %}<span class="dg-place__name">{{ place.title }}</span><span class="dg-place__cat">{{ place.category }}</span>
           </button>
           {% else %}
-          <div class="dg-place"><span class="dg-place__name">{{ place.title }}</span><span class="dg-place__cat">{{ place.category }}</span></div>
+          <div class="dg-place">{% include 'web/_place_icon.html' %}<span class="dg-place__name">{{ place.title }}</span><span class="dg-place__cat">{{ place.category }}</span></div>
           {% endif %}
         </li>
         {% endfor %}

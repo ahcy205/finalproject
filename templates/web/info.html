@@ -6,7 +6,13 @@
 {% block title %}생활관 안내{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <header class="dg-pagehead"><h1>{{ doc.title }}</h1></header>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--lilac">{% include 'web/_icon.html' with name='building' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>{{ doc.title }}</h1>
+      <p class="dg-pagehead__sub">생활관의 조직, 입관·퇴관, 시설 관리, 생활관비, 자치위원회에 관한 규정이에요.</p>
+    </div>
+  </header>
   <div class="dg-doc">
     <details class="dg-toc">
       <summary>목차</summary>
@@ -27,9 +33,8 @@
     </details>
 
     <div class="dg-doc__body">
-      <p class="dg-doc__lead">생활관의 조직, 입관·퇴관, 시설 관리, 생활관비, 자치위원회에 관한 규정이에요.</p>
       {% for section in sections %}
-      <section class="dg-chapter" aria-labelledby="{{ section.id }}">
+      <section class="dg-chapter dg-card dg-card--lg" aria-labelledby="{{ section.id }}">
         <h2 id="{{ section.id }}" class="dg-chapter__title"><span class="dg-chapter__no">{{ section.label }}</span>{{ section.name }}</h2>
         {% for article in section.articles %}
         <section class="dg-clause">

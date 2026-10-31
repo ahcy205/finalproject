@@ -7,9 +7,15 @@
 {% block title_suffix %}{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <a class="dg-backlink" href="{% url 'web:community_detail' post.id %}">글로 돌아가기</a>
-  <header class="dg-pagehead"><h1>글 수정</h1></header>
-  <form class="dg-form" method="post" enctype="multipart/form-data">
+  <a class="dg-backlink" href="{% url 'web:community_detail' post.id %}">{% include 'web/_icon.html' with name='back' %}글로 돌아가기</a>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--peach">{% include 'web/_icon.html' with name='edit' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>글 수정</h1>
+      <p class="dg-pagehead__sub">고친 내용은 바로 게시판에 보여요</p>
+    </div>
+  </header>
+  <form class="dg-form dg-card dg-card--lg" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="dg-field">
       <label class="dg-field__label" for="title">제목</label>

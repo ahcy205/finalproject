@@ -1,12 +1,26 @@
 {% extends 'web/layout.html' %}
-{% comment %}"커뮤니티" 묶음의 첫 화면 (docs/adr/0020).{% endcomment %}
+{% comment %}"커뮤니티" 묶음의 첫 화면 (docs/adr/0020, 0021).{% endcomment %}
 {% block title %}커뮤니티{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <header class="dg-pagehead"><h1>커뮤니티</h1></header>
-  <ul class="dg-linkrows dg-linkrows--large">
-    <li><a href="{% url 'web:notice' %}"><span class="dg-linkrows__title">공지 사항</span><span class="dg-linkrows__desc">생활관에서 알리는 소식</span></a></li>
-    <li><a href="{% url 'web:community_home' %}"><span class="dg-linkrows__title">자유 게시판</span><span class="dg-linkrows__desc">생활관 사람들과 이야기해요</span></a></li>
-  </ul>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--peach">{% include 'web/_icon.html' with name='board' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>커뮤니티</h1>
+      <p class="dg-pagehead__sub">생활관 소식을 보고 이야기를 나눠요</p>
+    </div>
+  </header>
+  <nav class="dg-bigcards" aria-label="커뮤니티 게시판">
+    <a class="dg-bigcard" href="{% url 'web:notice' %}">
+      <span class="dg-tile__icon dg-tint--sky">{% include 'web/_icon.html' with name='bell' %}</span>
+      <span class="dg-bigcard__main"><span class="dg-bigcard__title">공지 사항</span><span class="dg-bigcard__desc">생활관에서 알리는 소식</span></span>
+      {% include 'web/_icon.html' with name='chevron' %}
+    </a>
+    <a class="dg-bigcard" href="{% url 'web:community_home' %}">
+      <span class="dg-tile__icon dg-tint--peach">{% include 'web/_icon.html' with name='board' %}</span>
+      <span class="dg-bigcard__main"><span class="dg-bigcard__title">자유 게시판</span><span class="dg-bigcard__desc">생활관 사람들과 이야기해요</span></span>
+      {% include 'web/_icon.html' with name='chevron' %}
+    </a>
+  </nav>
 </div>
 {% endblock %}

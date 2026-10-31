@@ -6,9 +6,15 @@
 {% block title %}상벌점 관리{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <header class="dg-pagehead"><h1>상벌점 관리</h1></header>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--pine">{% include 'web/_icon.html' with name='star' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>상벌점 관리</h1>
+      <p class="dg-pagehead__sub">학번으로 학생에게 상점이나 벌점을 줘요</p>
+    </div>
+  </header>
   <div class="dg-formgrid">
-    <form class="dg-form dg-points-form" method="post" action="{% url 'web:reward_penalty' %}">
+    <form class="dg-form dg-card dg-card--lg dg-points-form" method="post" action="{% url 'web:reward_penalty' %}">
       {% csrf_token %}
       <div class="dg-field">
         <label class="dg-field__label" for="student_number">학번</label>
@@ -32,12 +38,12 @@
       <div class="dg-form__submit"><button class="dg-btn" type="submit">점수 주기</button></div>
     </form>
 
-    <aside class="dg-stack" aria-label="상벌점 안내">
-      <section class="dg-section" aria-labelledby="how-title">
-        <div class="dg-section__head"><h2 id="how-title">주기 전에</h2></div>
-        <ul class="dg-rows">
-          <li><span class="dg-rows__main">학생의 지금 점수는 <a href="{% url 'web:mypage' %}?tab=search">학생 검색</a>에서 확인해요.</span></li>
-          <li><span class="dg-rows__main">벌점이 20점 이상이면 퇴관 조치 대상이에요. <a href="{% url 'web:rules' %}#penalties">벌점 기준</a></span></li>
+    <aside class="dg-stackcards" aria-label="상벌점 안내">
+      <section class="dg-card" aria-labelledby="how-title">
+        <div class="dg-card__head"><h2 id="how-title">주기 전에</h2></div>
+        <ul class="dg-feed">
+          <li><div class="dg-feed__row"><span class="dg-feed__icon">{% include 'web/_icon.html' with name='search' %}</span><span class="dg-feed__text">학생의 지금 점수는 <a href="{% url 'web:mypage' %}?tab=search">학생 검색</a>에서 확인해요.</span></div></li>
+          <li><div class="dg-feed__row"><span class="dg-feed__icon dg-tint--peach">{% include 'web/_icon.html' with name='alert' %}</span><span class="dg-feed__text">벌점이 20점 이상이면 퇴관 조치 대상이에요. <a href="{% url 'web:rules' %}#penalties">벌점 기준</a></span></div></li>
         </ul>
       </section>
     </aside>

@@ -9,8 +9,11 @@
 <div class="dg-wrap">
   {% if is_admin %}
   <header class="dg-pagehead">
-    <h1>입실 신청 관리</h1>
-    <p class="dg-pagehead__meta">배정 대기 <span class="dg-num">{{ counts.unassigned }}</span>명 · 전체 <span class="dg-num">{{ counts.all }}</span>명</p>
+    <span class="dg-pagehead__icon dg-tint--pine">{% include 'web/_icon.html' with name='key' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>입실 신청 관리</h1>
+      <p class="dg-pagehead__meta">배정 대기 <span class="dg-num">{{ counts.unassigned }}</span>명 · 전체 <span class="dg-num">{{ counts.all }}</span>명</p>
+    </div>
   </header>
   <nav class="dg-tabs dg-tabs--tight" aria-label="신청 상태">
     <a href="?status=unassigned"{% if status == 'unassigned' %} aria-current="page"{% endif %}>배정 대기 <span class="dg-num">{{ counts.unassigned }}</span></a>
@@ -84,18 +87,25 @@
   </div>
 
   {% else %}
-  <header class="dg-pagehead"><h1>입실 신청 현황</h1></header>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--sky">{% include 'web/_icon.html' with name='key' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>입실 신청 현황</h1>
+      <p class="dg-pagehead__sub">내 입실 신청과 방 배정 결과예요</p>
+    </div>
+  </header>
   {% for dorm in dorms %}
   <div class="dg-formgrid">
-    <section class="dg-section" aria-labelledby="room-title">
-      <div class="dg-section__head"><h2 id="room-title">방 배정</h2></div>
-      <div class="dg-assigned">
+    <section class="dg-card dg-card--lg" aria-labelledby="room-title">
+      <div class="dg-card__head"><h2 id="room-title">방 배정</h2></div>
+      <div class="dg-assigned{% if dorm.building_name and dorm.r_number and dorm.position %} is-done{% endif %}">
+        <span class="dg-assigned__icon">{% include 'web/_icon.html' with name='key' %}</span>
         {% if dorm.building_name and dorm.r_number and dorm.position %}
-        <span class="dg-plate">{{ dorm.building_name }} {{ dorm.r_number }}호</span>
-        <span class="dg-assigned__bed">{{ dorm.position }}번 침대</span>
+        <span class="dg-assigned__main"><span class="dg-assigned__room">{{ dorm.building_name }} {{ dorm.r_number }}호</span>
+        <span class="dg-assigned__bed">{{ dorm.position }}번 침대</span></span>
         {% else %}
-        <span class="dg-status dg-status--pending">배정 대기</span>
-        <span class="dg-muted">관리실이 방을 배정하면 여기에 호실이 보여요.</span>
+        <span class="dg-assigned__main"><span class="dg-status dg-status--pending">배정 대기</span>
+        <span class="dg-muted">관리실이 방을 배정하면 여기에 호실이 보여요.</span></span>
         {% endif %}
       </div>
       <dl class="dg-facts">
@@ -105,16 +115,19 @@
         <div><dt>요청 사항</dt><dd>{{ dorm.content|default:"없음" }}</dd></div>
       </dl>
     </section>
-    <aside class="dg-stack" aria-label="입실 안내">
+    <aside class="dg-stackcards" aria-label="입실 안내">
       <p class="dg-note">신청 내용을 바꾸려면 마이페이지의 <a href="{% url 'web:mypage' %}?tab=inquiry">문의하기</a>로 관리실에 알려 주세요.</p>
     </aside>
   </div>
   {% empty %}
-  <div class="dg-empty">
-    <strong>아직 입실 신청을 하지 않았어요.</strong>
-    신청하면 배정 결과를 여기에서 볼 수 있어요.
+  <div class="dg-card dg-narrow">
+    <div class="dg-emptystate">
+      <span class="dg-emptystate__icon dg-tint--sky">{% include 'web/_icon.html' with name='key' %}</span>
+      <strong>아직 입실 신청을 하지 않았어요.</strong>
+      <p>신청하면 배정 결과를 여기에서 볼 수 있어요.</p>
+      <a class="dg-btn" href="{% url 'web:check_in' %}">입실 신청</a>
+    </div>
   </div>
-  <div class="dg-actions"><a class="dg-btn" href="{% url 'web:check_in' %}">입실 신청</a></div>
   {% endfor %}
   {% endif %}
 </div>

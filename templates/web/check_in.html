@@ -6,20 +6,27 @@
 {% block title %}입실 신청{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <header class="dg-pagehead"><h1>입실 신청</h1></header>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--sky">{% include 'web/_icon.html' with name='key' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>입실 신청</h1>
+      <p class="dg-pagehead__sub">생활관에 들어올 학생 정보를 보내 주세요</p>
+    </div>
+  </header>
   <div class="dg-formgrid">
     {% if applied %}
-    <section class="dg-panel" aria-labelledby="applied-title">
-      <h2 class="dg-panel__title" id="applied-title">이미 입실 신청을 했어요</h2>
+    <section class="dg-card dg-card--lg dg-applied" aria-labelledby="applied-title">
+      <span class="dg-emptystate__icon dg-tint--mint">{% include 'web/_icon.html' with name='check' %}</span>
+      <h2 class="dg-card__title" id="applied-title">이미 입실 신청을 했어요</h2>
       {% if applied.position %}
       <p>배정된 방 <span class="dg-plate dg-plate--line dg-plate--sm">{{ applied.building_name }} {{ applied.r_number }}호</span> <span class="dg-muted">{{ applied.position }}번 침대</span></p>
       {% else %}
       <p class="dg-muted">관리실에서 방을 배정하면 여기와 신청 현황에서 볼 수 있어요.</p>
       {% endif %}
-      <a class="dg-btn dg-btn--quiet" href="{% url 'web:dorminfo' %}">신청 현황 보기</a>
+      <a class="dg-btn dg-btn--soft" href="{% url 'web:dorminfo' %}">신청 현황 보기</a>
     </section>
     {% else %}
-    <form class="dg-form" method="post">
+    <form class="dg-form dg-card dg-card--lg" method="post">
       {% csrf_token %}
       <div class="dg-field">
         <label class="dg-field__label" for="name">이름</label>
@@ -50,8 +57,8 @@
     </form>
     {% endif %}
 
-    <aside class="dg-section" aria-labelledby="steps-title">
-      <div class="dg-section__head"><h2 id="steps-title">신청 뒤에는</h2></div>
+    <aside class="dg-card" aria-labelledby="steps-title">
+      <div class="dg-card__head"><h2 id="steps-title">신청 뒤에는</h2></div>
       <ol class="dg-steps">
         <li><span>신청서를 보내면 관리실에 접수돼요.</span></li>
         <li><span>관리실이 확인하고 방과 침대를 배정해요.</span></li>

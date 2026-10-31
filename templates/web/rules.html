@@ -6,7 +6,13 @@
 {% block title %}생활관 규칙{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <header class="dg-pagehead"><h1>{{ doc.title }}</h1></header>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--lilac">{% include 'web/_icon.html' with name='book' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>{{ doc.title }}</h1>
+      <p class="dg-pagehead__sub">관생이 생활관에서 지켜야 할 수칙이에요. 어기면 벌점이 매겨지며, 기준은 <a href="#penalties">벌점 기준</a> 표에 있어요.</p>
+    </div>
+  </header>
   <div class="dg-doc">
     <details class="dg-toc">
       <summary>목차</summary>
@@ -21,16 +27,17 @@
     </details>
 
     <div class="dg-doc__body">
-      <p class="dg-doc__lead">관생이 생활관에서 지켜야 할 수칙이에요. 어기면 벌점이 매겨지며, 기준은 <a href="#penalties">벌점 기준</a> 표에 있어요.</p>
+      <div class="dg-card dg-card--lg dg-doc__card">
       {% for section in sections %}{% for article in section.articles %}
       <section class="dg-clause">
         <h2 id="{{ article.id }}" class="dg-clause__title"><span class="dg-clause__no">{{ article.label }}</span>{% if article.name %}<span>{{ article.name }}</span>{% endif %}</h2>
         {% include 'web/_clause_blocks.html' with blocks=article.blocks %}
       </section>
       {% endfor %}{% endfor %}
+      </div>
 
       {% if penalties %}
-      <section class="dg-clause dg-clause--table" aria-labelledby="penalties">
+      <section class="dg-card dg-card--lg dg-clause dg-clause--table" aria-labelledby="penalties">
         <h2 id="penalties" class="dg-clause__title"><span class="dg-clause__no">별표 1</span><span>벌점 기준</span></h2>
         <p class="dg-muted">{{ penalties.title }}</p>
         <div class="dg-tablewrap">

@@ -6,7 +6,13 @@
 {% block title %}마이페이지{% endblock %}
 {% block content %}
 <div class="dg-wrap">
-  <header class="dg-pagehead"><h1>마이페이지</h1></header>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--sky">{% include 'web/_icon.html' with name='user' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>마이페이지</h1>
+      <p class="dg-pagehead__sub">{% if is_admin %}내 정보와 학생 문의를 관리해요{% else %}내 정보와 문의를 한곳에서 봐요{% endif %}</p>
+    </div>
+  </header>
   <nav class="dg-tabs" aria-label="마이페이지 탭">
     <a href="?tab=info"{% if tab == 'info' %} aria-current="page"{% endif %}>내 정보</a>
     <a href="?tab=inquiry"{% if tab == 'inquiry' %} aria-current="page"{% endif %}>{% if is_admin %}모든 문의{% else %}문의하기{% endif %}</a>
@@ -15,8 +21,12 @@
 
   {% if tab == 'info' %}
   <div class="dg-formgrid">
-    <section class="dg-section" aria-labelledby="me-title">
-      <div class="dg-section__head"><h2 id="me-title">{{ user.userprofile.full_name|default:user.username }}</h2></div>
+    <section class="dg-card dg-card--lg" aria-labelledby="me-title">
+      <div class="dg-profile">
+        <span class="dg-profile__avatar">{% include 'web/_icon.html' with name='user' %}</span>
+        <div><h2 class="dg-card__title" id="me-title">{{ user.userprofile.full_name|default:user.username }}</h2>
+        <p class="dg-card__sub">{% if is_admin %}생활관 관리실{% else %}{{ user.userprofile.department|default:"학생" }}{% endif %}</p></div>
+      </div>
       <dl class="dg-facts">
         <div><dt>학번</dt><dd class="dg-num">{{ user.username }}</dd></div>
         <div><dt>학과</dt><dd>{{ user.userprofile.department|default:"-" }}</dd></div>
@@ -28,14 +38,14 @@
         </dd></div>
       </dl>
     </section>
-    <section class="dg-panel" aria-labelledby="points-title">
-      <h2 class="dg-panel__title" id="points-title">상점·벌점</h2>
+    <section class="dg-card dg-card--lg" aria-labelledby="points-title">
+      <div class="dg-card__head"><h2 id="points-title">상점·벌점</h2></div>
       <div class="dg-points">
-        <div><span class="dg-points__label">상점</span><span class="dg-plate dg-plate--line">{{ user.userprofile.reward_point }}</span></div>
-        <div><span class="dg-points__label">벌점</span><span class="dg-plate dg-plate--line">{{ user.userprofile.penalty_point }}</span></div>
+        <div class="dg-points__item dg-tint--mint"><span class="dg-points__label">{% include 'web/_icon.html' with name='star' %}상점</span><span class="dg-points__value dg-num">{{ user.userprofile.reward_point }}<small>점</small></span></div>
+        <div class="dg-points__item dg-tint--peach"><span class="dg-points__label">{% include 'web/_icon.html' with name='alert' %}벌점</span><span class="dg-points__value dg-num">{{ user.userprofile.penalty_point }}<small>점</small></span></div>
       </div>
       {% if is_admin %}
-      <a class="dg-btn dg-btn--quiet" href="{% url 'web:reward_penalty' %}">상벌점 관리</a>
+      <a class="dg-btn dg-btn--soft dg-btn--block" href="{% url 'web:reward_penalty' %}">상벌점 관리</a>
       {% else %}
       <p class="dg-small dg-muted">벌점이 20점 이상이면 퇴관 조치돼요. <a href="{% url 'web:rules' %}">벌점 기준</a></p>
       {% endif %}
@@ -43,13 +53,14 @@
   </div>
 
   {% elif tab == 'inquiry' and is_admin %}
-  <section aria-label="모든 문의">
+  <section class="dg-card" aria-label="모든 문의">
     {% include 'web/_inquiry_rows.html' with show_author=True %}
   </section>
 
   {% elif tab == 'inquiry' %}
   <div class="dg-formgrid">
-    <form class="dg-form" method="post" action="{% url 'web:mypage' %}?tab=inquiry" novalidate>
+    <form class="dg-form dg-card dg-card--lg" method="post" action="{% url 'web:mypage' %}?tab=inquiry" novalidate>
+      <div class="dg-card__head"><h2>새 문의</h2></div>
       {% csrf_token %}
       <div class="dg-field">
         <label class="dg-field__label" for="{{ form.title.id_for_label }}">제목</label>
@@ -65,15 +76,15 @@
       </div>
       <div class="dg-form__submit"><button class="dg-btn" type="submit" name="submit_inquiry" value="1">문의 보내기</button></div>
     </form>
-    <section class="dg-section" aria-labelledby="mine-title">
-      <div class="dg-section__head"><h2 id="mine-title">내 문의</h2></div>
+    <section class="dg-card" aria-labelledby="mine-title">
+      <div class="dg-card__head"><h2 id="mine-title">내 문의</h2></div>
       {% include 'web/_inquiry_rows.html' %}
       <p class="dg-small dg-muted dg-after">자주 묻는 질문은 <a href="{% url 'web:chatbot' %}">AI 챗봇</a>이 바로 답해 줘요.</p>
     </section>
   </div>
 
   {% elif tab == 'search' %}
-  <form class="dg-searchbar" method="get" role="search">
+  <form class="dg-searchbar dg-card" method="get" role="search">
     <input type="hidden" name="tab" value="search">
     <label class="dg-sr" for="field">검색 항목</label>
     <select class="dg-input" name="field" id="field">
@@ -85,7 +96,7 @@
   </form>
   {% if request.GET.field %}
   <div class="dg-tablewrap">
-    <table class="dg-table">
+    <table class="dg-table dg-table--nowrap">
       <caption class="dg-sr">학생 검색 결과</caption>
       <thead><tr><th scope="col">이름</th><th scope="col">학번</th><th scope="col">학과</th><th scope="col">전화 번호</th>
         <th scope="col" class="dg-table__num">상점</th><th scope="col" class="dg-table__num">벌점</th><th scope="col">방</th><th scope="col">성별</th></tr></thead>
@@ -110,7 +121,12 @@
     </table>
   </div>
   {% else %}
-  <p class="dg-empty">이름, 학번, 학과, 전화 번호, 건물명, 호수, 성별로 학생을 찾을 수 있어요.</p>
+  <div class="dg-card">
+    <div class="dg-emptystate">
+      <span class="dg-emptystate__icon dg-tint--sky">{% include 'web/_icon.html' with name='search' %}</span>
+      <p>이름, 학번, 학과, 전화 번호, 건물명, 호수, 성별로 학생을 찾을 수 있어요.</p>
+    </div>
+  </div>
   {% endif %}
   {% endif %}
 </div>

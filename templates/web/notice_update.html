@@ -7,9 +7,15 @@
 {% block title_suffix %}{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <a class="dg-backlink" href="{% url 'web:notice_detail' notice.id %}">공지로 돌아가기</a>
-  <header class="dg-pagehead"><h1>공지 수정</h1></header>
-  <form class="dg-form" method="post" enctype="multipart/form-data">
+  <a class="dg-backlink" href="{% url 'web:notice_detail' notice.id %}">{% include 'web/_icon.html' with name='back' %}공지로 돌아가기</a>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--peach">{% include 'web/_icon.html' with name='bell' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>공지 수정</h1>
+      <p class="dg-pagehead__sub">고친 내용은 바로 공지에 보여요</p>
+    </div>
+  </header>
+  <form class="dg-form dg-card dg-card--lg" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% if error %}<p class="dg-formerror" role="alert">{{ error }}</p>{% endif %}
     <div class="dg-field">

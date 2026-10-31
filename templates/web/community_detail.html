@@ -8,11 +8,11 @@
 {% block title %}{{ post.title }}{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <a class="dg-backlink" href="{% url 'web:community_home' %}">자유 게시판</a>
-  <article class="dg-article">
+  <a class="dg-backlink" href="{% url 'web:community_home' %}">{% include 'web/_icon.html' with name='back' %}자유 게시판</a>
+  <article class="dg-article dg-card dg-card--lg">
     <header class="dg-article__head">
       <h1>{{ post.title }}</h1>
-      <p class="dg-article__meta"><span>{% if post.author_id == user.id %}내 글{% else %}익명{% endif %}</span> · <span class="dg-num">{{ post.created_at|date:"Y.m.d H:i" }}</span></p>
+      <p class="dg-article__meta"><span class="dg-article__avatar dg-tint--peach">{% include 'web/_icon.html' with name='user' %}</span><span>{% if post.author_id == user.id %}내 글{% else %}익명{% endif %}</span> · <span class="dg-num">{{ post.created_at|date:"Y.m.d H:i" }}</span></p>
     </header>
     <div class="dg-article__body">{{ post.content|linebreaks }}</div>
     {% if post.image %}
@@ -22,7 +22,7 @@
       <form method="post" action="{% url 'web:toggle_like' post.id %}">
         {% csrf_token %}
         <button class="dg-btn dg-btn--quiet dg-like" type="submit" aria-pressed="{% if liked %}true{% else %}false{% endif %}">
-          좋아요 <span class="dg-like__count">{{ post.likes.count }}</span>
+          {% include 'web/_icon.html' with name='heart' %}좋아요 <span class="dg-like__count">{{ post.likes.count }}</span>
         </button>
       </form>
       <div class="dg-actions">
@@ -32,8 +32,8 @@
     </footer>
   </article>
 
-  <section class="dg-section" aria-labelledby="comments-title">
-    <div class="dg-section__head"><h2 id="comments-title">댓글 <span class="dg-num">{{ comments.count }}</span></h2></div>
+  <section class="dg-card dg-card--lg dg-commentcard" aria-labelledby="comments-title">
+    <div class="dg-card__head"><h2 id="comments-title">댓글 <span class="dg-num">{{ comments.count }}</span></h2></div>
     <form class="dg-form dg-commentform" method="post" action="{% url 'web:add_comment' post.pk %}">
       {% csrf_token %}
       <div class="dg-field">
@@ -47,6 +47,8 @@
     <ul class="dg-comments">
       {% for comment in comments %}
       <li>
+        <span class="dg-comments__avatar{% if comment.anon_label == '글쓴이' %} is-writer{% endif %}">{% include 'web/_icon.html' with name='user' %}</span>
+        <div class="dg-comments__body">
         <div class="dg-comments__head">
           <span class="dg-comments__who{% if comment.anon_label == '글쓴이' %} dg-comments__who--writer{% endif %}">{{ comment.anon_label }}</span>
           <span class="dg-num">{{ comment.created_at|date:"Y.m.d H:i" }}</span>
@@ -62,11 +64,15 @@
           {% endif %}
         </div>
         <div class="dg-comments__text">{{ comment.content|linebreaks }}</div>
+        </div>
       </li>
       {% endfor %}
     </ul>
     {% else %}
-    <p class="dg-empty">아직 댓글이 없어요.</p>
+    <div class="dg-emptystate">
+      <span class="dg-emptystate__icon dg-tint--peach">{% include 'web/_icon.html' with name='comment' %}</span>
+      <p>아직 댓글이 없어요. 첫 댓글을 남겨 보세요.</p>
+    </div>
     {% endif %}
   </section>
 </div>

@@ -5,9 +5,15 @@
 {% block title %}글 쓰기{% endblock %}
 {% block content %}
 <div class="dg-wrap dg-narrow">
-  <a class="dg-backlink" href="{% url 'web:community_home' %}">자유 게시판</a>
-  <header class="dg-pagehead"><h1>글 쓰기</h1></header>
-  <form class="dg-form" method="post" enctype="multipart/form-data" novalidate>
+  <a class="dg-backlink" href="{% url 'web:community_home' %}">{% include 'web/_icon.html' with name='back' %}자유 게시판</a>
+  <header class="dg-pagehead">
+    <span class="dg-pagehead__icon dg-tint--peach">{% include 'web/_icon.html' with name='edit' %}</span>
+    <div class="dg-pagehead__text">
+      <h1>글 쓰기</h1>
+      <p class="dg-pagehead__sub">생활관 사람들과 나누고 싶은 이야기를 적어 주세요</p>
+    </div>
+  </header>
+  <form class="dg-form dg-card dg-card--lg" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="dg-field">
       <label class="dg-field__label" for="title">제목</label>

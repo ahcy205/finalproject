@@ -190,3 +190,26 @@
   .dg-bar *, .dg-toast { transition: none !important; animation: none !important; }
 }
 
+
+/* ---------- 밝은 상단 막대 (docs/adr/0021) ----------
+   녹색 막대 대신 흰 막대에 녹색 글자. 홈의 녹색 인사말과 겹치지 않고, 앱처럼 가볍게 보인다. */
+/* backdrop-filter(흐림)는 쓰지 않는다: 막대 안의 서랍(position: fixed)이 화면 대신 막대를 기준으로 놓여
+   휴대폰에서 페이지가 옆으로 넓어지고 서랍이 펼쳐지지 않았다 */
+.dg-bar { background: #fff; color: var(--dg-ink); border-bottom: 1px solid #E1E7E3; }
+.dg-brand { color: var(--dg-pine) !important; }
+.dg-nav__toggle, .dg-nav__link { color: var(--dg-ink-2) !important; }
+.dg-nav__toggle:hover, .dg-nav__link:hover, .dg-nav__toggle[aria-expanded="true"] { color: var(--dg-ink) !important; }
+.dg-nav__group.is-current > .dg-nav__toggle,
+.dg-nav__group.is-current > .dg-nav__link { color: var(--dg-pine) !important; border-bottom-color: var(--dg-pine); }
+.dg-nav__menu { border-radius: 14px; border-color: #E1E7E3; }
+.dg-nav__menu a { border-radius: 8px; }
+.dg-nav__who { color: var(--dg-ink-2); }
+.dg-nav__logout, .dg-nav__login { color: var(--dg-ink) !important; border-color: #D3DBD6; border-radius: 10px; }
+.dg-nav__logout:hover, .dg-nav__login:hover { background: #F2F5F3; border-color: var(--dg-ink-3); }
+@media (max-width: 959.98px) {
+  .dg-bar__menu { color: var(--dg-ink); border-color: #D3DBD6; border-radius: 10px; }
+  .dg-nav__head { background: #fff; color: var(--dg-ink); border-bottom: 1px solid #E1E7E3; }
+  .dg-nav__close { color: var(--dg-ink); }
+  .dg-nav__toggle { color: var(--dg-ink-3) !important; }
+  .dg-nav__group.is-current > .dg-nav__toggle { color: var(--dg-pine) !important; }
+}
