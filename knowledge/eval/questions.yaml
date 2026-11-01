@@ -127,6 +127,41 @@ questions:
   expected: ['menu:06월 16일', 'menu:06월 17일', 'menu:06월 18일', 'menu:06월 19일', 'menu:06월 20일']
   facts: ['4,500원|4500원|4,500']
 
+# 숫자 (벌점·기한·비율). 벌점표에 3·4·5·7·10점이 섞여 있어 항목과 점수를 바꿔 답하는지 본다 (2026-11-01 추가)
+- q: 방에서 친구들이랑 시끄럽게 떠들면 벌점 얼마야?
+  expected: [rules:penalty_table]
+  facts: ['3점']
+- q: 창밖으로 쓰레기 던지면 벌점 있어?
+  expected: [rules:penalty_table]
+  facts: ['3점']
+- q: 친구 외출 신청을 대신 해 주면 벌점 몇 점이야?
+  expected: [rules:penalty_table]
+  facts: ['4점']
+- q: 방 비밀번호를 다른 사람한테 알려 주면 벌점 받아?
+  expected: [rules:penalty_table]
+  facts: ['5점']
+- q: 외박 신청 안 하고 밖에서 자고 오면 벌점 몇 점이야?
+  expected: [rules:penalty_table]
+  facts: ['7점']
+- q: 기숙사 의자 부서뜨리면 벌점도 받아?
+  expected: [rules:penalty_table]
+  facts: ['10점']
+- q: 봉사활동 하면 벌점 얼마나 깎여?
+  expected: [rules:penalty_table, rules:article:14-2]
+  facts: ['2점']
+- q: 퇴관 조치 받으면 언제까지 방 빼야 해?
+  expected: [rules:penalty_table, info:article:16]
+  facts: ['2주|14일']
+- q: 입관 허가 받고 바로 안 들어가면 어떻게 돼?
+  expected: [info:article:9]
+  facts: ['7일']
+- q: 학교에서 방 옮기라고 하면 며칠 전에 알려 줘?
+  expected: [info:article:15]
+  facts: ['7일']
+- q: 2학년은 기숙사 몇 퍼센트 뽑아?
+  expected: [info:article:8]
+  facts: ['60%|60퍼센트|60 %']
+
 # 기숙사 자료로는 답할 수 없는 질문. "근거 부족" 기준값을 정하는 데 쓴다 (초안을 만들지 않아야 정답).
 out_of_scope:
 - 학교 도서관 몇 시까지 열어?
