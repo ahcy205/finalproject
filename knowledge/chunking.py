@@ -116,9 +116,10 @@ def menu_chunks():
     for index, day in enumerate(doc['days']):
         lines = []
         for meal in doc['meals']:
-            times = '·'.join(row['time'] for row in meal['rows'] if row['time'])
+            # 시간 칸은 배식 시작·종료 시각이다. "17:30·19:00"으로 두면 모델이 "7시 30분부터 9시"처럼 잘못 읽었다
+            times = '–'.join(row['time'] for row in meal['rows'] if row['time'])
             dishes = ', '.join(row['dishes'][index] for row in meal['rows'] if row['dishes'][index])
-            lines.append(f'{meal["name"]} ({meal["price"]}, {times}): {dishes}')
+            lines.append(f'{meal["name"]} {times} 배식 ({meal["price"]}): {dishes}')
         chunks.append(Chunk(
             source=Source.MENU, key=f'menu:{day["date"]}',
             title=f'{doc["title"]} {day["date"]} ({day["weekday"]})',
