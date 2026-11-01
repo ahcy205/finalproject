@@ -659,6 +659,20 @@ class DraftPromptTests(TestCase):
         self.assertTrue(prompt.endswith(REMINDER))
         self.assertIn('[1] 제3조\n06:00-23:00', prompt)
 
+    def test_prompt_tells_the_model_which_rule_word_the_student_meant(self):
+        """학생 말(전기장판)과 규칙 말(전열기)이 다르면 모델이 "명시되어 있지 않지만"으로 말을 돌린다.
+        근거에 있는 규칙 말만 골라 한 줄로 알려 준다 (docs/adr/0022)."""
+        from knowledge.answering import REMINDER, build_prompt
+        from knowledge.search import SearchHit
+        hit = SearchHit(chunk=KnowledgeChunk(key='rules:article:10', title='제10조', content='9. 전열기, 기타 난방/취사 도구 사용'),
+                        score=1.0)
+        prompt = build_prompt('', '전기장판 써도 돼?', [hit])
+        self.assertIn("질문의 '전기장판'은 근거의 '전열기'에 해당합니다.", prompt)
+        self.assertTrue(prompt.endswith(REMINDER))
+        # 근거에 없는 말은 알려 주지 않는다
+        self.assertNotIn('해당합니다', build_prompt('', '전기장판 써도 돼?', [SearchHit(
+            chunk=KnowledgeChunk(key='rules:article:3', title='제3조', content='06:00-23:00'), score=1.0)]))
+
     def test_system_prompt_shows_an_answer_and_a_refusal(self):
         from knowledge.answering import SYSTEM_PROMPT
         self.assertIn('예시 1', SYSTEM_PROMPT)

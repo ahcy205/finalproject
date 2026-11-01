@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 from .llm import LLMError, get_llm
 from .privacy import mask_personal_info
-from .search import search
+from .search import load_synonyms, search
 from .time_check import mismatched_times
 
 # 근거가 부족하다고 볼 유사도 기준 (bge-m3 기준 측정값, docs/adr/0007).
@@ -62,10 +62,26 @@ class Draft:
     best_similarity: float | None = None
 
 
+def word_hints(question, hits):
+    """질문의 학생 말이 근거에서는 다른 말로 적혀 있으면 알려 주는 줄 (synonyms.yaml, docs/adr/0022).
+
+    "전기장판"을 물었는데 근거에는 "전열기"만 있으면, 모델은 "명시되어 있지 않지만"으로 말을 돌린다.
+    근거에 실제로 있는 규칙 말만 알려 준다."""
+    evidence = ' '.join(f'{h.chunk.title} {h.chunk.content}' for h in hits)
+    lines = []
+    for word, terms in load_synonyms().items():
+        found = [t for t in terms if t in evidence and t not in question]
+        if word in question and found:
+            particle = '은' if (ord(word[-1]) - 0xAC00) % 28 else '는'  # 받침 있으면 '은'
+            lines.append(f"질문의 '{word}'{particle} 근거의 '{', '.join(found)}'에 해당합니다.")
+    return lines + [''] if lines else []
+
+
 def build_prompt(title, content, hits):
     lines = ['[문의]', f'제목: {title}', f'내용: {content}', '', '[근거]']
     for number, hit in enumerate(hits, start=1):
         lines += [f'[{number}] {hit.chunk.title}', hit.chunk.content, '']
+    lines += word_hints(f'{title} {content}', hits)
     # 작은 모델은 긴 지시보다 바로 앞의 말을 더 잘 따른다. 근거 뒤에 핵심 규칙을 한 번 더 둔다
     lines.append(REMINDER)
     return '\n'.join(lines).strip()
