@@ -44,6 +44,9 @@ SYSTEM_PROMPT = DRAFT_SYSTEM_PROMPT
 
 # 첫 문장에서 "자료에 없다"고 하면, 관계없는 근거 번호를 붙였더라도 답을 찾지 못한 것으로 본다
 NOT_FOUND = re.compile(r'확인할 수 없|확인하기 어렵|확인되지 않|명시되어 있지 않|언급되어 있지 않|포함되어 있지 않|나와 있지 않')
+# "명시되어 있지 않지만/않으나/않았지만/않은데" — 없다고 한 뒤 바로 답을 잇는 말
+HEDGE = re.compile(rf'(?:{NOT_FOUND.pattern})(?:았|었)?(?:지만|으나|은데|는데)')
+PARAGRAPH = re.compile(r'\n\s*\n')
 GREETING = re.compile(r'^\s*안녕하세요[.!]?\s*')
 SENTENCE_END = re.compile(r'(?<=[.!?])\s+')
 # 모델이 가끔 **굵게** 마크다운을 쓴다. 화면과 앱은 글자 그대로 보여 주므로 기호를 지운다
@@ -128,9 +131,20 @@ def allow_request(user_id, limit=RATE_LIMIT, window=RATE_WINDOW):
 
 def opens_with_not_found(text, sentences=2):
     """인사말을 뺀 앞 두 문장에 "자료에 없다"는 말이 있는지. 범위 밖 질문에 "명시되어 있지 않습니다 [5]"처럼
-    관계없는 번호를 붙여 인용 검사를 통과하는 답을 거른다."""
+    관계없는 번호를 붙여 인용 검사를 통과하는 답을 거른다.
+
+    "명시되어 있지 않지만, ~입니다"처럼 말을 돌린 뒤 답하는 문장은 세지 않는다. 학생 말(전기장판)과 규칙 말(전열기)이
+    다를 때 모델이 이렇게 답하고, 대개 맞는 답이다. 이런 답은 판단 모델 검증으로 넘긴다 (docs/adr/0022)."""
     body = GREETING.sub('', text)
-    return any(NOT_FOUND.search(s) for s in SENTENCE_END.split(body)[:sentences])
+    return any(NOT_FOUND.search(HEDGE.sub('', s)) for s in SENTENCE_END.split(body)[:sentences])
+
+
+def cut_trailing_refusal(text):
+    """답을 한 뒤 끝 문단에 붙인 거절 문구("근거 자료에서 확인할 수 없습니다…")를 지운다. 앞의 답과 어긋나 보인다."""
+    paragraphs = PARAGRAPH.split(text.strip())
+    while len(paragraphs) > 1 and REFUSAL_PHRASE in paragraphs[-1]:
+        paragraphs.pop()
+    return '\n\n'.join(paragraphs)
 
 
 def source_links(draft, numbers):
@@ -159,8 +173,8 @@ def checked_reply(question, draft, verifier=None):
     if not verdict.passed:
         related = list(range(1, min(RELATED_LINKS, len(draft.evidence)) + 1))
         return ChatReply('unverified', UNVERIFIED_MESSAGE, source_links(draft, related), draft=draft, verdict=verdict)
-    return ChatReply('answered', MARKDOWN_BOLD.sub(r'\1', draft.text), source_links(draft, draft.cited), draft=draft,
-                     verdict=verdict)
+    return ChatReply('answered', MARKDOWN_BOLD.sub(r'\1', cut_trailing_refusal(draft.text)), source_links(draft, draft.cited),
+                     draft=draft, verdict=verdict)
 
 
 def _answer(question, llm, embedder, min_similarity, verifier=None):

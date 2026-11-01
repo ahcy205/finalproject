@@ -759,6 +759,28 @@ class StudentChatTests(TestCase):
         reply = self.ask('남자 기숙사 이름', RecordingLLM(reply=text))
         self.assertEqual(reply.status, 'answered')
 
+    def test_a_hedged_answer_goes_to_verification_instead_of_hiding(self):
+        """"명시되어 있지 않지만, ~입니다 [3]"은 답이 있는 말이다. 숨기지 않고 검증으로 넘긴다 (docs/adr/0022)."""
+        from knowledge.chat import opens_with_not_found
+        for text in ('안녕하세요. 전기장판은 명시적으로 언급되어 있지 않지만, 제10조에서 전열기 사용을 금지합니다 [1].',
+                     '정확한 시간은 명시되어 있지 않으나, 매주 수요일 저녁에 점검합니다 [1].',
+                     '감면 방법은 따로 확인되지 않았지만, 봉사활동 1시간에 2점이 감면됩니다 [1].'):
+            with self.subTest(text=text):
+                self.assertFalse(opens_with_not_found(text))
+        self.assertTrue(opens_with_not_found('정확한 시간은 명시되어 있지 않지만 확인할 수 없습니다 [1].'))
+        reply = self.ask('전기장판', RecordingLLM(
+            reply='전기장판은 명시적으로 언급되어 있지 않지만, 전열기 사용은 금지되어 있습니다 [1].'))
+        self.assertEqual(reply.status, 'answered')
+
+    def test_a_trailing_refusal_is_cut_from_a_shown_answer(self):
+        """답을 한 뒤 끝에 붙인 거절 문구("근거 자료에서 확인할 수 없습니다…")는 앞의 답과 어긋나 보여서 지운다."""
+        answer = '전열기 사용은 금지되어 있습니다 [1]. 난방 도구도 같습니다 [1]. 필요하면 관리실에 물어보세요.'
+        text = (answer + '\n\n근거 자료에서 확인할 수 없는 세부 사항이라면:\n\n'
+                '근거 자료에서 확인할 수 없습니다. 생활관에 직접 문의해 주세요.')
+        reply = self.ask('전기장판', RecordingLLM(reply=text))
+        self.assertEqual(reply.status, 'answered')
+        self.assertEqual(reply.text, answer)
+
     def test_markdown_bold_is_removed_from_answers(self):
         reply = self.ask('출입시간', RecordingLLM(reply='1. **출입시간**: 06:00-23:00입니다 [1].'))
         self.assertEqual(reply.status, 'answered')
