@@ -158,6 +158,13 @@ class ChunkingTests(TestCase):
         self.assertIn('06:00-23:00', chunk.content)
         self.assertEqual((chunk.url, chunk.metadata['article']), ('/rules/', '3'))
 
+    def test_menu_chunk_states_serving_hours_as_a_range(self):
+        # "석식 (4,500원, 17:30·19:00)"을 모델이 "오후 7시 30분부터 9시"로 읽었다 (docs/adr/0022)
+        chunk = next(c for c in build_chunks(['menu']) if c.key == 'menu:06월 20일')
+        self.assertIn('중식 11:00–13:30 배식 (4,500원): 잔치국수', chunk.content)
+        self.assertIn('석식 17:30–19:00 배식 (4,500원): ', chunk.content)
+        self.assertNotIn('·', chunk.content.split('\n')[0])
+
     def test_bus_chunk_lists_stops_with_times_and_skips_breaks(self):
         chunk = next(c for c in build_chunks(['bus']) if c.key == 'bus:terminal:outbound')
         self.assertIn('(1호차) 천안 터미널 08:25 → 두정역 08:35', chunk.content)
@@ -630,6 +637,8 @@ class QueryExpansionTests(TestCase):
         from knowledge.search import expand_query
         self.assertEqual(expand_query('전기장판 써도 돼?'), '전기장판 써도 돼? (전열기 난방 도구)')
         self.assertEqual(expand_query('룸메랑 안 맞아'), '룸메랑 안 맞아 (실원 실 이동)')
+        self.assertEqual(expand_query('방 불은 몇 시에 꺼야 돼?'), '방 불은 몇 시에 꺼야 돼? (소등 천정등)')
+        self.assertEqual(expand_query('의자 부서뜨리면?'), '의자 부서뜨리면? (비품 파손)')
 
     def test_terms_already_in_the_question_are_not_repeated(self):
         from knowledge.search import expand_query
